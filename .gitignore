@@ -1,3 +1,6 @@
+# Claude Code guidance (internal use only)
+CLAUDE.md
+
 # Secrets (never commit!)
 *-pull-secret.yaml
 *secret*.yaml
