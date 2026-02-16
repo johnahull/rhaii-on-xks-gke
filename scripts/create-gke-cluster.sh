@@ -37,7 +37,7 @@ Required (choose one):
 
 Optional:
   --project <project>     GCP project ID (default: from gcloud config)
-  --zone <zone>           Zone for cluster (default: us-central1-b for TPU, us-central1-a for GPU)
+  --zone <zone>           Zone for cluster (default: europe-west4-a)
   --cluster-name <name>   Cluster name (default: rhaii-cluster)
   --dry-run               Run validation only, don't create cluster
   --skip-validation       Skip pre-flight validation checks (not recommended)
@@ -49,7 +49,7 @@ Examples:
   $0 --tpu
 
   # GPU cluster in specific zone
-  $0 --gpu --zone us-central1-a
+  $0 --gpu --zone europe-west4-a
 
   # Dry run to check prerequisites
   $0 --tpu --dry-run
@@ -126,11 +126,7 @@ fi
 
 # Set default zone based on accelerator
 if [[ -z "$ZONE" ]]; then
-    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        ZONE="us-central1-b"
-    else
-        ZONE="us-central1-a"
-    fi
+    ZONE="europe-west4-a"
 fi
 
 # Get project ID from gcloud if not specified
