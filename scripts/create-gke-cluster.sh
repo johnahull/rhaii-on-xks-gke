@@ -307,6 +307,8 @@ if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
     echo "Creating TPU v6e node pool..."
     echo "This will take ~10-15 minutes..."
     echo ""
+    echo "Note: TPU topology 2x2x1 requires exactly 1 node (no autoscaling)"
+    echo ""
 
     gcloud container node-pools create tpu-pool \
         --cluster "$CLUSTER_NAME" \
@@ -314,9 +316,6 @@ if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
         --machine-type ct6e-standard-4t \
         --tpu-topology 2x2x1 \
         --num-nodes 1 \
-        --enable-autoscaling \
-        --min-nodes 0 \
-        --max-nodes 3 \
         --project "$PROJECT_ID"
 else
     echo "Creating GPU T4 node pool..."
