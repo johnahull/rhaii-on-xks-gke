@@ -91,7 +91,10 @@ kubectl version --client
 
 **Installation:**
 ```bash
-# Linux
+# Linux (Red Hat/Fedora)
+sudo dnf install jq
+
+# Linux (Debian/Ubuntu)
 sudo apt-get install jq
 
 # macOS (Homebrew)
