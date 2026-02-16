@@ -61,7 +61,22 @@ Use the cost estimator script for detailed breakdowns:
 
 **Highest impact cost saving: ~$126/day (TPU) or ~$74/day (GPU)**
 
-**Scale down accelerator nodes:**
+**Using the automation script (recommended):**
+
+```bash
+# Scale to zero with confirmation
+./scripts/delete-gke-cluster.sh \
+  --cluster-name rhaii-cluster \
+  --zone us-central1-b \
+  --scale-to-zero
+
+# Or using environment variables
+export CLUSTER_NAME=rhaii-cluster
+export ZONE=us-central1-b
+./scripts/delete-gke-cluster.sh --scale-to-zero
+```
+
+**Manual scaling:**
 
 ```bash
 # TPU deployment
@@ -97,6 +112,25 @@ gcloud container clusters resize rhaii-cluster \
 ### 2. Delete Cluster When Not Needed
 
 **For long-term non-use (>1 week):**
+
+**Using the automation script (recommended):**
+
+```bash
+# Delete with safety confirmation
+./scripts/delete-gke-cluster.sh \
+  --cluster-name rhaii-cluster \
+  --zone us-central1-b
+
+# Or using environment variables
+export CLUSTER_NAME=rhaii-cluster
+export ZONE=us-central1-b
+./scripts/delete-gke-cluster.sh
+
+# Force delete without confirmation (use with caution)
+./scripts/delete-gke-cluster.sh --force
+```
+
+**Manual deletion:**
 
 ```bash
 # Delete entire cluster

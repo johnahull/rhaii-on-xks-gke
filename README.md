@@ -56,6 +56,7 @@ All deployment guides use these automation scripts in `scripts/`:
 
 ### Deployment Scripts
 - `create-gke-cluster.sh` - Automated cluster creation with integrated validation
+- `delete-gke-cluster.sh` - Safe cluster deletion or scale-to-zero for cost savings
 - `verify-deployment.sh` - Post-deployment health checks
 - `cost-estimator.sh` - Cost calculation and comparison
 
