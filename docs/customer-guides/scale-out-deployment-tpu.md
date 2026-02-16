@@ -119,7 +119,7 @@ done
 
 ```bash
 # Run benchmark
-cd /path/to/llm-d-xks-gke
+cd /path/to/rhaii-on-xks-gke
 python3 benchmarks/python/benchmark_vllm.py \
   --endpoint http://$GATEWAY_IP/v1/completions \
   --model google/gemma-2b-it \

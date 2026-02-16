@@ -142,11 +142,11 @@ lws-system      lws-controller-manager-...              1/1     Running
 
 ### Step 5: Comprehensive Verification (Recommended)
 
-Use the verification script from the llm-d-xks-gke repository:
+Use the verification script from the rhaii-on-xks-gke repository:
 
 ```bash
-# Navigate to llm-d-xks-gke repository
-cd ~/workspace/llm-d-xks-gke
+# Navigate to rhaii-on-xks-gke repository
+cd ~/workspace/rhaii-on-xks-gke
 
 # Run operator verification
 ./scripts/verify-deployment.sh --operators-only

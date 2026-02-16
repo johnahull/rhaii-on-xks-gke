@@ -43,7 +43,7 @@ Validate your environment before creating resources:
 
 ```bash
 # Navigate to repository
-cd /path/to/llm-d-xks-gke
+cd /path/to/rhaii-on-xks-gke
 
 # Run preflight check with customer-friendly output
 ./scripts/preflight-check.sh \
@@ -127,9 +127,9 @@ make status
 - ✅ Istio control plane ready
 - ✅ KServe controller ready
 
-**Verify from llm-d-xks-gke repository:**
+**Verify from rhaii-on-xks-gke repository:**
 ```bash
-cd /path/to/llm-d-xks-gke
+cd /path/to/rhaii-on-xks-gke
 ./scripts/verify-deployment.sh --operators-only
 ```
 
@@ -318,7 +318,7 @@ gcloud container clusters resize rhaii-tpu-cluster \
 
 **Repository Structure:**
 ```
-llm-d-xks-gke/
+rhaii-on-xks-gke/
 ├── scripts/
 │   ├── create-gke-cluster.sh
 │   ├── verify-deployment.sh

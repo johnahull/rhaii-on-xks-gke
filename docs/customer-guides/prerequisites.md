@@ -247,10 +247,10 @@ stringData:
 ### Clone Repository
 
 ```bash
-# Clone llm-d-xks-gke repository
+# Clone rhaii-on-xks-gke repository
 cd ~/workspace
-git clone https://github.com/YOUR_ORG/llm-d-xks-gke.git
-cd llm-d-xks-gke
+git clone https://github.com/YOUR_ORG/rhaii-on-xks-gke.git
+cd rhaii-on-xks-gke
 
 # Clone RHAII on XKS repository (for operators)
 cd ~/workspace
@@ -260,14 +260,14 @@ git clone https://github.com/opendatahub-io/rhaii-on-xks.git
 **Directory structure:**
 ```
 ~/workspace/
-├── llm-d-xks-gke/         # This repository
+├── rhaii-on-xks-gke/         # This repository
 └── rhaii-on-xks/          # Operator installation
 ```
 
 ### Add Secrets
 
 ```bash
-cd ~/workspace/llm-d-xks-gke
+cd ~/workspace/rhaii-on-xks-gke
 
 # Copy or create secret files
 cp /path/to/redhat-pull-secret.yaml .
@@ -284,7 +284,7 @@ ls -l *secret.yaml
 Run the comprehensive preflight check to verify all prerequisites:
 
 ```bash
-cd ~/workspace/llm-d-xks-gke
+cd ~/workspace/rhaii-on-xks-gke
 
 # For TPU deployment
 ./scripts/preflight-check.sh \
