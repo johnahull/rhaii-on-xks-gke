@@ -98,42 +98,27 @@ Create a production-ready GKE cluster with GPU T4 node pool:
 
 ## Step 3: Install Operators via RHAII on XKS (10 minutes)
 
-Install required operators using the official RHAII on XKS repository:
+**Follow the installation instructions in the official RHAII on XKS repository:**
 
-```bash
-# Clone RHAII on XKS repository (if not already cloned)
-cd ~/workspace  # or your preferred location
-if [ ! -d "rhaii-on-xks" ]; then
-  git clone https://github.com/opendatahub-io/rhaii-on-xks.git
-fi
+🔗 **https://github.com/opendatahub-io/rhaii-on-xks**
 
-# Navigate to RHAII on XKS repository
-cd rhaii-on-xks
-
-# Deploy all operators
-make deploy-all
-
-# Verify operator status
-make status
-```
-
-**What this installs:**
+The repository provides automated installation for:
 - cert-manager (certificate management)
 - Red Hat OpenShift Service Mesh (Istio)
 - KServe v0.15 (inference serving)
 - LeaderWorkerSet (LWS) controller
+
+**After installation, verify from rhaii-on-xks-gke repository:**
+```bash
+cd /path/to/rhaii-on-xks-gke
+./scripts/verify-deployment.sh --operators-only
+```
 
 **Success criteria:**
 - ✅ All operator pods Running
 - ✅ cert-manager webhook ready
 - ✅ Istio control plane ready
 - ✅ KServe controller ready
-
-**Verify from rhaii-on-xks-gke repository:**
-```bash
-cd /path/to/rhaii-on-xks-gke
-./scripts/verify-deployment.sh --operators-only
-```
 
 **Time:** ~10 minutes
 
