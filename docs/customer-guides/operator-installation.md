@@ -1,6 +1,6 @@
 # Operator Installation
 
-Install RHAII operators using the official RHAII on XKS repository.
+Install RHAII operators using the official [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) repository.
 
 ## Overview
 
@@ -19,11 +19,11 @@ Install RHAII operators using the official RHAII on XKS repository.
 
 ## Installation Instructions
 
-**Use the official RHAII on XKS repository for installation:**
+**Use the official repository for installation:**
 
-🔗 **https://github.com/opendatahub-io/rhaii-on-xks**
+🔗 **[RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)**
 
-Follow the installation instructions in the RHAII on XKS repository README. The repository provides:
+Follow the installation instructions in the repository README. The repository provides:
 - Automated installation via Makefile
 - Red Hat registry credential setup
 - Tested operator versions and configurations

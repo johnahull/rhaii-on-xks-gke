@@ -13,7 +13,7 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 
 ### Prerequisites and Setup
 - **[Prerequisites](prerequisites.md)** - Everything you need before starting
-- **[Operator Installation](operator-installation.md)** - Install RHAII operators via RHAII on XKS
+- **[Operator Installation](operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
 ### Single-Model Deployments (Baseline)
 Best for development, testing, and traffic <10 req/s:

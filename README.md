@@ -21,7 +21,7 @@ Both guides take you from zero to deployed in 30-40 minutes.
 
 ### Getting Started
 - **[Prerequisites](docs/customer-guides/prerequisites.md)** - Everything you need before deploying
-- **[Operator Installation](docs/customer-guides/operator-installation.md)** - Install RHAII operators via RHAII on XKS
+- **[Operator Installation](docs/customer-guides/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
 ### Deployment Guides
 
@@ -190,7 +190,7 @@ Before deploying, ensure you have:
    ```
 
 3. **Operator Installation** (~10 minutes)
-   - Clone RHAII on XKS repository
+   - Clone [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) repository
    - Deploy operators (cert-manager, Istio, KServe, LWS)
 
 4. **Deploy Workload** (~10 minutes)

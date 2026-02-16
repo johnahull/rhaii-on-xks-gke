@@ -94,9 +94,9 @@ Create a production-ready GKE cluster with TPU v6e node pool:
 
 ---
 
-## Step 3: Install Operators via RHAII on XKS (10 minutes)
+## Step 3: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
 
-**Follow the installation instructions in the official RHAII on XKS repository:**
+**Follow the installation instructions in the official repository:**
 
 🔗 **https://github.com/opendatahub-io/rhaii-on-xks**
 

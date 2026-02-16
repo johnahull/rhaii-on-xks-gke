@@ -86,6 +86,7 @@ kubectl get secret -n cert-manager rhaiis-pull-secret
 kubectl top nodes
 
 # Clean up and reinstall
+# Repository: https://github.com/opendatahub-io/rhaii-on-xks
 cd ~/workspace/rhaii-on-xks
 make uninstall-all
 make deploy-all

@@ -252,7 +252,8 @@ cd ~/workspace
 git clone https://github.com/YOUR_ORG/rhaii-on-xks-gke.git
 cd rhaii-on-xks-gke
 
-# Clone RHAII on XKS repository (for operators)
+# Clone RHAII on XKS repository for operator installation
+# Repository: https://github.com/opendatahub-io/rhaii-on-xks
 cd ~/workspace
 git clone https://github.com/opendatahub-io/rhaii-on-xks.git
 ```
@@ -261,7 +262,7 @@ git clone https://github.com/opendatahub-io/rhaii-on-xks.git
 ```
 ~/workspace/
 ├── rhaii-on-xks-gke/         # This repository
-└── rhaii-on-xks/          # Operator installation
+└── rhaii-on-xks/          # Operator installation (https://github.com/opendatahub-io/rhaii-on-xks)
 ```
 
 ### Add Secrets
@@ -307,7 +308,7 @@ cd ~/workspace/rhaii-on-xks-gke
 - ✅ IAM permissions
 - ✅ Accelerator availability in zone
 - ✅ Secret files exist and valid
-- ✅ RHAII on XKS repository cloned
+- ✅ [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) repository cloned
 
 **Success criteria:** All checks pass before proceeding to cluster creation.
 

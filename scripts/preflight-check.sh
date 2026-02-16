@@ -593,7 +593,8 @@ if [ "$CUSTOMER_MODE" = true ]; then
     echo "   ./scripts/create-gke-cluster.sh --${ACCELERATOR_TYPE}"
     echo ""
     echo "2. Install Operators via RHAII on XKS (~10 minutes)"
-    echo "   Follow: docs/customer-guides/operator-installation.md"
+    echo "   Repository: https://github.com/opendatahub-io/rhaii-on-xks"
+    echo "   Guide: docs/customer-guides/operator-installation.md"
     echo ""
     echo "3. Deploy Your Workload (~10 minutes)"
 
