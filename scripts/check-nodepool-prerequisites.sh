@@ -34,7 +34,8 @@ Optional:
   --tpu-topology <topology>  For TPUs: 2x2x1, 2x2x2, etc.
   --project <project>        GCP project (default: from environment or gcloud config)
   --customer                 Customer-friendly output with quota guidance
-  --test-capacity            Test actual capacity by attempting instance creation (experimental)
+  --test-capacity            Test capacity by creating test instance (experimental)
+                             Note: For TPUs, tests standalone VM capacity, not GKE node pool capacity
 
 Examples:
   # Check TPU v6e node pool prerequisites
@@ -533,24 +534,37 @@ if [ "$TEST_CAPACITY" = true ]; then
     echo -e "${YELLOW}⚠️  WARNING: This test will attempt to create a test instance!${NC}"
     echo "   The instance will be immediately deleted, but brief charges may apply."
     echo ""
+    echo -e "${YELLOW}⚠️  IMPORTANT: For TPUs, this tests standalone TPU VM capacity.${NC}"
+    echo "   GKE node pool capacity is separate and cannot be pre-tested."
+    echo "   Only actual node pool creation during cluster setup will confirm"
+    echo "   GKE TPU node pool availability."
+    echo ""
 
     TEST_INSTANCE_NAME="capacity-test-$(date +%s)"
 
     if [ "$IS_TPU" = true ]; then
-        echo "Testing TPU capacity by attempting instance creation..."
+        echo -e "${YELLOW}Note: TPU capacity test creates a standalone TPU VM (not GKE node pool)${NC}"
+        echo "      GKE node pool capacity is separate and can only be verified by"
+        echo "      attempting actual node pool creation during cluster setup."
+        echo ""
+        echo "Testing standalone TPU VM capacity..."
         echo "   Instance name: $TEST_INSTANCE_NAME"
         echo "   This will take 30-60 seconds..."
         echo ""
 
-        # Attempt to create a small TPU instance
+        # Convert machine type to accelerator type (e.g., ct6e-standard-4t -> v6e-4)
+        ACCELERATOR_TYPE=$(echo $MACHINE_TYPE | sed 's/ct/v/;s/-standard-/-/;s/t$//')
+
+        # Attempt to create a small TPU VM instance
         CREATE_OUTPUT=$(gcloud compute tpus tpu-vm create $TEST_INSTANCE_NAME \
             --zone=$ZONE \
-            --accelerator-type=$(echo $MACHINE_TYPE | sed 's/ct/tpu-v/;s/-standard-/-/;s/t$//') \
+            --accelerator-type=$ACCELERATOR_TYPE \
             --version=tpu-vm-base \
             --project=$PROJECT_ID 2>&1)
 
         if echo "$CREATE_OUTPUT" | grep -q "Created"; then
-            echo -e "${GREEN}✅ CAPACITY AVAILABLE: Successfully created test TPU instance${NC}"
+            echo -e "${GREEN}✅ CAPACITY AVAILABLE: Successfully created test TPU VM instance${NC}"
+            echo "   (Note: GKE node pool capacity may still differ)"
             echo "   Deleting test instance..."
             gcloud compute tpus tpu-vm delete $TEST_INSTANCE_NAME \
                 --zone=$ZONE \
@@ -561,10 +575,16 @@ if [ "$TEST_CAPACITY" = true ]; then
             if echo "$CREATE_OUTPUT" | grep -qi "quota\|QUOTA"; then
                 echo -e "${RED}❌ QUOTA EXCEEDED: Insufficient quota${NC}"
                 ALL_CHECKS_PASSED=false
-            elif echo "$CREATE_OUTPUT" | grep -qi "stockout\|capacity\|ZONE_RESOURCE_POOL_EXHAUSTED"; then
-                echo -e "${RED}❌ STOCKOUT DETECTED: No capacity available in $ZONE${NC}"
+            elif echo "$CREATE_OUTPUT" | grep -qi "stockout\|capacity\|ZONE_RESOURCE_POOL_EXHAUSTED\|RESOURCE_EXHAUSTED"; then
+                echo -e "${RED}❌ STOCKOUT DETECTED: No standalone TPU VM capacity available in $ZONE${NC}"
+                echo "   GKE node pool capacity may also be affected"
                 echo "   Try alternative zones or wait for capacity to become available"
                 ALL_CHECKS_PASSED=false
+            elif echo "$CREATE_OUTPUT" | grep -qi "permission"; then
+                echo -e "${YELLOW}⚠️  PERMISSION DENIED: Cannot create standalone TPU VMs${NC}"
+                echo "   Your project may only have access to GKE TPU node pools"
+                echo "   This is common and doesn't affect GKE deployment"
+                echo "   Skipping capacity test..."
             else
                 echo -e "${RED}❌ CAPACITY TEST FAILED${NC}"
                 echo "   Error: $CREATE_OUTPUT"
