@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT=${PROJECT:-ecoeng-llmd}
+PROJECT=${PROJECT:-YOUR_PROJECT}
 USE_API=false
 SHOW_MACHINE_TYPES=false
 CUSTOMER_MODE=false

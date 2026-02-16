@@ -17,7 +17,7 @@ Everything you need before deploying RHAII on GKE.
 
 - **Red Hat Account:** Access to registry.redhat.io
 - **Pull Secret:** Registry credentials for RHAII images
-  - Location: `11009103-jhull-svc-pull-secret.yaml`
+  - Location: `redhat-pull-secret.yaml`
   - Format: Kubernetes secret with `.dockerconfigjson`
 
 ### HuggingFace
@@ -162,7 +162,7 @@ Request quota increases before creating clusters:
 
 ### Red Hat Pull Secret
 
-**File:** `11009103-jhull-svc-pull-secret.yaml`
+**File:** `redhat-pull-secret.yaml`
 
 **Format:**
 ```yaml
@@ -267,7 +267,7 @@ git clone https://github.com/opendatahub-io/rhaii-on-xks.git
 cd ~/workspace/llm-d-xks-gke
 
 # Copy or create secret files
-cp /path/to/11009103-jhull-svc-pull-secret.yaml .
+cp /path/to/redhat-pull-secret.yaml .
 cp /path/to/huggingface-token-secret.yaml .
 
 # Verify secrets exist

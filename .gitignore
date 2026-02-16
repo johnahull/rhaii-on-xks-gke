@@ -2,6 +2,7 @@
 CLAUDE.md
 
 # Secrets (never commit!)
+redhat-pull-secret.yaml
 *-pull-secret.yaml
 *secret*.yaml
 *.secret

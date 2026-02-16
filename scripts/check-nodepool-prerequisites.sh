@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT=${PROJECT:-ecoeng-llmd}
+PROJECT=${PROJECT:-YOUR_PROJECT}
 
 # Color codes for output
 RED='\033[0;31m'

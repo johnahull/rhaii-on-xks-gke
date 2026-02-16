@@ -137,7 +137,7 @@ spec:
 
 ```bash
 # Apply pull secret
-kubectl apply -f 11009103-jhull-svc-pull-secret.yaml
+kubectl apply -f redhat-pull-secret.yaml
 
 # Apply HuggingFace token
 kubectl apply -f huggingface-token-secret.yaml

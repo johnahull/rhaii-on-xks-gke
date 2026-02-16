@@ -141,7 +141,7 @@ kubectl logs -l serving.kserve.io/inferenceservice -f
    kubectl get secret rhaiis-pull-secret
 
    # Reapply if missing
-   kubectl apply -f 11009103-jhull-svc-pull-secret.yaml
+   kubectl apply -f redhat-pull-secret.yaml
    ```
 
 2. **Model download failures:**

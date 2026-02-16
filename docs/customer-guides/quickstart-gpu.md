@@ -26,10 +26,10 @@ Deploy RHAII vLLM on Google Cloud GPU (T4) in 30-40 minutes.
 Before starting, ensure you have:
 
 - [ ] Google Cloud account with billing enabled
-- [ ] Project: `ecoeng-llmd` (or your project) with Owner/Editor role
+- [ ] Project: `YOUR_PROJECT` (or your project) with Owner/Editor role
 - [ ] `gcloud` CLI installed and authenticated
 - [ ] `kubectl` CLI installed
-- [ ] Red Hat registry credentials in `11009103-jhull-svc-pull-secret.yaml`
+- [ ] Red Hat registry credentials in `redhat-pull-secret.yaml`
 - [ ] HuggingFace token for model access
 - [ ] GPU T4 quota: 1 GPU minimum (3 GPUs for scale-out)
 
@@ -73,7 +73,7 @@ Create a production-ready GKE cluster with GPU T4 node pool:
 
 # Or specify options explicitly
 ./scripts/create-gke-cluster.sh --gpu \
-  --project ecoeng-llmd \
+  --project YOUR_PROJECT \
   --zone us-central1-a \
   --cluster-name rhaii-gpu-cluster
 ```
@@ -147,7 +147,7 @@ Deploy the baseline single-model vLLM inference service:
 
 ```bash
 # Apply secrets (if not already applied)
-kubectl apply -f 11009103-jhull-svc-pull-secret.yaml
+kubectl apply -f redhat-pull-secret.yaml
 kubectl apply -f huggingface-token-secret.yaml
 
 # Deploy LLMInferenceService

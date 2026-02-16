@@ -402,7 +402,7 @@ echo "========================================="
 
 # Check for pull secret (in repo root)
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PULL_SECRET_PATH="$REPO_ROOT/11009103-jhull-svc-pull-secret.yaml"
+PULL_SECRET_PATH="$REPO_ROOT/redhat-pull-secret.yaml"
 if [[ -f "$PULL_SECRET_PATH" ]]; then
     echo -e "${GREEN}✅ Red Hat pull secret found${NC}"
 else
