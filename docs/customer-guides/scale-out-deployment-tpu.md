@@ -25,6 +25,8 @@ Deploy 3-replica vLLM service with prefix caching for high throughput on TPU v6e
 - ✅ Budget approved (~$377/day)
 - ✅ Workload analysis confirms shared prompts benefit from caching
 
+**Optional:** Configure [Environment Setup](environment-setup.md) to streamline deployment commands.
+
 ---
 
 ## Architecture

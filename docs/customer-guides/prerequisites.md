@@ -341,7 +341,8 @@ cd ~/workspace/rhaii-on-xks-gke
 
 After completing prerequisites:
 
-1. **TPU Deployment:** Follow [TPU Quickstart](quickstart-tpu.md)
-2. **GPU Deployment:** Follow [GPU Quickstart](quickstart-gpu.md)
+1. **Optional:** Configure [Environment Setup](environment-setup.md) to streamline commands
+2. **TPU Deployment:** Follow [TPU Quickstart](quickstart-tpu.md)
+3. **GPU Deployment:** Follow [GPU Quickstart](quickstart-gpu.md)
 
 **Questions?** See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)

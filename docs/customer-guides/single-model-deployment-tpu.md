@@ -17,6 +17,8 @@ This guide provides additional details, customization options, and production co
 - ✅ kubectl configured for cluster access
 - ✅ Secrets applied (pull-secret, huggingface-token)
 
+**Optional:** Configure [Environment Setup](environment-setup.md) to avoid repeating `--project`, `--zone` flags in commands.
+
 **Verify:**
 ```bash
 ./scripts/verify-deployment.sh --operators-only

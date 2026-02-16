@@ -239,6 +239,49 @@ See [Production Hardening Guide](production-hardening.md) for checklist.
 
 ---
 
+### How do I avoid repeating --project and --zone in every command?
+
+**Use environment variables** to set common configuration values once:
+
+**Option 1: direnv (automatic):**
+```bash
+cp .envrc.example .envrc
+# Edit .envrc with your values
+direnv allow .
+```
+
+**Option 2: Manual sourcing:**
+```bash
+cp env.sh.example env.sh
+# Edit env.sh with your values
+source env.sh
+```
+
+**Supported variables:**
+- `PROJECT_ID` - GCP project ID
+- `ZONE` - GCP zone
+- `CLUSTER_NAME` - Default cluster name
+- `ACCELERATOR_TYPE` - Default accelerator (tpu/gpu)
+
+**Example:**
+```bash
+export PROJECT_ID="ecoeng-llmd"
+export ZONE="us-central1-b"
+
+# Simplified commands
+./scripts/create-gke-cluster.sh --tpu
+./scripts/verify-deployment.sh --deployment single-model
+```
+
+**CLI flags always override environment variables**, so you can still customize:
+```bash
+./scripts/create-gke-cluster.sh --tpu --zone us-east5-a
+```
+
+See [Environment Setup Guide](environment-setup.md) for complete instructions.
+
+---
+
 ## Costs
 
 ### What's included in the cost estimates?

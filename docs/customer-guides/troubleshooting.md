@@ -378,6 +378,117 @@ See [Cost Management Guide](cost-management.md) for optimization strategies.
 
 ---
 
+## Script and Automation Issues
+
+### Environment Variables Not Detected
+
+**Symptom:** Scripts use default values instead of environment variables.
+
+**Causes:**
+1. Variables not exported
+2. Incorrect variable names (case-sensitive)
+3. Not in correct directory (direnv only)
+
+**Solutions:**
+
+**1. Verify variables are exported:**
+```bash
+# Correct
+export PROJECT_ID="your-project"
+
+# Wrong - not exported
+PROJECT_ID="your-project"
+```
+
+**2. Check variable names:**
+```bash
+# Correct
+export PROJECT_ID="..."
+export ZONE="..."
+export CLUSTER_NAME="..."
+export ACCELERATOR_TYPE="..."
+
+# Wrong - case matters
+export project_id="..."
+```
+
+**3. Verify direnv is working:**
+```bash
+# Check direnv is installed
+direnv version
+
+# Check hook is configured
+cat ~/.bashrc | grep direnv
+
+# Re-allow directory
+direnv allow .
+
+# Verify variables loaded
+echo $PROJECT_ID
+```
+
+**4. For manual sourcing:**
+```bash
+# Source the file
+source env.sh
+
+# Verify
+echo $PROJECT_ID
+```
+
+---
+
+### CLI Flags Not Overriding Environment Variables
+
+**This should not happen** - CLI flags always override environment variables.
+
+**If experiencing this issue:**
+
+1. Verify you're using the latest scripts:
+   ```bash
+   git pull origin main
+   ```
+
+2. Check script version includes environment variable support:
+   ```bash
+   grep "Load from environment" scripts/preflight-check.sh
+   ```
+
+Expected output: Should show comment about environment variable loading.
+
+---
+
+### direnv Not Loading Automatically
+
+**Symptom:** Variables empty when entering directory.
+
+**Solutions:**
+
+1. **Verify direnv hook is configured:**
+   ```bash
+   # Add to ~/.bashrc or ~/.zshrc
+   eval "$(direnv hook bash)"  # For bash
+   eval "$(direnv hook zsh)"   # For zsh
+
+   # Reload shell
+   source ~/.bashrc
+   ```
+
+2. **Allow the directory:**
+   ```bash
+   cd /path/to/rhaii-on-xks-gke
+   direnv allow .
+   ```
+
+3. **Check for errors:**
+   ```bash
+   direnv status
+   ```
+
+See [Environment Setup Guide](environment-setup.md) for complete troubleshooting.
+
+---
+
 ## Getting More Help
 
 **Collect diagnostics:**

@@ -17,6 +17,8 @@ This guide is similar to [Single-Model Deployment (TPU)](single-model-deployment
 - Performance: ~5-6 req/s parallel, ~1.5 req/s serial
 - Cost: ~$80/day
 
+**Optional:** Configure [Environment Setup](environment-setup.md) to streamline deployment commands.
+
 ## Manifest
 
 **File:** `deployments/istio-kserve/baseline-pattern/manifests/llmisvc-gpu.yaml`

@@ -22,6 +22,8 @@ Similar to [Scale-Out Deployment (TPU)](scale-out-deployment-tpu.md) but adapted
 - ✅ GPU quota: 3 GPUs minimum
 - ✅ Budget approved (~$228/day)
 
+**Optional:** Configure [Environment Setup](environment-setup.md) to streamline deployment commands.
+
 ## Key Differences from TPU
 
 - Machine type: `n1-standard-4` (vs `ct6e-standard-4t`)
