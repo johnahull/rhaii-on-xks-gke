@@ -11,11 +11,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default values
-PROJECT_ID=""
-ZONE=""
-CLUSTER_NAME="rhaii-cluster"
-ACCELERATOR_TYPE=""
+# Load from environment variables if set, otherwise use defaults
+# Command-line flags will override these values during argument parsing
+PROJECT_ID="${PROJECT_ID:-}"
+ZONE="${ZONE:-}"
+CLUSTER_NAME="${CLUSTER_NAME:-rhaii-cluster}"
+ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-}"
 DRY_RUN=false
 INTERACTIVE=true
 SKIP_VALIDATION=false

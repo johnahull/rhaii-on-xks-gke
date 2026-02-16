@@ -57,12 +57,13 @@ Examples:
 EOF
 }
 
-# Parse arguments
+# Load from environment variables if set, otherwise use defaults
+# Command-line flags will override these values during argument parsing
 DEPLOYMENT_PATH=""
-CLUSTER_NAME=""
-ZONE="us-central1-a"
-ACCELERATOR_TYPE="gpu"
-PROJECT_ID=""
+CLUSTER_NAME="${CLUSTER_NAME:-}"
+ZONE="${ZONE:-us-central1-a}"
+ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-gpu}"
+PROJECT_ID="${PROJECT_ID:-}"
 CUSTOMER_MODE=false
 SKIP_TOOLS=false
 SKIP_CLUSTER=false
@@ -125,9 +126,10 @@ if [[ -z "$DEPLOYMENT_PATH" ]]; then
     exit 1
 fi
 
-# Determine script directory (deployments/)
+# Determine repository root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEPLOYMENT_DIR="${SCRIPT_DIR}/${DEPLOYMENT_PATH}"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEPLOYMENT_DIR="${REPO_ROOT}/deployments/${DEPLOYMENT_PATH}"
 
 # Validate deployment directory exists
 if [[ ! -d "$DEPLOYMENT_DIR" ]]; then
@@ -265,38 +267,43 @@ elif [[ "$ACCELERATOR_TYPE" == "gpu" ]]; then
 fi
 
 # Use our existing accelerator checker
-if [[ -f "$SCRIPT_DIR/check-gke-accelerator-availability.sh" ]]; then
-    echo "Running accelerator availability check for $ACCELERATOR_TYPE in $ZONE..."
-
-    # Call checker with specific accelerator type
-    CHECKER_OUTPUT=$("$SCRIPT_DIR/check-gke-accelerator-availability.sh" --zone "$ZONE" --type "$ACCELERATOR_TYPE" 2>&1)
-
-    # Check for GKE availability
-    if echo "$CHECKER_OUTPUT" | grep -q "✅ GKE is available"; then
-        echo -e "${GREEN}✅ GKE is available in $ZONE${NC}"
+if [[ -f "$SCRIPT_DIR/check-accelerator-availability.sh" ]]; then
+    if [[ -z "$PROJECT_ID" ]]; then
+        echo -e "${YELLOW}⚠️  Skipping accelerator availability check (no project ID set)${NC}"
+        ((WARNINGS_COUNT++))
     else
-        echo -e "${RED}❌ GKE is not available in $ZONE${NC}"
-        ALL_CHECKS_PASSED=false
-    fi
+        echo "Running accelerator availability check for $ACCELERATOR_TYPE in $ZONE..."
 
-    # Check for specific accelerator availability
-    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        if echo "$CHECKER_OUTPUT" | grep -q "✅ TPU .* is SUPPORTED"; then
-            echo -e "${GREEN}✅ TPU accelerators available in $ZONE${NC}"
-            # Show which TPU types are supported
-            echo "$CHECKER_OUTPUT" | grep "✅ TPU" | sed 's/^/   /'
+        # Call checker with specific accelerator type (pass PROJECT_ID)
+        CHECKER_OUTPUT=$(PROJECT="$PROJECT_ID" "$SCRIPT_DIR/check-accelerator-availability.sh" --zone "$ZONE" --type "$ACCELERATOR_TYPE" 2>&1)
+
+        # Check for GKE availability
+        if echo "$CHECKER_OUTPUT" | grep -q "✅ GKE is available"; then
+            echo -e "${GREEN}✅ GKE is available in $ZONE${NC}"
         else
-            echo -e "${RED}❌ No TPU accelerators available in $ZONE${NC}"
+            echo -e "${RED}❌ GKE is not available in $ZONE${NC}"
             ALL_CHECKS_PASSED=false
         fi
-    elif [[ "$ACCELERATOR_TYPE" == "gpu" ]]; then
-        if echo "$CHECKER_OUTPUT" | grep -q "GPU is SUPPORTED"; then
-            echo -e "${GREEN}✅ GPU accelerators available in $ZONE${NC}"
-            # Show which GPU types are supported
-            echo "$CHECKER_OUTPUT" | grep "✅ NVIDIA" | sed 's/^/   /'
-        else
-            echo -e "${RED}❌ No GPU accelerators available in $ZONE${NC}"
-            ALL_CHECKS_PASSED=false
+
+        # Check for specific accelerator availability
+        if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
+            if echo "$CHECKER_OUTPUT" | grep -q "✅ TPU .* is SUPPORTED"; then
+                echo -e "${GREEN}✅ TPU accelerators available in $ZONE${NC}"
+                # Show which TPU types are supported
+                echo "$CHECKER_OUTPUT" | grep "✅ TPU" | sed 's/^/   /'
+            else
+                echo -e "${RED}❌ No TPU accelerators available in $ZONE${NC}"
+                ALL_CHECKS_PASSED=false
+            fi
+        elif [[ "$ACCELERATOR_TYPE" == "gpu" ]]; then
+            if echo "$CHECKER_OUTPUT" | grep -q "GPU is SUPPORTED"; then
+                echo -e "${GREEN}✅ GPU accelerators available in $ZONE${NC}"
+                # Show which GPU types are supported
+                echo "$CHECKER_OUTPUT" | grep "✅ NVIDIA" | sed 's/^/   /'
+            else
+                echo -e "${RED}❌ No GPU accelerators available in $ZONE${NC}"
+                ALL_CHECKS_PASSED=false
+            fi
         fi
     fi
 else
@@ -401,7 +408,6 @@ echo "Check 7: Required Secrets"
 echo "========================================="
 
 # Check for pull secret (in repo root)
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PULL_SECRET_PATH="$REPO_ROOT/redhat-pull-secret.yaml"
 if [[ -f "$PULL_SECRET_PATH" ]]; then
     echo -e "${GREEN}✅ Red Hat pull secret found${NC}"

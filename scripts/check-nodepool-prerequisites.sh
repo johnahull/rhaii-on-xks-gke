@@ -4,7 +4,9 @@
 
 set -e
 
-PROJECT=${PROJECT:-YOUR_PROJECT}
+# Load from environment variables if set
+# Command-line flags will override these values during argument parsing
+PROJECT_ID="${PROJECT_ID:-}"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -30,7 +32,7 @@ Optional:
   --cluster <name>           Cluster name (validates cluster compatibility)
   --accelerator <type>       For GPUs: nvidia-tesla-t4, nvidia-tesla-a100, etc.
   --tpu-topology <topology>  For TPUs: 2x2x1, 2x2x2, etc.
-  --project <project>        GCP project (default: $PROJECT)
+  --project <project>        GCP project (default: from environment or gcloud config)
   --customer                 Customer-friendly output with quota guidance
   --test-capacity            Test actual capacity by attempting instance creation (experimental)
 
@@ -48,10 +50,10 @@ Examples:
 EOF
 }
 
-# Parse arguments
-ZONE=""
+# Parse arguments (environment variables used as defaults if not provided via flags)
+ZONE="${ZONE:-}"
 MACHINE_TYPE=""
-CLUSTER=""
+CLUSTER="${CLUSTER_NAME:-}"
 ACCELERATOR=""
 TPU_TOPOLOGY=""
 CUSTOMER_MODE=false
@@ -80,7 +82,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --project)
-            PROJECT="$2"
+            PROJECT_ID="$2"
             shift 2
             ;;
         --customer)
@@ -102,6 +104,19 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Set PROJECT_ID from gcloud config if not specified
+if [[ -z "$PROJECT_ID" ]]; then
+    PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
+fi
+
+if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "YOUR_PROJECT" ]]; then
+    echo "Error: PROJECT_ID not set. Either:"
+    echo "  1. Set via environment: export PROJECT_ID=your-project"
+    echo "  2. Set gcloud config: gcloud config set project your-project"
+    echo "  3. Pass as flag: --project your-project"
+    exit 1
+fi
 
 # Validate required arguments
 if [[ -z "$ZONE" || -z "$MACHINE_TYPE" ]]; then
@@ -130,7 +145,7 @@ fi
 echo "========================================="
 echo "GKE Node Pool Prerequisites Check"
 echo "========================================="
-echo "Project: $PROJECT"
+echo "Project: $PROJECT_ID"
 echo "Zone: $ZONE"
 echo "Machine Type: $MACHINE_TYPE"
 [[ -n "$CLUSTER" ]] && echo "Cluster: $CLUSTER"
@@ -148,11 +163,11 @@ echo "========================================="
 echo "Check 1: GKE Availability in Zone"
 echo "========================================="
 
-if gcloud container get-server-config --zone=$ZONE --project=$PROJECT &> /dev/null; then
+if gcloud container get-server-config --zone=$ZONE --project=$PROJECT_ID &> /dev/null; then
     echo -e "${GREEN}✅ GKE is available in $ZONE${NC}"
 
     # Get GKE version
-    GKE_VERSION=$(gcloud container get-server-config --zone=$ZONE --project=$PROJECT --format="value(channels[0].defaultVersion)" 2>/dev/null || echo "unknown")
+    GKE_VERSION=$(gcloud container get-server-config --zone=$ZONE --project=$PROJECT_ID --format="value(channels[0].defaultVersion)" 2>/dev/null || echo "unknown")
     echo "   Latest GKE version: $GKE_VERSION"
 else
     echo -e "${RED}❌ GKE is NOT available in $ZONE${NC}"
@@ -167,7 +182,7 @@ echo "========================================="
 echo "Check 2: Machine Type Availability"
 echo "========================================="
 
-MACHINE_CHECK=$(gcloud compute machine-types describe $MACHINE_TYPE --zone=$ZONE --project=$PROJECT 2>&1)
+MACHINE_CHECK=$(gcloud compute machine-types describe $MACHINE_TYPE --zone=$ZONE --project=$PROJECT_ID 2>&1)
 if echo "$MACHINE_CHECK" | grep -q "name: $MACHINE_TYPE"; then
     echo -e "${GREEN}✅ Machine type $MACHINE_TYPE is available in $ZONE${NC}"
 
@@ -237,7 +252,7 @@ if [ "$IS_TPU" = true ]; then
     fi
 
     if [[ -n "$TPU_VERSION" ]]; then
-        TPU_CHECK=$(gcloud compute accelerator-types list --filter="name:$TPU_VERSION AND zone:$ZONE" --project=$PROJECT 2>&1)
+        TPU_CHECK=$(gcloud compute accelerator-types list --filter="name:$TPU_VERSION AND zone:$ZONE" --project=$PROJECT_ID 2>&1)
         if echo "$TPU_CHECK" | grep -q "$ZONE"; then
             echo -e "${GREEN}✅ TPU $TPU_VERSION is available in $ZONE${NC}"
         else
@@ -251,7 +266,7 @@ if [ "$IS_TPU" = true ]; then
 elif [ "$IS_GPU" = true ]; then
     # Check GPU accelerator type
     if [[ -n "$ACCELERATOR" ]]; then
-        GPU_CHECK=$(gcloud compute accelerator-types list --filter="name:$ACCELERATOR AND zone:$ZONE" --project=$PROJECT 2>&1)
+        GPU_CHECK=$(gcloud compute accelerator-types list --filter="name:$ACCELERATOR AND zone:$ZONE" --project=$PROJECT_ID 2>&1)
         if echo "$GPU_CHECK" | grep -q "$ZONE"; then
             echo -e "${GREEN}✅ GPU $ACCELERATOR is available in $ZONE${NC}"
         else
@@ -329,7 +344,7 @@ if [ "$IS_GPU" = true ] && [[ -n "$ACCELERATOR" ]]; then
         echo "Checking GPU quota in region $REGION..."
 
         # Get quota information
-        QUOTA_BLOCK=$(gcloud compute regions describe $REGION --project=$PROJECT 2>&1 | \
+        QUOTA_BLOCK=$(gcloud compute regions describe $REGION --project=$PROJECT_ID 2>&1 | \
             grep -B1 -A1 "metric: $QUOTA_METRIC$")
 
         if [[ -n "$QUOTA_BLOCK" ]]; then
@@ -386,7 +401,7 @@ else
     echo "   Checking CPU quota only..."
 
     # Check CPU quota as fallback
-    CPU_QUOTA=$(gcloud compute regions describe $REGION --project=$PROJECT 2>&1 | \
+    CPU_QUOTA=$(gcloud compute regions describe $REGION --project=$PROJECT_ID 2>&1 | \
         grep -B1 -A1 "metric: CPUS$" | grep -E "limit:|usage:")
 
     if [[ -n "$CPU_QUOTA" ]]; then
@@ -414,7 +429,7 @@ if [ "$IS_TPU" = true ]; then
     EXISTING=$(gcloud compute instances list \
         --filter="zone:($ZONE) AND machineType:$MACHINE_TYPE" \
         --format="value(name)" \
-        --project=$PROJECT 2>/dev/null | wc -l)
+        --project=$PROJECT_ID 2>/dev/null | wc -l)
 
     if [ "$EXISTING" -gt 0 ]; then
         echo -e "${GREEN}✅ Found $EXISTING existing instance(s) with $MACHINE_TYPE in $ZONE${NC}"
@@ -430,7 +445,7 @@ elif [ "$IS_GPU" = true ] && [[ -n "$ACCELERATOR" ]]; then
     EXISTING=$(gcloud compute instances list \
         --filter="zone:($ZONE)" \
         --format="value(name)" \
-        --project=$PROJECT 2>/dev/null | wc -l)
+        --project=$PROJECT_ID 2>/dev/null | wc -l)
 
     if [ "$EXISTING" -gt 0 ]; then
         echo -e "${GREEN}✅ Found $EXISTING instance(s) in $ZONE${NC}"
@@ -444,7 +459,7 @@ elif [ "$IS_GPU" = true ] && [[ -n "$ACCELERATOR" ]]; then
     GPU_POOLS=$(gcloud compute instances list \
         --filter="zone:($ZONE) AND name:gke-*" \
         --format="value(name)" \
-        --project=$PROJECT 2>/dev/null | wc -l)
+        --project=$PROJECT_ID 2>/dev/null | wc -l)
 
     if [ "$GPU_POOLS" -gt 0 ]; then
         echo -e "${GREEN}✅ Found $GPU_POOLS GKE node(s) in $ZONE${NC}"
@@ -453,7 +468,7 @@ elif [ "$IS_GPU" = true ] && [[ -n "$ACCELERATOR" ]]; then
 fi
 
 # Check zone status
-ZONE_STATUS=$(gcloud compute zones describe $ZONE --format="value(status)" --project=$PROJECT 2>/dev/null)
+ZONE_STATUS=$(gcloud compute zones describe $ZONE --format="value(status)" --project=$PROJECT_ID 2>/dev/null)
 if [[ "$ZONE_STATUS" == "UP" ]]; then
     echo -e "${GREEN}✅ Zone status: UP (operational)${NC}"
 elif [[ "$ZONE_STATUS" == "DOWN" ]]; then
@@ -479,7 +494,7 @@ if [[ -n "$CLUSTER" ]]; then
     echo "Check 6: Cluster Compatibility"
     echo "========================================="
 
-    CLUSTER_INFO=$(gcloud container clusters describe $CLUSTER --zone=$ZONE --project=$PROJECT 2>&1)
+    CLUSTER_INFO=$(gcloud container clusters describe $CLUSTER --zone=$ZONE --project=$PROJECT_ID 2>&1)
     if echo "$CLUSTER_INFO" | grep -q "name: $CLUSTER"; then
         echo -e "${GREEN}✅ Cluster $CLUSTER exists in $ZONE${NC}"
 
@@ -532,14 +547,14 @@ if [ "$TEST_CAPACITY" = true ]; then
             --zone=$ZONE \
             --accelerator-type=$(echo $MACHINE_TYPE | sed 's/ct/tpu-v/;s/-standard-/-/;s/t$//') \
             --version=tpu-vm-base \
-            --project=$PROJECT 2>&1)
+            --project=$PROJECT_ID 2>&1)
 
         if echo "$CREATE_OUTPUT" | grep -q "Created"; then
             echo -e "${GREEN}✅ CAPACITY AVAILABLE: Successfully created test TPU instance${NC}"
             echo "   Deleting test instance..."
             gcloud compute tpus tpu-vm delete $TEST_INSTANCE_NAME \
                 --zone=$ZONE \
-                --project=$PROJECT \
+                --project=$PROJECT_ID \
                 --quiet 2>&1 > /dev/null
             echo -e "${GREEN}✅ Test instance deleted${NC}"
         else
@@ -575,14 +590,14 @@ if [ "$TEST_CAPACITY" = true ]; then
             --machine-type=$MACHINE_TYPE \
             $ACCEL_FLAG \
             --boot-disk-size=10GB \
-            --project=$PROJECT 2>&1)
+            --project=$PROJECT_ID 2>&1)
 
         if echo "$CREATE_OUTPUT" | grep -q "Created"; then
             echo -e "${GREEN}✅ CAPACITY AVAILABLE: Successfully created test GPU instance${NC}"
             echo "   Deleting test instance..."
             gcloud compute instances delete $TEST_INSTANCE_NAME \
                 --zone=$ZONE \
-                --project=$PROJECT \
+                --project=$PROJECT_ID \
                 --quiet 2>&1 > /dev/null
             echo -e "${GREEN}✅ Test instance deleted${NC}"
         else

@@ -21,6 +21,7 @@ Both guides take you from zero to deployed in 30-40 minutes.
 
 ### Getting Started
 - **[Prerequisites](docs/customer-guides/prerequisites.md)** - Everything you need before deploying
+- **[Environment Setup](docs/customer-guides/environment-setup.md)** - Optional: Configure environment variables to streamline commands
 - **[Operator Installation](docs/customer-guides/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
 ### Deployment Guides

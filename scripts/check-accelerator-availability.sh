@@ -4,7 +4,9 @@
 
 set -e
 
-PROJECT=${PROJECT:-YOUR_PROJECT}
+# Load from environment variables if set
+# Command-line flags will override these values during argument parsing
+PROJECT_ID="${PROJECT_ID:-}"
 USE_API=false
 SHOW_MACHINE_TYPES=false
 CUSTOMER_MODE=false
@@ -49,7 +51,7 @@ fetch_gpu_zones_from_api() {
     zones=$(gcloud compute accelerator-types list \
         --filter="name:$accelerator_type" \
         --format="value(zone)" \
-        --project="$PROJECT" 2>/dev/null | sort -u)
+        --project="$PROJECT_ID" 2>/dev/null | sort -u)
 
     if [[ -z "$zones" ]]; then
         echo "  Warning: No zones found for $accelerator_type" >&2
@@ -82,7 +84,7 @@ fetch_tpu_zones_from_api() {
     zones=$(gcloud compute accelerator-types list \
         --filter="name:$tpu_version" \
         --format="value(zone)" \
-        --project="$PROJECT" 2>/dev/null | sort -u)
+        --project="$PROJECT_ID" 2>/dev/null | sort -u)
 
     if [[ -z "$zones" ]]; then
         echo "  Warning: No zones found for TPU $tpu_version" >&2
@@ -168,7 +170,7 @@ fetch_and_display_machine_types() {
                 --zones="$zone" \
                 --filter="name:ct6e OR name:ct5e OR name:ct5p" \
                 --format="table[box](name,guestCpus,memoryMb.yesno(no='',yes=size()),description)" \
-                --project="$PROJECT" 2>/dev/null | head -20
+                --project="$PROJECT_ID" 2>/dev/null | head -20
             echo ""
             break  # Only show one zone for TPUs
         done
@@ -185,7 +187,7 @@ fetch_and_display_machine_types() {
                 --zones="$zone" \
                 --filter="name:a2- OR name:g2- OR name:a3-" \
                 --format="table[box](name,guestCpus,memoryMb.yesno(no='',yes=size()),description)" \
-                --project="$PROJECT" 2>/dev/null | head -25
+                --project="$PROJECT_ID" 2>/dev/null | head -25
             echo ""
             break  # Only show one zone for GPUs
         done
@@ -489,11 +491,11 @@ validate_zone() {
 
     # Verify GKE is available
     echo "Checking GKE availability in $zone..."
-    if gcloud container get-server-config --zone=$zone --project=$PROJECT &> /dev/null; then
+    if gcloud container get-server-config --zone=$zone --project=$PROJECT_ID &> /dev/null; then
         echo "✅ GKE is available in $zone"
 
         # Get latest version
-        LATEST_VERSION=$(gcloud container get-server-config --zone=$zone --project=$PROJECT --format="value(channels[0].defaultVersion)" 2>/dev/null || echo "unknown")
+        LATEST_VERSION=$(gcloud container get-server-config --zone=$zone --project=$PROJECT_ID --format="value(channels[0].defaultVersion)" 2>/dev/null || echo "unknown")
         echo "   Latest GKE version: $LATEST_VERSION"
     else
         echo "❌ GKE is NOT available in $zone"
@@ -513,7 +515,7 @@ validate_zone() {
 # Default filters
 TYPE_FILTER="all"
 REGION_FILTER=""
-ZONE_VALIDATE=""
+ZONE_VALIDATE="${ZONE:-}"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -559,6 +561,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Set PROJECT_ID from gcloud config if not specified
+if [[ -z "$PROJECT_ID" ]]; then
+    PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
+fi
+
+if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "YOUR_PROJECT" ]]; then
+    echo "Error: PROJECT_ID not set. Either:"
+    echo "  1. Set via environment: export PROJECT_ID=your-project"
+    echo "  2. Set gcloud config: gcloud config set project your-project"
+    exit 1
+fi
+
 # Validate TYPE_FILTER
 if [[ ! "$TYPE_FILTER" =~ ^(tpu|gpu|all)$ ]]; then
     echo "Error: --type must be 'tpu', 'gpu', or 'all'"
@@ -590,7 +604,7 @@ fi
 echo "========================================="
 echo "GKE Accelerator Availability Checker"
 echo "========================================="
-echo "Project: $PROJECT"
+echo "Project: $PROJECT_ID"
 if [[ "$USE_API" == "true" ]]; then
     echo "Data source: Live Google Cloud API"
 else

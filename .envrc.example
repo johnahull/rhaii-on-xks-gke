@@ -1,0 +1,46 @@
+# RHAII on XKS GKE - Environment Configuration
+#
+# This file contains environment variables that automation scripts will detect.
+#
+# Setup Instructions:
+# 1. Copy this file: cp .envrc.example .envrc
+# 2. Edit .envrc with your actual values
+# 3. Either:
+#    - Install direnv (https://direnv.net) and run: direnv allow .
+#    - Or manually source: source .envrc
+#
+# Note: .envrc is git-ignored to prevent accidental credential commits
+
+# ============================================================================
+# GCP Project Configuration
+# ============================================================================
+# Your Google Cloud project ID where RHAII will be deployed
+# Required for all scripts
+export PROJECT_ID="YOUR_PROJECT_ID_HERE"
+
+# ============================================================================
+# Zone Configuration
+# ============================================================================
+# GCP zone for cluster and resources
+#
+# Recommended zones by accelerator:
+# - TPU v6e: us-central1-b (primary), us-south1-a, us-east5-a
+# - GPU T4:  us-central1-a (primary), or any us-* zone
+#
+# Check availability: ./scripts/check-accelerator-availability.sh --zone ZONE --type tpu
+export ZONE="us-central1-b"
+
+# ============================================================================
+# Cluster Configuration
+# ============================================================================
+# Default cluster name for GKE operations
+# Override with --cluster-name flag if using a different name
+export CLUSTER_NAME="rhaii-cluster"
+
+# ============================================================================
+# Accelerator Type
+# ============================================================================
+# Default accelerator type: "tpu" or "gpu"
+# Determines which node pool and manifests to use
+# Override with --tpu or --gpu flags in individual scripts
+export ACCELERATOR_TYPE="tpu"

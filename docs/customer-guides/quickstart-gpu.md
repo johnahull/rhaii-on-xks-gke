@@ -37,6 +37,35 @@ Before starting, ensure you have:
 
 ---
 
+## Optional: Environment Setup
+
+To avoid repeating `--project`, `--zone`, etc. in every command:
+
+```bash
+# One-time setup
+cp .envrc.example .envrc
+# Edit .envrc with your project ID and zone
+
+# Option A: Install direnv (automatic loading)
+# See: https://direnv.net
+direnv allow .
+
+# Option B: Manual sourcing (no dependencies)
+cp env.sh.example env.sh
+# Edit env.sh
+source env.sh
+```
+
+After setup, you can run commands without flags:
+```bash
+./scripts/preflight-check.sh --deployment istio-kserve/baseline-pattern --accelerator gpu
+# Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone us-central1-a
+```
+
+**See:** [Environment Setup Guide](environment-setup.md) for complete instructions.
+
+---
+
 ## Step 1: Run Validation Checks (3 minutes)
 
 Validate your environment before creating resources:
