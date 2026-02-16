@@ -306,19 +306,20 @@ if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
     echo "Note: TPU topology 2x2x1 requires exactly 1 node (no autoscaling)"
     echo ""
 
-    gcloud container node-pools create tpu-pool \
+    NODE_POOL_OUTPUT=$(gcloud container node-pools create tpu-pool \
         --cluster "$CLUSTER_NAME" \
         --zone "$ZONE" \
         --machine-type ct6e-standard-4t \
         --tpu-topology 2x2x1 \
         --num-nodes 1 \
-        --project "$PROJECT_ID"
+        --project "$PROJECT_ID" 2>&1)
+    NODE_POOL_EXIT=$?
 else
     echo "Creating GPU T4 node pool..."
     echo "This will take ~5-10 minutes..."
     echo ""
 
-    gcloud container node-pools create gpu-pool \
+    NODE_POOL_OUTPUT=$(gcloud container node-pools create gpu-pool \
         --cluster "$CLUSTER_NAME" \
         --zone "$ZONE" \
         --machine-type n1-standard-4 \
@@ -327,7 +328,55 @@ else
         --enable-autoscaling \
         --min-nodes 0 \
         --max-nodes 3 \
-        --project "$PROJECT_ID"
+        --project "$PROJECT_ID" 2>&1)
+    NODE_POOL_EXIT=$?
+fi
+
+# Check if node pool creation failed
+if [[ $NODE_POOL_EXIT -ne 0 ]]; then
+    # Check for capacity exhaustion
+    if echo "$NODE_POOL_OUTPUT" | grep -qi "RESOURCE_EXHAUSTED\|exhausted.*capacity\|not available"; then
+        echo -e "${RED}❌ No capacity available in $ZONE${NC}"
+        echo ""
+        echo "The zone is temporarily out of $ACCELERATOR_TYPE capacity for GKE node pools."
+        echo "This is usually temporary and may resolve within hours."
+        echo ""
+        echo "Try these alternative zones with good availability:"
+        echo ""
+
+        if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
+            echo "  # US zones (lower latency from North America)"
+            echo "  ./scripts/create-gke-cluster.sh --tpu --zone us-east5-a"
+            echo "  ./scripts/create-gke-cluster.sh --tpu --zone us-south1-a"
+            echo ""
+            echo "  # Europe zones (lower latency from Europe)"
+            echo "  ./scripts/create-gke-cluster.sh --tpu --zone europe-west4-b"
+            echo "  ./scripts/create-gke-cluster.sh --tpu --zone europe-west4-c"
+        else
+            echo "  # US zones (lower latency from North America)"
+            echo "  ./scripts/create-gke-cluster.sh --gpu --zone us-east4-a"
+            echo "  ./scripts/create-gke-cluster.sh --gpu --zone us-central1-c"
+            echo ""
+            echo "  # Europe zones (lower latency from Europe)"
+            echo "  ./scripts/create-gke-cluster.sh --gpu --zone europe-west4-b"
+            echo "  ./scripts/create-gke-cluster.sh --gpu --zone europe-west1-b"
+        fi
+
+        echo ""
+        echo "Or wait and retry the current zone:"
+        echo "  ./scripts/create-gke-cluster.sh --$ACCELERATOR_TYPE --zone $ZONE"
+        echo ""
+        echo "Tip: Delete the partially created cluster first:"
+        echo "  ./scripts/delete-gke-cluster.sh --cluster-name $CLUSTER_NAME --zone $ZONE --force"
+        exit 1
+    else
+        # Other error - display full output
+        echo -e "${RED}❌ Node pool creation failed${NC}"
+        echo ""
+        echo "Error output:"
+        echo "$NODE_POOL_OUTPUT"
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✅ Accelerator node pool created successfully${NC}"
