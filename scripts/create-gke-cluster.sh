@@ -38,7 +38,7 @@ Required (choose one):
 
 Optional:
   --project <project>     GCP project ID (default: from gcloud config)
-  --zone <zone>           Zone for cluster (default: europe-west4-a)
+  --zone <zone>           Zone for cluster (default: europe-west4-a for TPU, us-central1-a for GPU)
   --cluster-name <name>   Cluster name (default: rhaii-cluster)
   --num-nodes <n>         Accelerator pool node count (default: 3 for TPU, 1 for GPU)
   --dry-run               Run validation only, don't create cluster
@@ -126,7 +126,11 @@ fi
 
 # Set default zone based on accelerator
 if [[ -z "$ZONE" ]]; then
-    ZONE="europe-west4-a"
+    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
+        ZONE="europe-west4-a"
+    else
+        ZONE="us-central1-a"
+    fi
 fi
 
 # Set default node count: 3 for both TPU and GPU (matches 3-replica deployment)
