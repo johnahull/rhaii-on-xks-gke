@@ -207,10 +207,7 @@ if [[ "$SKIP_VALIDATION" == "false" ]]; then
 
     # Check 3: Preflight checks
     echo "✓ Running comprehensive preflight checks..."
-    # We don't have a deployment path yet, so we'll check the istio-kserve/baseline-pattern as default
-    DEPLOYMENT_PATH="istio-kserve/baseline-pattern"
     if ! ./scripts/preflight-check.sh \
-        --deployment "$DEPLOYMENT_PATH" \
         --zone "$ZONE" \
         --accelerator "$ACCELERATOR_TYPE" \
         --project "$PROJECT_ID" \
@@ -218,7 +215,7 @@ if [[ "$SKIP_VALIDATION" == "false" ]]; then
         --skip-cluster > /dev/null 2>&1; then
         echo -e "${RED}❌ Preflight checks failed${NC}"
         echo "Run this command for details:"
-        echo "  ./scripts/preflight-check.sh --deployment $DEPLOYMENT_PATH --zone $ZONE --accelerator $ACCELERATOR_TYPE --customer"
+        echo "  ./scripts/preflight-check.sh --zone $ZONE --accelerator $ACCELERATOR_TYPE --customer"
         exit 1
     fi
     echo -e "${GREEN}✅ All preflight checks passed${NC}"

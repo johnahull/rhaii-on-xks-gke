@@ -27,7 +27,6 @@ Usage: $0 [OPTIONS]
 Options:
   --operators-only        Check operators only (cert-manager, Istio, KServe)
   --deployment <type>     Verify specific deployment type:
-                           - single-model: Single-model baseline deployment
                            - scale-out: High-throughput scale-out deployment
   --namespace <ns>        Kubernetes namespace (default: default)
   --timeout <seconds>     Timeout for checks (default: 300)
@@ -37,14 +36,11 @@ Examples:
   # Verify operators are running
   $0 --operators-only
 
-  # Verify single-model deployment
-  $0 --deployment single-model
-
   # Verify scale-out deployment
   $0 --deployment scale-out
 
   # Verify in specific namespace
-  $0 --deployment single-model --namespace llm-serving
+  $0 --deployment scale-out --namespace llm-serving
 
 ========================================
 EOF

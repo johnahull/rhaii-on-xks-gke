@@ -18,12 +18,11 @@ docs/customer-guides/
 └── faq.md                             # FAQ
 ```
 
-### Automation Scripts (6 files, ~120K)
+### Automation Scripts (5 files)
 ```
 scripts/
 ├── create-gke-cluster.sh              # Cluster creation (13K)
 ├── verify-deployment.sh               # Post-deployment validation (12K)
-├── cost-estimator.sh                  # Cost calculator (9K)
 ├── preflight-check.sh                 # Prerequisite validation (22K)
 ├── check-accelerator-availability.sh  # Zone validation (25K)
 └── check-nodepool-prerequisites.sh    # Node pool validation (28K)
@@ -32,12 +31,6 @@ scripts/
 ### Kubernetes Manifests
 ```
 deployments/istio-kserve/
-├── baseline-pattern/manifests/        # Smoke testing manifests
-│   ├── llmisvc-tpu.yaml
-│   ├── llmisvc-gpu.yaml
-│   ├── httproute.yaml
-│   └── networkpolicies/
-│
 └── caching-pattern/manifests/         # Customer deployment manifests
     ├── llmisvc-tpu-caching.yaml
     ├── llmisvc-gpu-caching.yaml
@@ -72,7 +65,7 @@ benchmarks/
 ## Total Files
 
 - **Documentation:** 10 customer guides
-- **Scripts:** 6 automation scripts (120K)
+- **Scripts:** 5 automation scripts
 - **Manifests:** 13 Kubernetes YAML files
 - **Benchmarks:** Benchmarking tools and utilities
 - **Total:** 35+ files ready for customer use
@@ -92,7 +85,7 @@ benchmarks/
 
 3. **Run validation:**
    ```bash
-   ./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
+   ./scripts/preflight-check.sh --customer --accelerator tpu
    ```
 
 ### For Developers
@@ -110,8 +103,6 @@ benchmarks/
    # Check accelerator availability
    ./scripts/check-accelerator-availability.sh --customer --type tpu
 
-   # Estimate costs
-   ./scripts/cost-estimator.sh --deployment scale-out --accelerator tpu
    ```
 
 ## Repository Setup for Git
@@ -129,10 +120,9 @@ git add .
 git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
 - Customer-facing deployment guides (10 files)
-- Automation scripts with validation (6 files)
+- Automation scripts with validation (5 files)
 - Production-ready Kubernetes manifests (TPU + GPU)
-- Benchmarking tools
-- Cost management and troubleshooting guides"
+- Benchmarking tools"
 
 # Add remote (replace with your repository URL)
 # git remote add origin https://github.com/YOUR_ORG/rhaii-on-xks-gke.git

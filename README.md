@@ -51,7 +51,7 @@ All deployment guides use these automation scripts in `scripts/`:
 **Example:**
 ```bash
 # Run validation
-./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
+./scripts/preflight-check.sh --customer --accelerator tpu
 
 # Create cluster
 ./scripts/create-gke-cluster.sh --tpu
@@ -89,8 +89,6 @@ rhaii-on-xks-gke/
 │
 ├── deployments/                       # Kubernetes manifests
 │   └── istio-kserve/
-│       ├── baseline-pattern/         # Smoke testing manifests
-│       │   └── manifests/
 │       └── caching-pattern/          # Customer deployment manifests
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml

@@ -249,7 +249,6 @@ direnv allow .
 # Daily work - no repeated flags
 ./scripts/create-gke-cluster.sh --tpu
 ./scripts/verify-deployment.sh --deployment scale-out
-./scripts/cost-estimator.sh --deployment scale-out
 
 # Override for specific tests
 ./scripts/check-accelerator-availability.sh --zone us-east5-a
@@ -410,7 +409,7 @@ After setting up your environment:
 
 1. **Validate configuration:**
    ```bash
-   ./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
+   ./scripts/preflight-check.sh --customer --accelerator tpu
    ```
 
 2. **Deploy RHAII:**

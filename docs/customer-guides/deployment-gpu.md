@@ -107,7 +107,7 @@ source env.sh
 
 After setup, you can run commands without flags:
 ```bash
-./scripts/preflight-check.sh --deployment istio-kserve/caching-pattern --accelerator gpu
+./scripts/preflight-check.sh --accelerator gpu
 # Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone us-central1-a
 ```
 
@@ -125,7 +125,6 @@ cd /path/to/rhaii-on-xks-gke
 
 # Run preflight check with customer-friendly output
 ./scripts/preflight-check.sh \
-  --deployment istio-kserve/caching-pattern \
   --accelerator gpu \
   --zone us-central1-a \
   --customer

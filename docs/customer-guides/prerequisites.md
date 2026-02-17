@@ -278,14 +278,12 @@ cd ~/workspace/rhaii-on-xks-gke
 
 # For TPU deployment
 ./scripts/preflight-check.sh \
-  --deployment istio-kserve/caching-pattern \
   --accelerator tpu \
   --zone europe-west4-a \
   --customer
 
 # For GPU deployment
 ./scripts/preflight-check.sh \
-  --deployment istio-kserve/caching-pattern \
   --accelerator gpu \
   --zone us-central1-a \
   --customer

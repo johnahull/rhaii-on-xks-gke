@@ -21,10 +21,7 @@ show_usage() {
 GKE LLM Deployment Pre-Flight Check
 =========================================
 
-Usage: $0 --deployment <path> [OPTIONS]
-
-Required:
-  --deployment <path>     Path to deployment directory (e.g., gateway-api/baseline-pattern)
+Usage: $0 [OPTIONS]
 
 Optional:
   --cluster <name>        Cluster name to validate (creates if not specified)
@@ -37,21 +34,14 @@ Optional:
   --detailed              Show detailed output for all checks
 
 Examples:
-  # Check Pattern 1 GPU deployment
-  $0 --deployment gateway-api/baseline-pattern
+  # TPU deployment check
+  $0 --accelerator tpu --zone europe-west4-a --customer
 
-  # Check Pattern 2 with existing cluster
-  $0 --deployment gateway-api/pattern2-multimodel \\
-    --cluster llm-d-cluster \\
-    --zone us-central1-a
+  # GPU deployment check with existing cluster
+  $0 --accelerator gpu --cluster my-cluster --zone us-central1-a
 
-  # Check Istio/KServe Pattern 1 TPU deployment
-  $0 --deployment istio-kserve/baseline-pattern \\
-    --accelerator tpu \\
-    --zone europe-west4-a
-
-  # Check with detailed output
-  $0 --deployment gateway-api/caching-pattern --detailed
+  # Detailed output
+  $0 --accelerator tpu --detailed
 
 =========================================
 EOF
@@ -59,7 +49,7 @@ EOF
 
 # Load from environment variables if set, otherwise use defaults
 # Command-line flags will override these values during argument parsing
-DEPLOYMENT_PATH=""
+DEPLOYMENT_PATH="istio-kserve/caching-pattern"
 CLUSTER_NAME="${CLUSTER_NAME:-}"
 ZONE="${ZONE:-us-central1-a}"
 ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-gpu}"
@@ -71,10 +61,6 @@ DETAILED=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --deployment)
-            DEPLOYMENT_PATH="$2"
-            shift 2
-            ;;
         --cluster)
             CLUSTER_NAME="$2"
             shift 2
@@ -118,13 +104,6 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
-# Validate required arguments
-if [[ -z "$DEPLOYMENT_PATH" ]]; then
-    echo -e "${RED}Error: --deployment is required${NC}"
-    show_usage
-    exit 1
-fi
 
 # Determine repository root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
