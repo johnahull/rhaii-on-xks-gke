@@ -1,6 +1,6 @@
 # RHAII Deployment on GKE
 
-Production-ready deployment guides and automation for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
+Basic deployment guides for a simple scale-out cluster example for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
 
 ## 🚀 Get Started
 
