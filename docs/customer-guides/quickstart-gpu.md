@@ -125,7 +125,72 @@ Create a production-ready GKE cluster with GPU T4 node pool:
 
 ---
 
-## Step 3: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
+## Step 3: Create Required Secrets (2 minutes)
+
+Create Kubernetes secrets for Red Hat registry and HuggingFace model access:
+
+### Red Hat Pull Secret
+
+**Option A: From Red Hat Registry Service Account**
+
+1. Log in to https://registry.redhat.io
+2. Navigate to: Registry Service Accounts → Create Service Account
+3. Download the Kubernetes Secret (YAML format)
+4. Save as `redhat-pull-secret.yaml`
+
+**Option B: Create manually from credentials**
+
+```bash
+# Create secret from Red Hat credentials
+kubectl create secret docker-registry rhaiis-pull-secret \
+  --docker-server=registry.redhat.io \
+  --docker-username=YOUR_USERNAME \
+  --docker-password=YOUR_PASSWORD \
+  --docker-email=YOUR_EMAIL
+
+# Or apply from file if you have the YAML
+kubectl apply -f redhat-pull-secret.yaml
+```
+
+### HuggingFace Token Secret
+
+1. Get your token from: https://huggingface.co/settings/tokens
+2. Accept license for models you'll use (e.g., https://huggingface.co/google/gemma-2b-it)
+3. Create the secret:
+
+```bash
+# Create secret directly
+kubectl create secret generic huggingface-token \
+  --from-literal=token=YOUR_HF_TOKEN_HERE
+
+# Or create YAML file first
+cat <<EOF > huggingface-token-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: huggingface-token
+type: Opaque
+stringData:
+  token: YOUR_HF_TOKEN_HERE
+EOF
+
+kubectl apply -f huggingface-token-secret.yaml
+```
+
+**Verify secrets were created:**
+```bash
+kubectl get secrets rhaiis-pull-secret huggingface-token
+```
+
+**Success criteria:**
+- ✅ Secret `rhaiis-pull-secret` exists (type: kubernetes.io/dockerconfigjson)
+- ✅ Secret `huggingface-token` exists (type: Opaque)
+
+**Time:** ~2 minutes
+
+---
+
+## Step 4: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
 
 **Follow the installation instructions in the official repository:**
 
@@ -155,15 +220,11 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 4: Deploy Single-Model Workload (10 minutes)
+## Step 5: Deploy Single-Model Workload (10 minutes)
 
 Deploy the baseline single-model vLLM inference service:
 
 ```bash
-# Apply secrets (if not already applied)
-kubectl apply -f redhat-pull-secret.yaml
-kubectl apply -f huggingface-token-secret.yaml
-
 # Deploy LLMInferenceService
 kubectl apply -f deployments/istio-kserve/baseline-pattern/manifests/llmisvc-gpu.yaml
 
@@ -188,7 +249,7 @@ gemma-2b-gpu-svc    True    http://...
 
 ---
 
-## Step 5: Test Deployment (3 minutes)
+## Step 6: Test Deployment (3 minutes)
 
 Verify the deployment is working:
 
