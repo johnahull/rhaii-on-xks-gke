@@ -56,7 +56,7 @@ All deployment guides use these automation scripts in `scripts/`:
 ./scripts/create-gke-cluster.sh --tpu
 
 # Verify deployment
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 ```
 
 ---
@@ -72,6 +72,7 @@ rhaii-on-xks-gke/
 │   ├── deployment-tpu.md              # TPU deployment guide
 │   ├── deployment-gpu.md              # GPU deployment guide
 │   ├── prerequisites.md               # Setup requirements
+│   ├── environment-setup.md           # Environment variable configuration
 │   ├── operator-installation.md       # RHAII operator installation
 │   ├── verification-testing.md        # Validation procedures
 │   ├── troubleshooting.md             # Common issues
@@ -138,7 +139,7 @@ Before deploying, ensure you have:
 
 5. **Verify & Test** (~5 minutes)
    ```bash
-   ./scripts/verify-deployment.sh --deployment scale-out
+   ./scripts/verify-deployment.sh
    ```
 
 **Total time:** ~50 minutes for complete deployment

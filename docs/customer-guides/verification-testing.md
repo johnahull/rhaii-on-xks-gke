@@ -11,7 +11,7 @@ Use the verification script for quick checks:
 ./scripts/verify-deployment.sh --operators-only
 
 # Verify deployment
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 ```
 
 ## Manual Verification Checklist

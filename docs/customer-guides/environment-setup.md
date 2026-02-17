@@ -9,7 +9,7 @@ RHAII automation scripts support environment variables that allow you to set com
 **Without environment variables:**
 ```bash
 ./scripts/create-gke-cluster.sh --tpu --project ecoeng-llmd --zone us-central1-b --cluster-name rhaii-cluster
-./scripts/verify-deployment.sh --deployment scale-out --project ecoeng-llmd --zone us-central1-b
+./scripts/verify-deployment.sh --project ecoeng-llmd --zone us-central1-b
 ```
 
 **With environment variables:**
@@ -22,7 +22,7 @@ export ACCELERATOR_TYPE="tpu"
 
 # Use multiple times
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 ```
 
 ## Quick Start
@@ -248,7 +248,7 @@ direnv allow .
 
 # Daily work - no repeated flags
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 
 # Override for specific tests
 ./scripts/check-accelerator-availability.sh --zone us-east5-a

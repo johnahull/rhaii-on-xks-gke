@@ -10,7 +10,7 @@ Common issues and solutions for RHAII on GKE deployments.
 ./scripts/verify-deployment.sh --operators-only
 
 # Check deployment status
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 
 # View all pods
 kubectl get pods --all-namespaces

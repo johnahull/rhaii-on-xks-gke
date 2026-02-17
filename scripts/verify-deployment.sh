@@ -26,8 +26,6 @@ Usage: $0 [OPTIONS]
 
 Options:
   --operators-only        Check operators only (cert-manager, Istio, KServe)
-  --deployment <type>     Verify specific deployment type:
-                           - scale-out: High-throughput scale-out deployment
   --namespace <ns>        Kubernetes namespace (default: default)
   --timeout <seconds>     Timeout for checks (default: 300)
   --help, -h              Show this help message
@@ -36,11 +34,11 @@ Examples:
   # Verify operators are running
   $0 --operators-only
 
-  # Verify scale-out deployment
-  $0 --deployment scale-out
+  # Verify deployment
+  $0
 
   # Verify in specific namespace
-  $0 --deployment scale-out --namespace llm-serving
+  $0 --namespace llm-serving
 
 ========================================
 EOF
@@ -48,7 +46,6 @@ EOF
 
 # Parse arguments
 OPERATORS_ONLY=false
-DEPLOYMENT_TYPE=""
 NAMESPACE="default"
 TIMEOUT=300
 
@@ -57,10 +54,6 @@ while [[ $# -gt 0 ]]; do
         --operators-only)
             OPERATORS_ONLY=true
             shift
-            ;;
-        --deployment)
-            DEPLOYMENT_TYPE="$2"
-            shift 2
             ;;
         --namespace)
             NAMESPACE="$2"
@@ -213,101 +206,97 @@ fi
 # Deployment Verification
 # ============================================================================
 
-if [[ -n "$DEPLOYMENT_TYPE" ]]; then
-    echo "========================================="
-    echo "Deployment Verification: $DEPLOYMENT_TYPE"
-    echo "========================================="
-    echo ""
+echo "========================================="
+echo "Deployment Verification"
+echo "========================================="
+echo ""
 
-    # Check for LLMInferenceService
-    echo "LLMInferenceService:"
-    LLMISVC_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l)
-    if [[ "$LLMISVC_COUNT" -eq 0 ]]; then
-        echo -e "${RED}❌ No LLMInferenceService found in namespace: $NAMESPACE${NC}"
-        ALL_CHECKS_PASSED=false
+# Check for LLMInferenceService
+echo "LLMInferenceService:"
+LLMISVC_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l)
+if [[ "$LLMISVC_COUNT" -eq 0 ]]; then
+    echo -e "${RED}❌ No LLMInferenceService found in namespace: $NAMESPACE${NC}"
+    ALL_CHECKS_PASSED=false
+else
+    echo "  Found $LLMISVC_COUNT LLMInferenceService(s)"
+    kubectl get llminferenceservice -n "$NAMESPACE"
+
+    # Check READY status
+    READY_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[?(@.status.conditions[?(@.type=="Ready")].status=="True")].metadata.name}' | wc -w)
+    if [[ "$READY_COUNT" -eq "$LLMISVC_COUNT" ]]; then
+        echo -e "${GREEN}✅ All LLMInferenceServices are READY${NC}"
     else
-        echo "  Found $LLMISVC_COUNT LLMInferenceService(s)"
-        kubectl get llminferenceservice -n "$NAMESPACE"
+        echo -e "${RED}❌ $READY_COUNT/$LLMISVC_COUNT LLMInferenceServices are READY${NC}"
+        ALL_CHECKS_PASSED=false
+    fi
+fi
+echo ""
 
-        # Check READY status
-        READY_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[?(@.status.conditions[?(@.type=="Ready")].status=="True")].metadata.name}' | wc -w)
-        if [[ "$READY_COUNT" -eq "$LLMISVC_COUNT" ]]; then
-            echo -e "${GREEN}✅ All LLMInferenceServices are READY${NC}"
+# Check Gateway
+echo "Istio Gateway:"
+GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+if [[ -z "$GATEWAY_IP" ]]; then
+    echo -e "${RED}❌ No external IP assigned to Gateway${NC}"
+    ALL_CHECKS_PASSED=false
+else
+    echo -e "${GREEN}✅ Gateway IP: $GATEWAY_IP${NC}"
+
+    # Test health endpoint
+    echo ""
+    echo "Health Endpoint:"
+    # Find the first LLMInferenceService name
+    LLMISVC_NAME=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    if [[ -n "$LLMISVC_NAME" ]]; then
+        HEALTH_URL="http://$GATEWAY_IP/v1/health"
+        test_http_endpoint "$HEALTH_URL" "200" "health endpoint"
+
+        # Test inference endpoint
+        echo ""
+        echo "Inference Endpoint:"
+        INFERENCE_URL="http://$GATEWAY_IP/v1/models"
+        test_http_endpoint "$INFERENCE_URL" "200" "models endpoint"
+
+        # Perform actual inference test
+        echo ""
+        echo "Test Inference Request:"
+        echo -n "  Sending completion request... "
+        INFERENCE_RESPONSE=$(curl -s -X POST "$HEALTH_URL/../v1/completions" \
+            -H "Content-Type: application/json" \
+            -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 10}' \
+            2>/dev/null || echo "")
+
+        if echo "$INFERENCE_RESPONSE" | grep -q "choices"; then
+            echo -e "${GREEN}✅ Inference successful${NC}"
+            echo "     Response: $(echo "$INFERENCE_RESPONSE" | jq -r '.choices[0].text' 2>/dev/null | head -c 50)..."
         else
-            echo -e "${RED}❌ $READY_COUNT/$LLMISVC_COUNT LLMInferenceServices are READY${NC}"
+            echo -e "${RED}❌ Inference failed${NC}"
+            echo "     Response: $INFERENCE_RESPONSE"
             ALL_CHECKS_PASSED=false
         fi
     fi
-    echo ""
-
-    # Check Gateway
-    echo "Istio Gateway:"
-    GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-    if [[ -z "$GATEWAY_IP" ]]; then
-        echo -e "${RED}❌ No external IP assigned to Gateway${NC}"
-        ALL_CHECKS_PASSED=false
-    else
-        echo -e "${GREEN}✅ Gateway IP: $GATEWAY_IP${NC}"
-
-        # Test health endpoint
-        echo ""
-        echo "Health Endpoint:"
-        # Find the first LLMInferenceService name
-        LLMISVC_NAME=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-        if [[ -n "$LLMISVC_NAME" ]]; then
-            HEALTH_URL="http://$GATEWAY_IP/v1/health"
-            test_http_endpoint "$HEALTH_URL" "200" "health endpoint"
-
-            # Test inference endpoint
-            echo ""
-            echo "Inference Endpoint:"
-            INFERENCE_URL="http://$GATEWAY_IP/v1/models"
-            test_http_endpoint "$INFERENCE_URL" "200" "models endpoint"
-
-            # Perform actual inference test
-            echo ""
-            echo "Test Inference Request:"
-            echo -n "  Sending completion request... "
-            INFERENCE_RESPONSE=$(curl -s -X POST "$HEALTH_URL/../v1/completions" \
-                -H "Content-Type: application/json" \
-                -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 10}' \
-                2>/dev/null || echo "")
-
-            if echo "$INFERENCE_RESPONSE" | grep -q "choices"; then
-                echo -e "${GREEN}✅ Inference successful${NC}"
-                echo "     Response: $(echo "$INFERENCE_RESPONSE" | jq -r '.choices[0].text' 2>/dev/null | head -c 50)..."
-            else
-                echo -e "${RED}❌ Inference failed${NC}"
-                echo "     Response: $INFERENCE_RESPONSE"
-                ALL_CHECKS_PASSED=false
-            fi
-        fi
-    fi
-    echo ""
-
-    # Deployment-specific checks
-    if [[ "$DEPLOYMENT_TYPE" == "scale-out" ]]; then
-        echo "Scale-Out Specific Checks:"
-
-        # Check replica count
-        REPLICA_COUNT=$(kubectl get pods -n "$NAMESPACE" -l serving.kserve.io/inferenceservice --no-headers 2>/dev/null | wc -l)
-        if [[ "$REPLICA_COUNT" -eq 3 ]]; then
-            echo -e "${GREEN}✅ 3 replicas running${NC}"
-        else
-            echo -e "${YELLOW}⚠️  $REPLICA_COUNT replicas (expected 3)${NC}"
-        fi
-
-        # Check NetworkPolicies
-        NP_COUNT=$(kubectl get networkpolicies -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l)
-        if [[ "$NP_COUNT" -gt 0 ]]; then
-            echo -e "${GREEN}✅ NetworkPolicies configured ($NP_COUNT)${NC}"
-        else
-            echo -e "${YELLOW}⚠️  No NetworkPolicies found${NC}"
-        fi
-
-        echo ""
-    fi
 fi
+echo ""
+
+# Scale-out checks
+echo "Scale-Out Checks:"
+
+# Check replica count
+REPLICA_COUNT=$(kubectl get pods -n "$NAMESPACE" -l serving.kserve.io/inferenceservice --no-headers 2>/dev/null | wc -l)
+if [[ "$REPLICA_COUNT" -eq 3 ]]; then
+    echo -e "${GREEN}✅ 3 replicas running${NC}"
+else
+    echo -e "${YELLOW}⚠️  $REPLICA_COUNT replicas (expected 3)${NC}"
+fi
+
+# Check NetworkPolicies
+NP_COUNT=$(kubectl get networkpolicies -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l)
+if [[ "$NP_COUNT" -gt 0 ]]; then
+    echo -e "${GREEN}✅ NetworkPolicies configured ($NP_COUNT)${NC}"
+else
+    echo -e "${YELLOW}⚠️  No NetworkPolicies found${NC}"
+fi
+
+echo ""
 
 # ============================================================================
 # Final Summary

@@ -340,7 +340,7 @@ Verify the deployment is working:
 
 ```bash
 # Automated verification
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 
 # Manual testing
 # Get Gateway IP

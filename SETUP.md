@@ -11,20 +11,22 @@ docs/customer-guides/
 ├── deployment-tpu.md                  # TPU deployment guide
 ├── deployment-gpu.md                  # GPU deployment guide
 ├── prerequisites.md                   # Setup requirements
+├── environment-setup.md               # Environment variable configuration
 ├── operator-installation.md           # RHAII operator installation
 ├── verification-testing.md            # Validation procedures
 ├── troubleshooting.md                 # Common issues
 └── faq.md                             # FAQ
 ```
 
-### Automation Scripts (5 files)
+### Automation Scripts (6 files)
 ```
 scripts/
-├── create-gke-cluster.sh              # Cluster creation (13K)
-├── verify-deployment.sh               # Post-deployment validation (12K)
-├── preflight-check.sh                 # Prerequisite validation (22K)
-├── check-accelerator-availability.sh  # Zone validation (25K)
-└── check-nodepool-prerequisites.sh    # Node pool validation (28K)
+├── create-gke-cluster.sh              # Cluster creation
+├── delete-gke-cluster.sh              # Cluster deletion / scale-to-zero
+├── verify-deployment.sh               # Post-deployment validation
+├── preflight-check.sh                 # Prerequisite validation
+├── check-accelerator-availability.sh  # Zone validation
+└── check-nodepool-prerequisites.sh    # Node pool validation
 ```
 
 ### Kubernetes Manifests
@@ -64,8 +66,8 @@ benchmarks/
 ## Total Files
 
 - **Documentation:** 9 customer guides
-- **Scripts:** 5 automation scripts
-- **Manifests:** 13 Kubernetes YAML files
+- **Scripts:** 6 automation scripts
+- **Manifests:** 7 Kubernetes YAML files
 - **Benchmarks:** Benchmarking tools and utilities
 - **Total:** 35+ files ready for customer use
 
@@ -119,7 +121,7 @@ git add .
 git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
 - Customer-facing deployment guides (9 files)
-- Automation scripts with validation (5 files)
+- Automation scripts with validation (6 files)
 - Production-ready Kubernetes manifests (TPU + GPU)
 - Benchmarking tools"
 

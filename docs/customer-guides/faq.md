@@ -176,7 +176,7 @@ export ZONE="europe-west4-a"
 
 # Simplified commands
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment scale-out
+./scripts/verify-deployment.sh
 ```
 
 **CLI flags always override environment variables**, so you can still customize:
@@ -236,7 +236,7 @@ kubectl get events --sort-by='.lastTimestamp'
 
 1. Run detailed verification:
    ```bash
-   ./scripts/verify-deployment.sh --deployment scale-out
+   ./scripts/verify-deployment.sh
    ```
 
 2. Check specific component:
