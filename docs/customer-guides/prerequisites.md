@@ -114,18 +114,13 @@ Request quota increases before creating clusters:
 
 ### TPU Deployment Quotas
 
-**Single-Model Deployment (4 chips):**
-- TPU v6e: 4 chips in selected region
-- Example: `TPUs (v6e)` in `us-central1`
-
-**Scale-Out Deployment (12 chips):**
-- TPU v6e: 12 chips minimum (for 3-node deployment)
+**Required:** 12 TPU v6e chips (3 nodes × 4 chips each)
 
 **How to request:**
 1. Navigate to: https://console.cloud.google.com/iam-admin/quotas
 2. Search: "TPU v6e" and select region (e.g., us-central1)
 3. Click "EDIT QUOTAS"
-4. Request: 12 chips (allows both single and scale-out)
+4. Request: 12 chips
 5. Justification: "LLM inference deployment for production workloads"
 6. Submit request
 
@@ -133,12 +128,7 @@ Request quota increases before creating clusters:
 
 ### GPU Deployment Quotas
 
-**Single-Model Deployment (1 GPU):**
-- GPU T4: 1 GPU in selected region
-- Example: `NVIDIA T4 GPUs` in `us-central1`
-
-**Scale-Out Deployment (3 GPUs):**
-- GPU T4: 3 GPUs minimum
+**Required:** 3 T4 GPUs
 
 **How to request:**
 1. Navigate to: https://console.cloud.google.com/iam-admin/quotas
@@ -289,14 +279,14 @@ cd ~/workspace/rhaii-on-xks-gke
 
 # For TPU deployment
 ./scripts/preflight-check.sh \
-  --deployment istio-kserve/baseline-pattern \
+  --deployment istio-kserve/caching-pattern \
   --accelerator tpu \
   --zone europe-west4-a \
   --customer
 
 # For GPU deployment
 ./scripts/preflight-check.sh \
-  --deployment istio-kserve/baseline-pattern \
+  --deployment istio-kserve/caching-pattern \
   --accelerator gpu \
   --zone us-central1-a \
   --customer
@@ -324,13 +314,11 @@ cd ~/workspace/rhaii-on-xks-gke
 
 ### Deployment Costs
 
-**TPU Deployments:**
-- Single-model: ~$132/day ($3,960/month)
-- Scale-out (3x): ~$377/day ($11,310/month)
+**TPU Deployment (3 replicas):**
+- Running: ~$377/day ($11,310/month)
 
-**GPU Deployments:**
-- Single-model: ~$80/day ($2,400/month)
-- Scale-out (3x): ~$228/day ($6,840/month)
+**GPU Deployment (3 replicas):**
+- Running: ~$228/day ($6,840/month)
 
 **Scaled to Zero:**
 - Both: ~$6/day ($180/month) - cluster overhead only
@@ -342,7 +330,7 @@ cd ~/workspace/rhaii-on-xks-gke
 After completing prerequisites:
 
 1. **Optional:** Configure [Environment Setup](environment-setup.md) to streamline commands
-2. **TPU Deployment:** Follow [TPU Quickstart](quickstart-tpu.md)
-3. **GPU Deployment:** Follow [GPU Quickstart](quickstart-gpu.md)
+2. **TPU Deployment:** Follow [RHAII Deployment Guide (TPU)](deployment-tpu.md)
+3. **GPU Deployment:** Follow [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 
 **Questions?** See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)

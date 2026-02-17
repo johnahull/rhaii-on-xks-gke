@@ -2,18 +2,14 @@
 
 Production-ready deployment guides and automation for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
 
-## 🚀 Quick Start
+## 🚀 Get Started
 
-**New to RHAII on GKE?** Start here:
+Choose your accelerator and follow the deployment guide:
 
-### 30-Minute Deployment Guides
+- **[RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md)** - Deploy on TPU v6e (~$377/day, ~25 req/s)
+- **[RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md)** - Deploy on GPU T4 (~$228/day, ~18 req/s)
 
-Choose your accelerator:
-
-- **[TPU Quickstart](docs/customer-guides/quickstart-tpu.md)** - Deploy on TPU v6e (~$132/day)
-- **[GPU Quickstart](docs/customer-guides/quickstart-gpu.md)** - Deploy on GPU T4 (~$80/day)
-
-Both guides take you from zero to deployed in 30-40 minutes.
+Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
 
 ---
 
@@ -25,14 +21,8 @@ Both guides take you from zero to deployed in 30-40 minutes.
 - **[Operator Installation](docs/customer-guides/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
 ### Deployment Guides
-
-**Single-Model Deployments** (Development, <10 req/s):
-- [Single-Model TPU](docs/customer-guides/single-model-deployment-tpu.md) - Baseline TPU deployment
-- [Single-Model GPU](docs/customer-guides/single-model-deployment-gpu.md) - Baseline GPU deployment
-
-**High-Throughput Scale-Out** (Production, >10 req/s):
-- [Scale-Out TPU](docs/customer-guides/scale-out-deployment-tpu.md) - 3-replica deployment with prefix caching
-- [Scale-Out GPU](docs/customer-guides/scale-out-deployment-gpu.md) - 3-replica GPU deployment
+- [RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md) - Production TPU v6e deployment
+- [RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md) - Production GPU T4 deployment
 
 ### Operations
 - [Verification & Testing](docs/customer-guides/verification-testing.md) - Validate your deployment
@@ -63,13 +53,13 @@ All deployment guides use these automation scripts in `scripts/`:
 **Example:**
 ```bash
 # Run validation
-./scripts/preflight-check.sh --customer --deployment istio-kserve/baseline-pattern --accelerator tpu
+./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
 
 # Create cluster
 ./scripts/create-gke-cluster.sh --tpu
 
 # Verify deployment
-./scripts/verify-deployment.sh --deployment single-model
+./scripts/verify-deployment.sh --deployment scale-out
 ```
 
 ---
@@ -80,25 +70,11 @@ All deployment guides use these automation scripts in `scripts/`:
 
 | Factor | TPU v6e | GPU T4 | Winner |
 |--------|---------|--------|--------|
-| Performance | ~7-8 req/s | ~5-6 req/s | TPU |
-| Cost (single-model) | ~$132/day | ~$80/day | GPU |
+| Performance | ~25 req/s | ~18 req/s | TPU |
+| Cost | ~$377/day | ~$228/day | GPU |
 | Zone availability | 5 zones | 20+ zones | GPU |
-| Best for | Production | PoC/Dev | - |
 
-**Recommendation:** Start with GPU for PoC, upgrade to TPU for production.
-
-### When to use Single-Model vs Scale-Out?
-
-| Factor | Single-Model | Scale-Out (3x) |
-|--------|--------------|----------------|
-| Traffic | <10 req/s | >10 req/s |
-| Cost (TPU) | ~$132/day | ~$377/day |
-| Cost (GPU) | ~$80/day | ~$228/day |
-| Performance (TPU) | ~7-8 req/s | ~25 req/s |
-| Performance (GPU) | ~5-6 req/s | ~18 req/s |
-| High Availability | No | Yes |
-
-**Recommendation:** Start with single-model, scale when traffic consistently exceeds 10 req/s.
+**Recommendation:** Use GPU for lower cost, TPU for maximum throughput.
 
 ---
 
@@ -106,11 +82,10 @@ All deployment guides use these automation scripts in `scripts/`:
 
 ### Monthly Costs (Running 24/7)
 
-| Deployment | TPU v6e | GPU T4 |
-|------------|---------|--------|
-| Single-Model | $3,960/mo | $2,400/mo |
-| Scale-Out (3x) | $11,310/mo | $6,840/mo |
-| **Scaled to Zero** | $180/mo | $180/mo |
+| Accelerator | Running | Scaled to Zero |
+|-------------|---------|----------------|
+| TPU v6e | $11,310/mo | $180/mo |
+| GPU T4 | $6,840/mo | $180/mo |
 
 **💡 Cost Tip:** Scale node pools to zero when not in use. See [Cost Management](docs/customer-guides/cost-management.md).
 
@@ -124,12 +99,10 @@ rhaii-on-xks-gke/
 │
 ├── docs/customer-guides/              # Customer-facing guides
 │   ├── README.md                      # Complete guide index
-│   ├── quickstart-tpu.md              # 30-min TPU deployment
-│   ├── quickstart-gpu.md              # 30-min GPU deployment
+│   ├── deployment-tpu.md              # TPU deployment guide
+│   ├── deployment-gpu.md              # GPU deployment guide
 │   ├── prerequisites.md               # Setup requirements
 │   ├── operator-installation.md       # RHAII operator installation
-│   ├── single-model-deployment-*.md   # Single-model guides
-│   ├── scale-out-deployment-*.md      # Scale-out guides
 │   ├── verification-testing.md        # Validation procedures
 │   ├── production-hardening.md        # Production checklist
 │   ├── cost-management.md             # Cost optimization
@@ -138,6 +111,7 @@ rhaii-on-xks-gke/
 │
 ├── scripts/                           # Automation scripts
 │   ├── create-gke-cluster.sh          # Cluster creation
+│   ├── delete-gke-cluster.sh          # Cluster deletion / scale-to-zero
 │   ├── verify-deployment.sh           # Post-deployment validation
 │   ├── cost-estimator.sh              # Cost calculator
 │   ├── preflight-check.sh             # Prerequisite validation
@@ -146,12 +120,9 @@ rhaii-on-xks-gke/
 │
 ├── deployments/                       # Kubernetes manifests
 │   └── istio-kserve/
-│       ├── baseline-pattern/         # Single-model deployment
+│       ├── baseline-pattern/         # Smoke testing manifests
 │       │   └── manifests/
-│       │       ├── llmisvc-tpu.yaml   # TPU manifest
-│       │       ├── llmisvc-gpu.yaml   # GPU manifest
-│       │       └── networkpolicies/   # Security policies
-│       └── caching-pattern/          # Scale-out deployment
+│       └── caching-pattern/          # Customer deployment manifests
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml
@@ -186,7 +157,7 @@ Before deploying, ensure you have:
 1. **Prerequisites** (15-30 minutes, one-time)
    - Install tools, configure accounts, request quotas
 
-2. **Cluster Creation** (~15 minutes)
+2. **Cluster Creation** (~20 minutes)
    ```bash
    ./scripts/create-gke-cluster.sh --tpu  # or --gpu
    ```
@@ -195,17 +166,17 @@ Before deploying, ensure you have:
    - Clone [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) repository
    - Deploy operators (cert-manager, Istio, KServe, LWS)
 
-4. **Deploy Workload** (~10 minutes)
+4. **Deploy Workload** (~12 minutes)
    ```bash
-   kubectl apply -f deployments/istio-kserve/baseline-pattern/manifests/llmisvc-tpu.yaml
+   kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
    ```
 
-5. **Verify & Test** (~3 minutes)
+5. **Verify & Test** (~5 minutes)
    ```bash
-   ./scripts/verify-deployment.sh --deployment single-model
+   ./scripts/verify-deployment.sh --deployment scale-out
    ```
 
-**Total time:** ~30-40 minutes for complete deployment
+**Total time:** ~50 minutes for complete deployment
 
 ---
 
@@ -238,5 +209,5 @@ This repository provides deployment configurations and documentation for Red Hat
 ---
 
 **Ready to deploy?** Start with:
-- [TPU Quickstart](docs/customer-guides/quickstart-tpu.md) for maximum performance
-- [GPU Quickstart](docs/customer-guides/quickstart-gpu.md) for cost-effective PoC
+- [Deploy on TPU](docs/customer-guides/deployment-tpu.md) for maximum performance
+- [Deploy on GPU](docs/customer-guides/deployment-gpu.md) for cost-effective deployment

@@ -605,21 +605,21 @@ if [ "$CUSTOMER_MODE" = true ]; then
     echo "3. Deploy Your Workload (~10 minutes)"
 
     if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        echo "   Follow: docs/customer-guides/single-model-deployment-tpu.md"
+        echo "   Follow: docs/customer-guides/deployment-tpu.md"
         echo ""
         echo "💰 Estimated Costs:"
-        echo "   • Single-model deployment: ~\$132/day (\$3,960/month)"
-        echo "   • High-throughput scale-out: ~\$377/day (\$11,310/month)"
+        echo "   • Running (3 replicas): ~\$377/day (\$11,310/month)"
+        echo "   • Scaled to zero: ~\$6/day (cluster overhead)"
     else
-        echo "   Follow: docs/customer-guides/single-model-deployment-gpu.md"
+        echo "   Follow: docs/customer-guides/deployment-gpu.md"
         echo ""
         echo "💰 Estimated Costs:"
-        echo "   • Single-model deployment: ~\$80/day (\$2,400/month)"
-        echo "   • High-throughput scale-out: ~\$228/day (\$6,840/month)"
+        echo "   • Running (3 replicas): ~\$228/day (\$6,840/month)"
+        echo "   • Scaled to zero: ~\$6/day (cluster overhead)"
     fi
 
     echo ""
-    echo "⏱️  Total Time: ~30-40 minutes for complete deployment"
+    echo "⏱️  Total Time: ~50 minutes for complete deployment"
     echo ""
     echo "📚 For detailed guides, see: docs/customer-guides/"
 fi

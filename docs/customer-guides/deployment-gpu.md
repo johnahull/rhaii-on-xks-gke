@@ -1,6 +1,6 @@
-# High-Throughput Scale-Out Deployment (GPU)
+# RHAII Deployment Guide (GPU)
 
-Deploy 3-replica vLLM service with prefix caching for production workloads on GPU T4.
+Deploy a production vLLM inference service on GPU T4 with prefix caching and intelligent routing.
 
 ## Overview
 
@@ -12,44 +12,14 @@ Deploy 3-replica vLLM service with prefix caching for production workloads on GP
 - Security isolation via NetworkPolicies
 
 **Performance:**
-- ~18 req/s parallel requests (vs 5-6 req/s single-model)
-- ~4.8 req/s serial requests (vs 1.5 req/s single-model)
-- 3.2× throughput improvement over baseline
+- ~18 req/s parallel requests
+- ~4.8 req/s serial requests
 
 **Cost:**
 - Running: ~$228/day ($6,840/month)
-- vs Single-model: 2.85× cost for 3.2× throughput
-- **Cost efficiency: 1.12× better cost-per-request**
 - Scaled to zero: ~$6/day (cluster overhead only)
 
 **Time:** ~45 minutes total
-
----
-
-## When to Choose This Deployment
-
-**Choose GPU Scale-Out Deployment if:**
-- Production workload with >10 req/s expected traffic
-- Shared prompts/prefixes across requests (translation, summarization, Q&A)
-- Budget allows ~$228/day ($6,840/month)
-- Need 3.2× throughput improvement over baseline
-- Cost efficiency matters (1.12× better cost-per-request with caching)
-- Wide zone availability required (T4 available in 20+ zones)
-- Lower cost alternative to TPU scale-out ($228/day vs $377/day)
-
-**Choose Baseline GPU Deployment instead if:**
-- Development, testing, or PoC workloads
-- <10 req/s traffic expected
-- Budget-constrained (~$80/day for single-model GPU)
-- Unique prompts without prefix sharing
-- Want to start small and scale later
-
-**Choose TPU Scale-Out if:**
-- Maximum performance required (~25 req/s vs ~18 req/s)
-- Budget allows higher cost ($377/day vs $228/day)
-- Zone constraints acceptable (TPU available in 5 zones)
-
-**See:** [30-Minute GPU Quickstart](quickstart-gpu.md) for baseline deployment
 
 ---
 
@@ -65,7 +35,6 @@ Before starting, ensure you have:
 - [ ] HuggingFace token for model access
 - [ ] **GPU T4 quota: 3 GPUs minimum**
 - [ ] **Budget approved: ~$228/day** ($6,840/month)
-- [ ] Workload analysis confirms shared prompts benefit from caching
 
 **Need help?** See [Prerequisites Guide](prerequisites.md) for detailed setup instructions.
 
@@ -73,7 +42,7 @@ Before starting, ensure you have:
 
 ## Architecture
 
-This scale-out deployment provides high-throughput inference with intelligent request routing.
+This deployment provides high-throughput inference with intelligent request routing.
 
 ### Components
 
@@ -280,7 +249,7 @@ kubectl get secret huggingface-token
 
 ---
 
-## Step 5: Deploy Scale-Out Configuration (10 minutes)
+## Step 5: Deploy Inference Service (10 minutes)
 
 Deploy the 3-replica vLLM inference service with prefix caching:
 
@@ -383,7 +352,7 @@ kubectl get networkpolicies
 
 ## Step 7: Verify Deployment (5 minutes)
 
-Verify the scale-out deployment is working:
+Verify the deployment is working:
 
 ```bash
 # Automated verification
@@ -470,7 +439,7 @@ python3 benchmarks/python/benchmark_vllm.py \
 
 ## 🎉 Success!
 
-Your RHAII GPU scale-out deployment is ready for production traffic!
+Your RHAII GPU deployment is ready for production traffic!
 
 ### Quick Reference
 
@@ -733,63 +702,6 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 
 ---
 
-## Appendix: Migration from Baseline
-
-If you already have a single-model baseline GPU deployment and want to migrate to scale-out:
-
-### Migration Steps
-
-1. **Request additional GPU quota** (3 GPUs total vs 1 GPU baseline)
-2. **Budget approval** for increased cost (~$228/day vs ~$80/day)
-3. **Delete baseline deployment:**
-   ```bash
-   kubectl delete llminferenceservice gemma-2b-gpu-svc
-   # Wait for resources released
-   kubectl get pods -w
-   ```
-4. **Scale node pool to 3 nodes:**
-   ```bash
-   gcloud container clusters resize rhaii-cluster \
-     --node-pool gpu-pool \
-     --num-nodes 3 \
-     --zone us-central1-a
-   # Wait ~5 minutes for nodes ready
-   kubectl get nodes -w
-   ```
-5. **Deploy scale-out configuration** (follow Steps 5-8 above)
-
-### Rollback Procedure
-
-To revert to baseline single-model deployment:
-
-```bash
-# 1. Delete scale-out deployment
-kubectl delete llminferenceservice gemma-2b-gpu-svc
-
-# 2. Scale node pool to 1
-gcloud container clusters resize rhaii-cluster \
-  --node-pool gpu-pool \
-  --num-nodes 1 \
-  --zone us-central1-a
-
-# 3. Redeploy baseline configuration
-kubectl apply -f deployments/istio-kserve/baseline-pattern/manifests/llmisvc-gpu.yaml
-```
-
-### Comparison: Baseline vs Scale-Out
-
-| Metric | Baseline | Scale-Out | Improvement |
-|--------|----------|-----------|-------------|
-| **Replicas** | 1 | 3 | 3× |
-| **GPUs** | 1 | 3 | 3× |
-| **Throughput (parallel)** | 5-6 req/s | 18 req/s | 3.2× |
-| **Throughput (serial)** | 1.5 req/s | 4.8 req/s | 3.2× |
-| **Cost** | $80/day | $228/day | 2.85× |
-| **Cost-per-request** | Baseline | 1.12× better | 12% savings |
-| **Prefix caching** | No | Yes | ~70% latency ↓ |
-
----
-
 ## Next Steps
 
 ### Production Hardening
@@ -820,7 +732,7 @@ Prepare for production:
 ### Upgrade to TPU
 
 **For maximum performance:**
-- See [Scale-Out Deployment (TPU)](scale-out-deployment-tpu.md)
+- See [RHAII Deployment Guide (TPU)](deployment-tpu.md)
 - ~25 req/s throughput vs ~18 req/s GPU
 - Higher cost: $377/day vs $228/day
 - Limited zone availability

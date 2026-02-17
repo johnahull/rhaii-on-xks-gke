@@ -10,10 +10,7 @@ Use the verification script for quick checks:
 # Verify operators only
 ./scripts/verify-deployment.sh --operators-only
 
-# Verify complete deployment
-./scripts/verify-deployment.sh --deployment single-model
-
-# Verify scale-out deployment
+# Verify deployment
 ./scripts/verify-deployment.sh --deployment scale-out
 ```
 
@@ -97,17 +94,13 @@ python3 benchmarks/python/benchmark_vllm.py \
 
 **Expected results:**
 
-**Single-model TPU:**
-- Parallel: ~7-8 req/s
-- Latency: <200ms P50
-
-**Single-model GPU:**
-- Parallel: ~5-6 req/s
-- Latency: <300ms P50
-
-**Scale-out TPU:**
+**TPU (3 replicas):**
 - Parallel: ~25 req/s
 - Latency: <200ms P50
+
+**GPU (3 replicas):**
+- Parallel: ~18 req/s
+- Latency: <300ms P50
 
 ## Security Validation
 

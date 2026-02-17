@@ -197,8 +197,8 @@ if [[ "$OPERATORS_ONLY" == "true" ]]; then
         echo -e "${GREEN}✅ All operator checks PASSED${NC}"
         echo ""
         echo "Next step: Deploy your workload"
-        echo "  docs/customer-guides/single-model-deployment-tpu.md"
-        echo "  docs/customer-guides/single-model-deployment-gpu.md"
+        echo "  docs/customer-guides/deployment-tpu.md"
+        echo "  docs/customer-guides/deployment-gpu.md"
     else
         echo -e "${RED}❌ Some operator checks FAILED${NC}"
         echo ""
@@ -337,9 +337,6 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
     fi
     echo ""
     echo "Next steps:"
-    if [[ "$DEPLOYMENT_TYPE" == "single-model" ]]; then
-        echo "  • Scale to high-throughput: docs/customer-guides/scale-out-deployment-tpu.md"
-    fi
     echo "  • Production hardening: docs/customer-guides/production-hardening.md"
     echo "  • Cost management: docs/customer-guides/cost-management.md"
 else

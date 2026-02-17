@@ -419,9 +419,9 @@ echo "   See: docs/customer-guides/operator-installation.md"
 echo ""
 echo "2. Deploy your workload (~10 minutes)"
 if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-    echo "   Follow: docs/customer-guides/single-model-deployment-tpu.md"
+    echo "   Follow: docs/customer-guides/deployment-tpu.md"
 else
-    echo "   Follow: docs/customer-guides/single-model-deployment-gpu.md"
+    echo "   Follow: docs/customer-guides/deployment-gpu.md"
 fi
 echo ""
 echo "💰 Cost Management:"

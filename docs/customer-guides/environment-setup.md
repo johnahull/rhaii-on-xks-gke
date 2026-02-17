@@ -9,7 +9,7 @@ RHAII automation scripts support environment variables that allow you to set com
 **Without environment variables:**
 ```bash
 ./scripts/create-gke-cluster.sh --tpu --project ecoeng-llmd --zone us-central1-b --cluster-name rhaii-cluster
-./scripts/verify-deployment.sh --deployment single-model --project ecoeng-llmd --zone us-central1-b
+./scripts/verify-deployment.sh --deployment scale-out --project ecoeng-llmd --zone us-central1-b
 ```
 
 **With environment variables:**
@@ -22,7 +22,7 @@ export ACCELERATOR_TYPE="tpu"
 
 # Use multiple times
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment single-model
+./scripts/verify-deployment.sh --deployment scale-out
 ```
 
 ## Quick Start
@@ -248,8 +248,8 @@ direnv allow .
 
 # Daily work - no repeated flags
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment single-model
-./scripts/cost-estimator.sh --deployment single-model
+./scripts/verify-deployment.sh --deployment scale-out
+./scripts/cost-estimator.sh --deployment scale-out
 
 # Override for specific tests
 ./scripts/check-accelerator-availability.sh --zone us-east5-a
@@ -402,7 +402,7 @@ git commit -m "Remove environment files from tracking"
 
 **Token management:**
 - HuggingFace tokens are managed via Kubernetes secrets (not environment variables)
-- See [Quickstart Guide](quickstart-tpu.md) for secret creation
+- See [Deployment Guide (TPU)](deployment-tpu.md) for secret creation
 
 ## Next Steps
 
@@ -410,20 +410,16 @@ After setting up your environment:
 
 1. **Validate configuration:**
    ```bash
-   ./scripts/preflight-check.sh --customer --deployment istio-kserve/baseline-pattern --accelerator tpu
+   ./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
    ```
 
-2. **Create cluster:**
-   - [TPU Quickstart](quickstart-tpu.md)
-   - [GPU Quickstart](quickstart-gpu.md)
-
-3. **Deploy RHAII:**
-   - [Single-Model Deployment](single-model-deployment-tpu.md)
-   - [Scale-Out Deployment](scale-out-deployment-tpu.md)
+2. **Deploy RHAII:**
+   - [RHAII Deployment Guide (TPU)](deployment-tpu.md)
+   - [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 
 ## Related Documentation
 
-- [TPU Quickstart Guide](quickstart-tpu.md)
-- [GPU Quickstart Guide](quickstart-gpu.md)
+- [RHAII Deployment Guide (TPU)](deployment-tpu.md)
+- [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 - [Troubleshooting Guide](troubleshooting.md)
 - [FAQ](faq.md)

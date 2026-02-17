@@ -2,13 +2,6 @@
 
 Welcome to the customer-facing documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kubernetes Engine (GKE).
 
-## 🚀 Quick Start
-
-**New to RHAII on GKE?** Start here:
-
-- **[30-Minute TPU Quickstart](quickstart-tpu.md)** - Deploy RHAII on TPU v6e (~$132/day)
-- **[30-Minute GPU Quickstart](quickstart-gpu.md)** - Deploy RHAII on GPU T4 (~$80/day)
-
 ## 📖 Deployment Guides
 
 ### Prerequisites and Setup
@@ -16,17 +9,11 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 - **[Environment Setup](environment-setup.md)** - Optional: Configure environment variables to streamline commands
 - **[Operator Installation](operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
-### Single-Model Deployments (Baseline)
-Best for development, testing, and traffic <10 req/s:
+### Deployment
+Deploy a 3-replica vLLM inference service with prefix caching and intelligent routing:
 
-- **[Single-Model Deployment (TPU)](single-model-deployment-tpu.md)** - Deploy on TPU v6e
-- **[Single-Model Deployment (GPU)](single-model-deployment-gpu.md)** - Deploy on GPU T4
-
-### High-Throughput Scale-Out Deployments
-Best for production workloads with >10 req/s and shared prompts:
-
-- **[Scale-Out Deployment (TPU)](scale-out-deployment-tpu.md)** - 3-replica deployment with prefix caching (TPU)
-- **[Scale-Out Deployment (GPU)](scale-out-deployment-gpu.md)** - 3-replica deployment with prefix caching (GPU)
+- **[RHAII Deployment Guide (TPU)](deployment-tpu.md)** - Deploy on TPU v6e (~$377/day, ~25 req/s)
+- **[RHAII Deployment Guide (GPU)](deployment-gpu.md)** - Deploy on GPU T4 (~$228/day, ~18 req/s)
 
 ## 🛠️ Operations
 
@@ -41,36 +28,22 @@ Best for production workloads with >10 req/s and shared prompts:
 ### When to use TPU vs GPU?
 
 **Choose TPU if:**
-- You need maximum performance (~7-8 req/s single-model, ~25 req/s scale-out)
+- You need maximum performance (~25 req/s)
 - You have production workloads with consistent traffic
-- Budget allows ~$132/day for single-model deployment
+- Budget allows ~$377/day
 
 **Choose GPU if:**
-- You're doing PoC or development work
-- You need lower costs (~$80/day for single-model deployment)
-- You need wider zone availability
-
-### When to use Single-Model vs Scale-Out?
-
-**Single-Model Deployment when:**
-- Traffic <10 req/s
-- Development or testing workloads
-- Cost-sensitive deployments
-- Getting started with RHAII
-
-**Scale-Out Deployment when:**
-- Traffic >10 req/s
-- Production workloads with high availability requirements
-- Workloads with shared prompts (benefits from prefix caching)
-- Need 3.3× better throughput (worth 2.9× cost increase)
+- You need lower costs (~$228/day)
+- You need wider zone availability (T4 available in 20+ zones vs 5 for TPU)
+- You want faster quota approval
 
 ## 💰 Cost Comparison
 
-| Deployment Type | TPU v6e Cost | GPU T4 Cost | Performance |
-|----------------|--------------|-------------|-------------|
-| Single-Model   | ~$132/day    | ~$80/day    | 7-8 req/s (TPU), 5-6 req/s (GPU) |
-| Scale-Out (3x) | ~$377/day    | ~$228/day   | 25 req/s (TPU), 18 req/s (GPU) |
-| **Scaled to 0** | ~$6/day | ~$6/day | 0 req/s (cluster overhead only) |
+| Accelerator | Running Cost | Performance | Zone Availability |
+|-------------|-------------|-------------|-------------------|
+| TPU v6e     | ~$377/day   | ~25 req/s   | 5 zones           |
+| GPU T4      | ~$228/day   | ~18 req/s   | 20+ zones         |
+| **Scaled to 0** | ~$6/day | 0 req/s (cluster overhead only) | — |
 
 > **Cost Tip:** Scale node pools to 0 when not in use to minimize costs. See [Cost Management](cost-management.md).
 
@@ -114,5 +87,5 @@ Found an issue or have suggestions? Please:
 ---
 
 **Ready to get started?** Jump to:
-- [TPU Quickstart](quickstart-tpu.md) for maximum performance
-- [GPU Quickstart](quickstart-gpu.md) for cost-effective PoC
+- [Deploy on TPU](deployment-tpu.md) for maximum performance
+- [Deploy on GPU](deployment-gpu.md) for cost-effective deployment

@@ -5,52 +5,25 @@
 ### When should I use TPU vs GPU?
 
 **Use TPU v6e when:**
-- You need maximum performance (~7-8 req/s single, ~25 req/s scale-out)
+- You need maximum performance (~25 req/s)
 - You have production workloads with consistent traffic
-- Budget allows ~$132/day for single-model deployment
+- Budget allows ~$377/day
 - Your zone has TPU v6e availability
 
 **Use GPU T4 when:**
-- You're doing PoC or development work
-- You need lower costs (~$80/day for single-model)
+- You need lower costs (~$228/day)
 - You need wider zone availability (20+ zones vs 5 zones)
 - You want faster quota approval (instant vs 24-48h)
 
 **Performance comparison:**
 | Metric | GPU T4 | TPU v6e | Winner |
 |--------|--------|---------|--------|
-| Single-model throughput | 5-6 req/s | 7-8 req/s | TPU |
-| Scale-out throughput | 18 req/s | 25 req/s | TPU |
-| Cost (single) | $80/day | $132/day | GPU |
-| Cost (scale-out) | $228/day | $377/day | GPU |
-| Zone availability | Wide | Limited | GPU |
-| Memory | 13.12 GiB | 16 GiB | TPU |
+| Throughput | ~18 req/s | ~25 req/s | TPU |
+| Cost | $228/day | $377/day | GPU |
+| Zone availability | 20+ zones | 5 zones | GPU |
+| Memory per accelerator | 13.12 GiB | 16 GiB | TPU |
 
-**Recommendation:** Start with GPU for PoC, upgrade to TPU for production.
-
----
-
-### When should I use single-model vs scale-out deployment?
-
-**Single-model deployment when:**
-- Traffic <10 req/s
-- Development or testing workloads
-- Cost-sensitive deployments
-- Getting started with RHAII
-- Simple use case, single model
-
-**Scale-out deployment (3 replicas) when:**
-- Traffic >10 req/s
-- Production workloads needing high availability
-- Workloads with shared prompts (benefits from prefix caching)
-- You can afford 2.9× cost for 3.3× throughput
-
-**Cost-benefit analysis:**
-- Single-model TPU: $132/day, ~7-8 req/s
-- Scale-out TPU: $377/day (~2.9× cost), ~25 req/s (~3.3× throughput)
-- **Result:** 1.14× better cost-per-request with scale-out
-
-**Recommendation:** Start with single-model, scale when traffic consistently exceeds 10 req/s.
+**Recommendation:** Use GPU for lower cost, TPU for maximum throughput.
 
 ---
 
@@ -115,22 +88,6 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-
 
 ### What's the minimum GCP quota needed?
 
-**Single-model deployment:**
-
-**TPU:**
-- TPU v6e chips: 4 (one node)
-- CPUs: 20
-- In-use IP addresses: 5
-- Load balancers: 2
-
-**GPU:**
-- T4 GPUs: 1
-- CPUs: 20
-- In-use IP addresses: 5
-- Load balancers: 2
-
-**Scale-out deployment (3 replicas):**
-
 **TPU:**
 - TPU v6e chips: 12 (three nodes)
 - CPUs: 30
@@ -185,7 +142,7 @@ gcloud container clusters resize CLUSTER_NAME \
 
 **Cost when scaled to zero:**
 - ~$6/day (cluster control plane + standard nodes)
-- **Savings:** $126/day (TPU) or $74/day (GPU)
+- **Savings:** ~$371/day (TPU) or ~$222/day (GPU)
 
 **Scale back up:**
 ```bash
@@ -203,17 +160,18 @@ See [Cost Management Guide](cost-management.md) for automation.
 
 ### How long does it take to deploy from scratch?
 
-**Total time: ~30-40 minutes**
+**Total time: ~50 minutes**
 
 Breakdown:
 1. Prerequisites (one-time): Variable (tools + quotas)
 2. Validation checks: ~3 minutes
-3. Cluster creation: ~15 minutes
+3. Cluster creation: ~20 minutes
 4. Operator installation: ~10 minutes
-5. Workload deployment: ~10 minutes
-6. Verification: ~3 minutes
+5. Workload deployment (3 replicas): ~12 minutes
+6. EnvoyFilter + NetworkPolicies: ~2 minutes
+7. Verification: ~5 minutes
 
-**Subsequent deployments:** ~25 minutes (skip prerequisites)
+**Subsequent deployments:** ~35 minutes (skip prerequisites)
 
 ---
 
@@ -270,7 +228,7 @@ export ZONE="europe-west4-a"
 
 # Simplified commands
 ./scripts/create-gke-cluster.sh --tpu
-./scripts/verify-deployment.sh --deployment single-model
+./scripts/verify-deployment.sh --deployment scale-out
 ```
 
 **CLI flags always override environment variables**, so you can still customize:
@@ -305,8 +263,8 @@ See [Environment Setup Guide](environment-setup.md) for complete instructions.
 
 **Top cost-saving strategies:**
 
-1. **Scale to zero when not in use** (saves ~$126/day TPU, ~$74/day GPU)
-2. **Use GPU for dev/test, TPU for production**
+1. **Scale to zero when not in use** (saves ~$371/day TPU, ~$222/day GPU)
+2. **Use GPU for lower-cost deployments, TPU for maximum throughput**
 3. **Right-size models** (don't use 70B model if 7B works)
 4. **Schedule scaling** (scale down overnight/weekends)
 5. **Use committed use discounts** (30-70% savings for long-term)
@@ -317,35 +275,6 @@ See [Cost Management Guide](cost-management.md) for details.
 ---
 
 ## Migration and Upgrades
-
-### How do I migrate between deployment patterns?
-
-**Single-model → Scale-out:**
-
-1. Delete single-model deployment:
-   ```bash
-   kubectl delete llminferenceservice <name>
-   ```
-
-2. Scale node pool to 3 nodes:
-   ```bash
-   gcloud container clusters resize CLUSTER \
-     --node-pool tpu-pool \
-     --num-nodes 3 \
-     --zone ZONE
-   ```
-
-3. Deploy scale-out configuration:
-   ```bash
-   kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
-   ```
-
-**Scale-out → Single-model:**
-Reverse the above steps, scale node pool back to 1.
-
-**Downtime:** ~5-10 minutes during transition
-
----
 
 ### How do I upgrade to a newer vLLM version?
 
@@ -358,7 +287,7 @@ spec:
 
 Reapply:
 ```bash
-kubectl apply -f deployments/istio-kserve/baseline-pattern/manifests/llmisvc-tpu.yaml
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
 ```
 
 **KServe will perform rolling update automatically.**
@@ -393,7 +322,7 @@ kubectl get events --sort-by='.lastTimestamp'
 
 1. Run detailed verification:
    ```bash
-   ./scripts/verify-deployment.sh --deployment single-model
+   ./scripts/verify-deployment.sh --deployment scale-out
    ```
 
 2. Check specific component:

@@ -108,8 +108,8 @@ After successful operator installation:
 
 1. **Verify deployment:** Run `./scripts/verify-deployment.sh --operators-only`
 2. **Deploy workload:**
-   - [Single-Model Deployment (TPU)](single-model-deployment-tpu.md)
-   - [Single-Model Deployment (GPU)](single-model-deployment-gpu.md)
+   - [RHAII Deployment Guide (TPU)](deployment-tpu.md)
+   - [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 
 ---
 

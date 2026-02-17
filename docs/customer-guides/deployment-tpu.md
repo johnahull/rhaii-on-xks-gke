@@ -1,6 +1,6 @@
-# High-Throughput Scale-Out Deployment (TPU)
+# RHAII Deployment Guide (TPU)
 
-Deploy 3-replica vLLM service with prefix caching for production workloads on TPU v6e.
+Deploy a production vLLM inference service on TPU v6e with prefix caching and intelligent routing.
 
 ## Overview
 
@@ -12,38 +12,14 @@ Deploy 3-replica vLLM service with prefix caching for production workloads on TP
 - Security isolation via NetworkPolicies
 
 **Performance:**
-- ~25 req/s parallel requests (vs 7-8 req/s single-model)
-- ~6.3 req/s serial requests (vs 1.9 req/s single-model)
-- 3.3× throughput improvement over baseline
+- ~25 req/s parallel requests
+- ~6.3 req/s serial requests
 
 **Cost:**
 - Running: ~$377/day ($11,310/month)
-- vs Single-model: 2.9× cost for 3.3× throughput
-- **Cost efficiency: 1.14× better cost-per-request**
 - Scaled to zero: ~$6/day (cluster overhead only)
 
 **Time:** ~50 minutes total
-
----
-
-## When to Choose This Deployment
-
-**Choose Scale-Out Deployment if:**
-- Production workload with >10 req/s expected traffic
-- Shared prompts/prefixes across requests (translation, summarization, Q&A)
-- Budget allows ~$377/day ($11,310/month)
-- Need 3.3× throughput improvement over baseline
-- Cost efficiency matters (1.14× better cost-per-request with caching)
-- High availability is required
-
-**Choose Baseline Deployment instead if:**
-- Development, testing, or PoC workloads
-- <10 req/s traffic expected
-- Budget-constrained (~$132/day for single-model TPU)
-- Unique prompts without prefix sharing
-- Want to start small and scale later
-
-**See:** [30-Minute TPU Quickstart](quickstart-tpu.md) for baseline deployment
 
 ---
 
@@ -59,7 +35,6 @@ Before starting, ensure you have:
 - [ ] HuggingFace token for model access
 - [ ] **TPU v6e quota: 12 chips minimum** (3 nodes × 4 chips)
 - [ ] **Budget approved: ~$377/day** ($11,310/month)
-- [ ] Workload analysis confirms shared prompts benefit from caching
 
 **Need help?** See [Prerequisites Guide](prerequisites.md) for detailed setup instructions.
 
@@ -67,7 +42,7 @@ Before starting, ensure you have:
 
 ## Architecture
 
-This scale-out deployment provides high-throughput inference with intelligent request routing.
+This deployment provides high-throughput inference with intelligent request routing.
 
 ### Components
 
@@ -262,7 +237,7 @@ kubectl get secret huggingface-token
 
 ---
 
-## Step 5: Deploy Scale-Out Configuration (10 minutes)
+## Step 5: Deploy Inference Service (10 minutes)
 
 Deploy the 3-replica vLLM inference service with prefix caching:
 
@@ -362,7 +337,7 @@ kubectl get networkpolicies
 
 ## Step 7: Verify Deployment (5 minutes)
 
-Verify the scale-out deployment is working:
+Verify the deployment is working:
 
 ```bash
 # Automated verification
@@ -449,7 +424,7 @@ python3 benchmarks/python/benchmark_vllm.py \
 
 ## 🎉 Success!
 
-Your RHAII TPU scale-out deployment is ready for production traffic!
+Your RHAII TPU deployment is ready for production traffic!
 
 ### Quick Reference
 
@@ -685,63 +660,6 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 ```
 
 **See [Troubleshooting Guide](troubleshooting.md) for more solutions.**
-
----
-
-## Appendix: Migration from Baseline
-
-If you already have a single-model baseline deployment and want to migrate to scale-out:
-
-### Migration Steps
-
-1. **Request additional TPU quota** (12 chips total vs 4 chips baseline)
-2. **Budget approval** for increased cost (~$377/day vs ~$132/day)
-3. **Delete baseline deployment:**
-   ```bash
-   kubectl delete llminferenceservice gemma-2b-tpu-svc
-   # Wait for resources released
-   kubectl get pods -w
-   ```
-4. **Scale node pool to 3 nodes:**
-   ```bash
-   gcloud container clusters resize rhaii-cluster \
-     --node-pool tpu-pool \
-     --num-nodes 3 \
-     --zone europe-west4-a
-   # Wait ~10 minutes for nodes ready
-   kubectl get nodes -w
-   ```
-5. **Deploy scale-out configuration** (follow Steps 5-8 above)
-
-### Rollback Procedure
-
-To revert to baseline single-model deployment:
-
-```bash
-# 1. Delete scale-out deployment
-kubectl delete llminferenceservice gemma-2b-tpu-svc
-
-# 2. Scale node pool to 1
-gcloud container clusters resize rhaii-cluster \
-  --node-pool tpu-pool \
-  --num-nodes 1 \
-  --zone europe-west4-a
-
-# 3. Redeploy baseline configuration
-kubectl apply -f deployments/istio-kserve/baseline-pattern/manifests/llmisvc-tpu.yaml
-```
-
-### Comparison: Baseline vs Scale-Out
-
-| Metric | Baseline | Scale-Out | Improvement |
-|--------|----------|-----------|-------------|
-| **Replicas** | 1 | 3 | 3× |
-| **TPU Chips** | 4 | 12 | 3× |
-| **Throughput (parallel)** | 7-8 req/s | 25 req/s | 3.3× |
-| **Throughput (serial)** | 1.9 req/s | 6.3 req/s | 3.3× |
-| **Cost** | $132/day | $377/day | 2.9× |
-| **Cost-per-request** | Baseline | 1.14× better | 14% savings |
-| **Prefix caching** | No | Yes | ~75% latency ↓ |
 
 ---
 

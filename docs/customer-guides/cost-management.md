@@ -4,23 +4,11 @@ Strategies to optimize and control RHAII deployment costs on GKE.
 
 ## Cost Overview
 
-### Single-Model Deployment
-
-**TPU v6e (europe-west4-a):**
-- Running: ~$132/day ($3,960/month)
-- Scaled to zero: ~$6/day ($180/month)
-
-**GPU T4 (us-central1-a):**
-- Running: ~$80/day ($2,400/month)
-- Scaled to zero: ~$6/day ($180/month)
-
-### Scale-Out Deployment (3 replicas)
-
-**TPU v6e:**
+**TPU v6e (3 replicas):**
 - Running: ~$377/day ($11,310/month)
 - Scaled to zero: ~$6/day ($180/month)
 
-**GPU T4:**
+**GPU T4 (3 replicas):**
 - Running: ~$228/day ($6,840/month)
 - Scaled to zero: ~$6/day ($180/month)
 
@@ -31,26 +19,26 @@ Strategies to optimize and control RHAII deployment costs on GKE.
 Use the cost estimator script for detailed breakdowns:
 
 ```bash
-# Single-model TPU cost
+# TPU deployment cost
 ./scripts/cost-estimator.sh \
-  --deployment single-model \
+  --deployment scale-out \
   --accelerator tpu
 
-# Scale-out GPU cost
+# GPU deployment cost
 ./scripts/cost-estimator.sh \
   --deployment scale-out \
   --accelerator gpu
 
-# Compare deployment types
+# Compare accelerator types
 ./scripts/cost-estimator.sh \
-  --accelerator tpu \
+  --deployment scale-out \
   --compare
 
 # Cost per request at specific traffic
 ./scripts/cost-estimator.sh \
-  --deployment single-model \
+  --deployment scale-out \
   --accelerator tpu \
-  --traffic 5  # req/s
+  --traffic 15  # req/s
 ```
 
 ---
@@ -59,7 +47,7 @@ Use the cost estimator script for detailed breakdowns:
 
 ### 1. Scale to Zero When Not in Use
 
-**Highest impact cost saving: ~$126/day (TPU) or ~$74/day (GPU)**
+**Highest impact cost saving: ~$371/day (TPU) or ~$222/day (GPU)**
 
 **Using the automation script (recommended):**
 
@@ -195,14 +183,13 @@ gcloud container clusters delete rhaii-cluster \
 
 ## Right-Sizing Strategies
 
-### 1. Use GPU for Development, TPU for Production
+### 1. Use GPU for Lower-Cost Deployments
 
-**Development workflow:**
-1. Develop on GPU T4: ~$80/day
-2. Test on GPU with small traffic
-3. Deploy to TPU for production: ~$132/day
+**Cost comparison:**
+- GPU T4 deployment: ~$228/day
+- TPU v6e deployment: ~$377/day
 
-**Savings:** ~$52/day during development (vs always using TPU)
+**Savings:** ~$149/day using GPU instead of TPU (with ~18 req/s vs ~25 req/s throughput)
 
 ---
 
@@ -220,18 +207,17 @@ gcloud container clusters delete rhaii-cluster \
 
 ---
 
-### 3. Deployment Pattern Selection
+### 3. Right-Size Replica Count
 
-**Traffic-based decision:**
+**Traffic-based scaling:**
 
-| Traffic | Recommended Pattern | TPU Cost | GPU Cost |
-|---------|-------------------|----------|----------|
-| <5 req/s | Single-model | $132/day | $80/day |
-| 5-10 req/s | Single-model | $132/day | $80/day |
-| 10-20 req/s | Scale-out (3x) | $377/day | $228/day |
-| >20 req/s | Scale-out (5x) | $628/day | $380/day |
+| Traffic | Replicas | TPU Cost | GPU Cost |
+|---------|----------|----------|----------|
+| 10-20 req/s | 3 | $377/day | $228/day |
+| 20-35 req/s | 5 | $628/day | $380/day |
+| >35 req/s | 7+ | $880/day | $532/day |
 
-**Over-provisioning waste:** Running scale-out for <10 req/s wastes ~$245/day (TPU)
+**Tip:** Start with 3 replicas, scale up based on observed traffic and latency metrics.
 
 ---
 
@@ -351,16 +337,16 @@ gcloud container node-pools describe tpu-pool \
 ## Cost Optimization Checklist
 
 **Before deployment:**
-- [ ] Choose appropriate accelerator (GPU for dev, TPU for prod)
+- [ ] Choose appropriate accelerator (GPU for lower cost, TPU for max throughput)
 - [ ] Select smallest model that meets requirements
-- [ ] Request minimum quota needed
+- [ ] Request minimum quota needed (12 TPU chips or 3 GPUs)
 - [ ] Estimate monthly costs with traffic projections
 
 **During deployment:**
-- [ ] Start with single-model, scale only when needed
 - [ ] Monitor resource utilization
 - [ ] Set up budget alerts
 - [ ] Document scaling procedures
+- [ ] Right-size replica count based on traffic
 
 **Ongoing:**
 - [ ] Scale to zero when not in use
@@ -390,16 +376,15 @@ gcloud container node-pools describe tpu-pool \
 
 **Requirements:** 24/7 availability, 15 req/s traffic
 
-**Option A: Scale-out TPU (always on)**
+**Option A: TPU deployment (always on)**
 - Cost: $377/day × 30 days = $11,310/month
 - Performance: ~25 req/s capacity
 
-**Option B: Single-model TPU with HPA (scale up during peaks)**
-- Base cost: $132/day × 30 days = $3,960/month
-- Peak hours (8h/day): $245/day × 30 days = $7,350/month
-- Average: ~$5,655/month
-- **Savings: $5,655/month (50%)**
-- **Trade-off:** Slower response during peak scaling
+**Option B: GPU deployment (always on)**
+- Cost: $228/day × 30 days = $6,840/month
+- Performance: ~18 req/s capacity (sufficient for 15 req/s)
+- **Savings: $4,470/month (40%)**
+- **Trade-off:** Less headroom for traffic spikes
 
 ---
 
@@ -447,18 +432,18 @@ helm install kubecost kubecost/cost-analyzer \
 
 1. **Scale to zero when not in use:** ~95% savings
 2. **Scheduled scaling (overnight/weekends):** ~50-76% savings
-3. **Use GPU for dev, TPU for prod:** ~$52/day savings
-4. **Right-size deployment pattern:** Avoid over-provisioning
+3. **Use GPU instead of TPU when possible:** ~$149/day savings
+4. **Right-size replica count:** Match replicas to traffic
 5. **Committed use discounts:** 30-70% for long-term
 
 **Monthly cost examples:**
 - Development (GPU, 8h/day, 5d/week): ~$573/month
-- Production (TPU, 24/7, single-model): ~$3,960/month
-- Production (TPU, 24/7, scale-out): ~$11,310/month
+- Production (GPU, 24/7): ~$6,840/month
+- Production (TPU, 24/7): ~$11,310/month
 
 **Tools:**
 ```bash
-./scripts/cost-estimator.sh --deployment single-model --accelerator tpu
+./scripts/cost-estimator.sh --deployment scale-out --accelerator tpu
 ```
 
 ---

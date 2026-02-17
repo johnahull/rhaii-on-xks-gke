@@ -4,18 +4,14 @@ This repository contains everything needed to deploy RHAII on GKE.
 
 ## What's Included
 
-### Documentation (14 files, ~124K)
+### Documentation (10 files)
 ```
 docs/customer-guides/
 ├── README.md                          # Navigation index
-├── quickstart-tpu.md                  # 30-min TPU deployment
-├── quickstart-gpu.md                  # 30-min GPU deployment
+├── deployment-tpu.md                  # TPU deployment guide
+├── deployment-gpu.md                  # GPU deployment guide
 ├── prerequisites.md                   # Setup requirements
 ├── operator-installation.md           # RHAII operator installation
-├── single-model-deployment-tpu.md     # Single-model TPU guide
-├── single-model-deployment-gpu.md     # Single-model GPU guide
-├── scale-out-deployment-tpu.md        # Scale-out TPU guide
-├── scale-out-deployment-gpu.md        # Scale-out GPU guide
 ├── verification-testing.md            # Validation procedures
 ├── production-hardening.md            # Production checklist
 ├── cost-management.md                 # Cost optimization
@@ -37,20 +33,17 @@ scripts/
 ### Kubernetes Manifests
 ```
 deployments/istio-kserve/
-├── baseline-pattern/manifests/
-│   ├── llmisvc-tpu.yaml               # Single-model TPU
-│   ├── llmisvc-gpu.yaml               # Single-model GPU (NEW)
-│   ├── httproute.yaml                 # HTTP routing
-│   └── networkpolicies/               # Security policies
-│       ├── allow-gateway.yaml
-│       ├── allow-vllm-egress.yaml
-│       └── default-deny.yaml
+├── baseline-pattern/manifests/        # Smoke testing manifests
+│   ├── llmisvc-tpu.yaml
+│   ├── llmisvc-gpu.yaml
+│   ├── httproute.yaml
+│   └── networkpolicies/
 │
-└── caching-pattern/manifests/
-    ├── llmisvc-tpu-caching.yaml      # Scale-out TPU
-    ├── llmisvc-gpu-caching.yaml      # Scale-out GPU (NEW)
+└── caching-pattern/manifests/         # Customer deployment manifests
+    ├── llmisvc-tpu-caching.yaml
+    ├── llmisvc-gpu-caching.yaml
     ├── envoyfilter-route-extproc-body.yaml
-    └── networkpolicies/               # Security policies
+    └── networkpolicies/
         ├── allow-epp-scheduler.yaml
         ├── allow-gateway-to-vllm.yaml
         ├── allow-vllm-egress.yaml
@@ -79,11 +72,11 @@ benchmarks/
 
 ## Total Files
 
-- **Documentation:** 14 customer guides (124K)
+- **Documentation:** 10 customer guides
 - **Scripts:** 6 automation scripts (120K)
 - **Manifests:** 13 Kubernetes YAML files
 - **Benchmarks:** Benchmarking tools and utilities
-- **Total:** 40+ files ready for customer use
+- **Total:** 35+ files ready for customer use
 
 ## Getting Started
 
@@ -95,12 +88,12 @@ benchmarks/
    ```
 
 2. **Choose your deployment:**
-   - TPU: `docs/customer-guides/quickstart-tpu.md`
-   - GPU: `docs/customer-guides/quickstart-gpu.md`
+   - TPU: `docs/customer-guides/deployment-tpu.md`
+   - GPU: `docs/customer-guides/deployment-gpu.md`
 
 3. **Run validation:**
    ```bash
-   ./scripts/preflight-check.sh --customer --deployment istio-kserve/baseline-pattern --accelerator tpu
+   ./scripts/preflight-check.sh --customer --deployment istio-kserve/caching-pattern --accelerator tpu
    ```
 
 ### For Developers
@@ -119,7 +112,7 @@ benchmarks/
    ./scripts/check-accelerator-availability.sh --customer --type tpu
 
    # Estimate costs
-   ./scripts/cost-estimator.sh --deployment single-model --accelerator tpu
+   ./scripts/cost-estimator.sh --deployment scale-out --accelerator tpu
    ```
 
 ## Repository Setup for Git
@@ -136,7 +129,7 @@ git add .
 # Create initial commit
 git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
-- Customer-facing deployment guides (14 files)
+- Customer-facing deployment guides (10 files)
 - Automation scripts with validation (6 files)
 - Production-ready Kubernetes manifests (TPU + GPU)
 - Benchmarking tools
@@ -160,7 +153,7 @@ git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
 1. Review documentation in `docs/customer-guides/`
 2. Test automation scripts with `--help` flag
-3. Follow a quickstart guide to validate deployment
+3. Follow a deployment guide to validate deployment
 4. Customize manifests for your use case
 5. Share repository with customers
 
