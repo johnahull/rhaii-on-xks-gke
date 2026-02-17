@@ -186,8 +186,8 @@ if [[ "$OPERATORS_ONLY" == "true" ]]; then
         echo -e "${GREEN}✅ All operator checks PASSED${NC}"
         echo ""
         echo "Next step: Deploy your workload"
-        echo "  docs/customer-guides/deployment-tpu.md"
-        echo "  docs/customer-guides/deployment-gpu.md"
+        echo "  docs/deployment-tpu.md"
+        echo "  docs/deployment-gpu.md"
     else
         echo -e "${RED}❌ Some operator checks FAILED${NC}"
         echo ""
@@ -196,7 +196,7 @@ if [[ "$OPERATORS_ONLY" == "true" ]]; then
         echo "     kubectl get pods -A"
         echo "  2. Review operator logs:"
         echo "     kubectl logs -n <namespace> <pod-name>"
-        echo "  3. See: docs/customer-guides/troubleshooting.md"
+        echo "  3. See: docs/troubleshooting.md"
     fi
     echo "========================================="
     exit $([ "$ALL_CHECKS_PASSED" == "true" ] && echo 0 || echo 1)
@@ -322,14 +322,14 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
     fi
     echo ""
     echo "Next steps:"
-    echo "  • Troubleshooting: docs/customer-guides/troubleshooting.md"
+    echo "  • Troubleshooting: docs/troubleshooting.md"
 else
     echo -e "${RED}❌ SOME CHECKS FAILED${NC}"
     echo ""
     echo "Troubleshooting steps:"
     echo "  1. Review failed checks above"
     echo "  2. Check pod logs: kubectl logs -n <namespace> <pod-name>"
-    echo "  3. See: docs/customer-guides/troubleshooting.md"
+    echo "  3. See: docs/troubleshooting.md"
     exit 1
 fi
 

@@ -38,8 +38,7 @@ All guides reference these automation scripts in `/scripts/`:
 - [GKE AI Labs](https://gke-ai-labs.dev) - Google Cloud AI on GKE resources
 
 ### Repository Documentation
-- [Technical Guides](../README.md) - Developer-focused documentation
-- [Main README](../../README.md) - Repository overview
+- [Main README](../README.md) - Repository overview
 
 ## 🆘 Getting Help
 

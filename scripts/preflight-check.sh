@@ -579,20 +579,20 @@ if [ "$CUSTOMER_MODE" = true ]; then
     echo ""
     echo "2. Install Operators via RHAII on XKS (~10 minutes)"
     echo "   Repository: https://github.com/opendatahub-io/rhaii-on-xks"
-    echo "   Guide: docs/customer-guides/operator-installation.md"
+    echo "   Guide: docs/operator-installation.md"
     echo ""
     echo "3. Deploy Your Workload (~10 minutes)"
 
     if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        echo "   Follow: docs/customer-guides/deployment-tpu.md"
+        echo "   Follow: docs/deployment-tpu.md"
     else
-        echo "   Follow: docs/customer-guides/deployment-gpu.md"
+        echo "   Follow: docs/deployment-gpu.md"
     fi
 
     echo ""
     echo "⏱️  Total Time: ~50 minutes for complete deployment"
     echo ""
-    echo "📚 For detailed guides, see: docs/customer-guides/"
+    echo "📚 For detailed guides, see: docs/"
 fi
 
 echo ""

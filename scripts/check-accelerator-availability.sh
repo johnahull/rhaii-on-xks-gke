@@ -726,8 +726,8 @@ if [[ "$CUSTOMER_MODE" == "true" ]]; then
     fi
 
     echo "📚 For detailed deployment guides:"
-    echo "   docs/customer-guides/deployment-tpu.md"
-    echo "   docs/customer-guides/deployment-gpu.md"
+    echo "   docs/deployment-tpu.md"
+    echo "   docs/deployment-gpu.md"
     echo ""
     echo "========================================="
 fi

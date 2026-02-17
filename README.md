@@ -6,8 +6,8 @@ Basic deployment guides for a simple scale-out cluster example for **Red Hat AI 
 
 Choose your accelerator and follow the deployment guide:
 
-- **[RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
-- **[RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
+- **[RHAII Deployment Guide (TPU)](docs/deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
+- **[RHAII Deployment Guide (GPU)](docs/deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
 
 Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
 
@@ -16,19 +16,19 @@ Both guides deploy a 3-replica vLLM inference service with prefix caching and in
 ## 📖 Documentation
 
 ### Getting Started
-- **[Prerequisites](docs/customer-guides/prerequisites.md)** - Everything you need before deploying
-- **[Environment Setup](docs/customer-guides/environment-setup.md)** - Optional: Configure environment variables to streamline commands
-- **[Operator Installation](docs/customer-guides/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
+- **[Prerequisites](docs/prerequisites.md)** - Everything you need before deploying
+- **[Environment Setup](docs/environment-setup.md)** - Optional: Configure environment variables to streamline commands
+- **[Operator Installation](docs/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
 ### Deployment Guides
-- [RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md) - Production TPU v6e deployment
-- [RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md) - Production GPU T4 deployment
+- [RHAII Deployment Guide (TPU)](docs/deployment-tpu.md) - Production TPU v6e deployment
+- [RHAII Deployment Guide (GPU)](docs/deployment-gpu.md) - Production GPU T4 deployment
 
 ### Operations
-- [Verification & Testing](docs/customer-guides/verification-testing.md) - Validate your deployment
-- [Troubleshooting](docs/customer-guides/troubleshooting.md) - Common issues and solutions
+- [Verification & Testing](docs/verification-testing.md) - Validate your deployment
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
 
-**Complete Index:** [Customer Guides Hub](docs/customer-guides/README.md)
+**Complete Index:** [Customer Guides Hub](docs/README.md)
 
 ---
 
@@ -66,7 +66,7 @@ All deployment guides use these automation scripts in `scripts/`:
 rhaii-on-xks-gke/
 ├── README.md                          # This file
 │
-├── docs/customer-guides/              # Customer-facing guides
+├── docs/              # Customer-facing guides
 │   ├── README.md                      # Complete guide index
 │   ├── deployment-tpu.md              # TPU deployment guide
 │   ├── deployment-gpu.md              # GPU deployment guide
@@ -106,7 +106,7 @@ Before deploying, ensure you have:
 - ✅ Red Hat registry credentials (pull secret)
 - ✅ HuggingFace token for model access
 
-**Detailed setup:** [Prerequisites Guide](docs/customer-guides/prerequisites.md)
+**Detailed setup:** [Prerequisites Guide](docs/prerequisites.md)
 
 ---
 
@@ -142,7 +142,7 @@ Before deploying, ensure you have:
 
 ## 🆘 Getting Help
 
-1. **Review [Troubleshooting](docs/customer-guides/troubleshooting.md)** - Solutions to common issues
+1. **Review [Troubleshooting](docs/troubleshooting.md)** - Solutions to common issues
 2. **Run verification:** `./scripts/verify-deployment.sh --operators-only`
 3. **Check logs:** `kubectl logs -l serving.kserve.io/inferenceservice`
 
@@ -168,5 +168,5 @@ This repository provides deployment configurations and documentation for Red Hat
 ---
 
 **Ready to deploy?** Start with:
-- [Deploy on TPU](docs/customer-guides/deployment-tpu.md) for maximum performance
-- [Deploy on GPU](docs/customer-guides/deployment-gpu.md) for wider zone availability
+- [Deploy on TPU](docs/deployment-tpu.md) for maximum performance
+- [Deploy on GPU](docs/deployment-gpu.md) for wider zone availability
