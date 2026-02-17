@@ -11,7 +11,6 @@ Everything you need before deploying RHAII on GKE.
   - Recommended: Create new project for RHAII deployments
   - Required permissions: Owner or Editor role
 - **Billing:** Enabled with valid payment method
-  - Estimate: $80-$400/day depending on deployment
 
 ### Red Hat Registry
 
@@ -304,24 +303,12 @@ cd ~/workspace/rhaii-on-xks-gke
 
 ---
 
-## Estimated Time and Costs
+## Estimated Setup Time
 
-### Setup Time
 - Account setup: 1-2 hours (one-time)
 - Tool installation: 15-30 minutes (one-time)
 - Quota requests: 24-48 hours wait (one-time)
 - Secret creation: 15 minutes (one-time)
-
-### Deployment Costs
-
-**TPU Deployment (3 replicas):**
-- Running: ~$377/day ($11,310/month)
-
-**GPU Deployment (3 replicas):**
-- Running: ~$228/day ($6,840/month)
-
-**Scaled to Zero:**
-- Both: ~$6/day ($180/month) - cluster overhead only
 
 ---
 

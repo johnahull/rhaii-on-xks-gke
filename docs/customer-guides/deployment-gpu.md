@@ -15,10 +15,6 @@ Deploy a production vLLM inference service on GPU T4 with prefix caching and int
 - ~18 req/s parallel requests
 - ~4.8 req/s serial requests
 
-**Cost:**
-- Running: ~$228/day ($6,840/month)
-- Scaled to zero: ~$6/day (cluster overhead only)
-
 **Time:** ~45 minutes total
 
 ---
@@ -34,7 +30,6 @@ Before starting, ensure you have:
 - [ ] Red Hat registry credentials in `redhat-pull-secret.yaml`
 - [ ] HuggingFace token for model access
 - [ ] **GPU T4 quota: 3 GPUs minimum**
-- [ ] **Budget approved: ~$228/day** ($6,840/month)
 
 **Need help?** See [Prerequisites Guide](prerequisites.md) for detailed setup instructions.
 
@@ -88,16 +83,6 @@ Fast response (~80ms vs ~250ms without cache)
 - Every token processed from scratch
 - Longer latencies for repeated patterns
 - Lower overall throughput
-
-### GPU vs TPU Comparison
-
-| Metric | GPU T4 Scale-Out | TPU v6e Scale-Out |
-|--------|------------------|-------------------|
-| **Throughput** | ~18 req/s | ~25 req/s |
-| **Cost** | $228/day | $377/day |
-| **Memory** | 13.12 GiB/GPU | 16 GiB/chip |
-| **Zone Availability** | 20+ zones | 5 zones |
-| **Best For** | Cost-conscious production | Maximum performance |
 
 ---
 
@@ -494,7 +479,6 @@ gcloud container clusters resize rhaii-gpu-scaleout-cluster \
 
 **Requirements:**
 - 5 replicas = 5 GPUs
-- Budget: ~$380/day
 
 **Scale down:**
 ```yaml
@@ -534,18 +518,14 @@ KServe performs rolling updates automatically, maintaining availability:
 
 ---
 
-## Cost Management
-
-### Scale to Zero When Not in Use
+## Scale to Zero
 
 ```bash
-# Scale node pool to zero (saves ~$222/day)
+# Scale node pool to zero
 gcloud container clusters resize rhaii-gpu-scaleout-cluster \
   --node-pool gpu-pool \
   --num-nodes 0 \
   --zone us-central1-a
-
-# Cost when scaled to zero: ~$6/day (cluster overhead)
 ```
 
 ### Scale Back Up
@@ -560,13 +540,6 @@ gcloud container clusters resize rhaii-gpu-scaleout-cluster \
 # Wait for nodes ready (~5 minutes)
 kubectl get nodes -w
 ```
-
-### Scheduled Scaling
-
-For automated cost savings, see [Cost Management Guide](cost-management.md) for:
-- GCP Cloud Scheduler integration
-- Business hours scaling
-- Budget alerts
 
 ---
 
@@ -729,14 +702,6 @@ Prepare for production:
 - Alerting rules for SLA violations
 - See [Monitoring Guide](monitoring.md)
 
-### Upgrade to TPU
-
-**For maximum performance:**
-- See [RHAII Deployment Guide (TPU)](deployment-tpu.md)
-- ~25 req/s throughput vs ~18 req/s GPU
-- Higher cost: $377/day vs $228/day
-- Limited zone availability
-
 ---
 
 ## Reference
@@ -745,8 +710,6 @@ Prepare for production:
 - `deployments/istio-kserve/caching-pattern/manifests/llmisvc-gpu-caching.yaml`
 - `deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml`
 - `deployments/istio-kserve/caching-pattern/manifests/networkpolicies/`
-
-**Cost:** ~$228/day ($6,840/month) running, ~$6/day scaled to zero
 
 **Performance:** ~18 req/s parallel, ~4.8 req/s serial, <300ms P50 latency
 

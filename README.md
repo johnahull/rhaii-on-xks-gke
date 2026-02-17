@@ -6,8 +6,8 @@ Production-ready deployment guides and automation for **Red Hat AI Inference Ser
 
 Choose your accelerator and follow the deployment guide:
 
-- **[RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md)** - Deploy on TPU v6e (~$377/day, ~25 req/s)
-- **[RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md)** - Deploy on GPU T4 (~$228/day, ~18 req/s)
+- **[RHAII Deployment Guide (TPU)](docs/customer-guides/deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
+- **[RHAII Deployment Guide (GPU)](docs/customer-guides/deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
 
 Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
 
@@ -27,7 +27,6 @@ Both guides deploy a 3-replica vLLM inference service with prefix caching and in
 ### Operations
 - [Verification & Testing](docs/customer-guides/verification-testing.md) - Validate your deployment
 - [Production Hardening](docs/customer-guides/production-hardening.md) - Security and reliability
-- [Cost Management](docs/customer-guides/cost-management.md) - Optimize and control costs
 - [Troubleshooting](docs/customer-guides/troubleshooting.md) - Common issues and solutions
 - [FAQ](docs/customer-guides/faq.md) - Frequently asked questions
 
@@ -46,9 +45,8 @@ All deployment guides use these automation scripts in `scripts/`:
 
 ### Deployment Scripts
 - `create-gke-cluster.sh` - Automated cluster creation with integrated validation
-- `delete-gke-cluster.sh` - Safe cluster deletion or scale-to-zero for cost savings
+- `delete-gke-cluster.sh` - Safe cluster deletion or scale-to-zero
 - `verify-deployment.sh` - Post-deployment health checks
-- `cost-estimator.sh` - Cost calculation and comparison
 
 **Example:**
 ```bash
@@ -61,33 +59,6 @@ All deployment guides use these automation scripts in `scripts/`:
 # Verify deployment
 ./scripts/verify-deployment.sh --deployment scale-out
 ```
-
----
-
-## 🎯 Deployment Decision Guide
-
-### When to use TPU vs GPU?
-
-| Factor | TPU v6e | GPU T4 | Winner |
-|--------|---------|--------|--------|
-| Performance | ~25 req/s | ~18 req/s | TPU |
-| Cost | ~$377/day | ~$228/day | GPU |
-| Zone availability | 5 zones | 20+ zones | GPU |
-
-**Recommendation:** Use GPU for lower cost, TPU for maximum throughput.
-
----
-
-## 💰 Cost Estimates
-
-### Monthly Costs (Running 24/7)
-
-| Accelerator | Running | Scaled to Zero |
-|-------------|---------|----------------|
-| TPU v6e | $11,310/mo | $180/mo |
-| GPU T4 | $6,840/mo | $180/mo |
-
-**💡 Cost Tip:** Scale node pools to zero when not in use. See [Cost Management](docs/customer-guides/cost-management.md).
 
 ---
 
@@ -105,7 +76,6 @@ rhaii-on-xks-gke/
 │   ├── operator-installation.md       # RHAII operator installation
 │   ├── verification-testing.md        # Validation procedures
 │   ├── production-hardening.md        # Production checklist
-│   ├── cost-management.md             # Cost optimization
 │   ├── troubleshooting.md             # Common issues
 │   └── faq.md                         # FAQ
 │
@@ -113,7 +83,6 @@ rhaii-on-xks-gke/
 │   ├── create-gke-cluster.sh          # Cluster creation
 │   ├── delete-gke-cluster.sh          # Cluster deletion / scale-to-zero
 │   ├── verify-deployment.sh           # Post-deployment validation
-│   ├── cost-estimator.sh              # Cost calculator
 │   ├── preflight-check.sh             # Prerequisite validation
 │   ├── check-accelerator-availability.sh  # Zone validation
 │   └── check-nodepool-prerequisites.sh    # Node pool validation
@@ -210,4 +179,4 @@ This repository provides deployment configurations and documentation for Red Hat
 
 **Ready to deploy?** Start with:
 - [Deploy on TPU](docs/customer-guides/deployment-tpu.md) for maximum performance
-- [Deploy on GPU](docs/customer-guides/deployment-gpu.md) for cost-effective deployment
+- [Deploy on GPU](docs/customer-guides/deployment-gpu.md) for wider zone availability

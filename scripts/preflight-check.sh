@@ -606,16 +606,8 @@ if [ "$CUSTOMER_MODE" = true ]; then
 
     if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
         echo "   Follow: docs/customer-guides/deployment-tpu.md"
-        echo ""
-        echo "💰 Estimated Costs:"
-        echo "   • Running (3 replicas): ~\$377/day (\$11,310/month)"
-        echo "   • Scaled to zero: ~\$6/day (cluster overhead)"
     else
         echo "   Follow: docs/customer-guides/deployment-gpu.md"
-        echo ""
-        echo "💰 Estimated Costs:"
-        echo "   • Running (3 replicas): ~\$228/day (\$6,840/month)"
-        echo "   • Scaled to zero: ~\$6/day (cluster overhead)"
     fi
 
     echo ""

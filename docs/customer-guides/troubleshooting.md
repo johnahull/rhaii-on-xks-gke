@@ -348,9 +348,9 @@ Review and update NetworkPolicy to allow required traffic.
 
 ---
 
-## Cost Issues
+## Resource Management
 
-### Unexpected High Costs
+### Unused Resources Still Running
 
 **Check running resources:**
 ```bash
@@ -374,7 +374,7 @@ gcloud container clusters resize CLUSTER_NAME \
   --zone ZONE
 ```
 
-See [Cost Management Guide](cost-management.md) for optimization strategies.
+See the deployment guides for scale-to-zero procedures.
 
 ---
 

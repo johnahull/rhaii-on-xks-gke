@@ -57,15 +57,6 @@ Examples:
   # Non-interactive with custom name
   $0 --gpu --cluster-name my-cluster --non-interactive
 
-Cost Estimates:
-  TPU (v6e):
-    • Single-model deployment: ~\$132/day (\$3,960/month)
-    • High-throughput scale-out: ~\$377/day (\$11,310/month)
-
-  GPU (T4):
-    • Single-model deployment: ~\$80/day (\$2,400/month)
-    • High-throughput scale-out: ~\$228/day (\$6,840/month)
-
 ========================================
 EOF
 }
@@ -152,17 +143,6 @@ echo ""
 
 # Interactive confirmation if not in non-interactive mode
 if [[ "$INTERACTIVE" == "true" ]]; then
-    # Show cost estimate
-    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        echo "💰 Estimated Costs (TPU v6e):"
-        echo "   • Single-model: ~\$132/day (\$3,960/month)"
-        echo "   • Scale-out: ~\$377/day (\$11,310/month)"
-    else
-        echo "💰 Estimated Costs (GPU T4):"
-        echo "   • Single-model: ~\$80/day (\$2,400/month)"
-        echo "   • Scale-out: ~\$228/day (\$6,840/month)"
-    fi
-    echo ""
     echo "⏱️  Total Creation Time: ~20 minutes"
     echo ""
 
@@ -422,14 +402,6 @@ if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
     echo "   Follow: docs/customer-guides/deployment-tpu.md"
 else
     echo "   Follow: docs/customer-guides/deployment-gpu.md"
-fi
-echo ""
-echo "💰 Cost Management:"
-echo "   Scale down when not in use:"
-if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-    echo "   gcloud container clusters resize $CLUSTER_NAME --node-pool tpu-pool --num-nodes 0 --zone $ZONE"
-else
-    echo "   gcloud container clusters resize $CLUSTER_NAME --node-pool gpu-pool --num-nodes 0 --zone $ZONE"
 fi
 echo ""
 echo "📚 Documentation: docs/customer-guides/"

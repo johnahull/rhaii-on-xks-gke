@@ -338,7 +338,6 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
     echo ""
     echo "Next steps:"
     echo "  • Production hardening: docs/customer-guides/production-hardening.md"
-    echo "  • Cost management: docs/customer-guides/cost-management.md"
 else
     echo -e "${RED}❌ SOME CHECKS FAILED${NC}"
     echo ""

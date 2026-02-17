@@ -721,18 +721,10 @@ if [ "$CUSTOMER_MODE" = true ] && [ "$ALL_CHECKS_PASSED" = true ]; then
         echo "   • Cluster creation: ~5 minutes"
         echo "   • TPU node pool: ~10-15 minutes"
         echo "   • Total: ~20 minutes"
-        echo ""
-        echo "💰 Estimated costs (europe-west4-a TPU v6e):"
-        echo "   • Single node (4 chips): ~\$132/day"
-        echo "   • 3-node scale-out (12 chips): ~\$377/day"
     else
         echo "   • Cluster creation: ~5 minutes"
         echo "   • GPU node pool: ~5-10 minutes"
         echo "   • Total: ~15 minutes"
-        echo ""
-        echo "💰 Estimated costs (us-central1-a T4 GPU):"
-        echo "   • Single node (1 GPU): ~\$80/day"
-        echo "   • 3-node scale-out (3 GPUs): ~\$228/day"
     fi
 
     echo ""

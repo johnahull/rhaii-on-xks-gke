@@ -12,40 +12,15 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 ### Deployment
 Deploy a 3-replica vLLM inference service with prefix caching and intelligent routing:
 
-- **[RHAII Deployment Guide (TPU)](deployment-tpu.md)** - Deploy on TPU v6e (~$377/day, ~25 req/s)
-- **[RHAII Deployment Guide (GPU)](deployment-gpu.md)** - Deploy on GPU T4 (~$228/day, ~18 req/s)
+- **[RHAII Deployment Guide (TPU)](deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
+- **[RHAII Deployment Guide (GPU)](deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
 
 ## 🛠️ Operations
 
 - **[Verification & Testing](verification-testing.md)** - Validate your deployment
 - **[Production Hardening](production-hardening.md)** - Security and reliability best practices
-- **[Cost Management](cost-management.md)** - Optimize and control costs
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
 - **[FAQ](faq.md)** - Frequently asked questions
-
-## 🎯 Deployment Decision Guide
-
-### When to use TPU vs GPU?
-
-**Choose TPU if:**
-- You need maximum performance (~25 req/s)
-- You have production workloads with consistent traffic
-- Budget allows ~$377/day
-
-**Choose GPU if:**
-- You need lower costs (~$228/day)
-- You need wider zone availability (T4 available in 20+ zones vs 5 for TPU)
-- You want faster quota approval
-
-## 💰 Cost Comparison
-
-| Accelerator | Running Cost | Performance | Zone Availability |
-|-------------|-------------|-------------|-------------------|
-| TPU v6e     | ~$377/day   | ~25 req/s   | 5 zones           |
-| GPU T4      | ~$228/day   | ~18 req/s   | 20+ zones         |
-| **Scaled to 0** | ~$6/day | 0 req/s (cluster overhead only) | — |
-
-> **Cost Tip:** Scale node pools to 0 when not in use to minimize costs. See [Cost Management](cost-management.md).
 
 ## 🔧 Automation Scripts
 
@@ -53,7 +28,6 @@ All guides reference these automation scripts in `/scripts/`:
 
 - `create-gke-cluster.sh` - Automated cluster creation with validation
 - `verify-deployment.sh` - Post-deployment health checks
-- `cost-estimator.sh` - Cost calculation and comparison
 - `preflight-check.sh` - Comprehensive prerequisite validation
 - `check-accelerator-availability.sh` - Zone and accelerator validation
 - `check-nodepool-prerequisites.sh` - Node pool compatibility validation
@@ -88,4 +62,4 @@ Found an issue or have suggestions? Please:
 
 **Ready to get started?** Jump to:
 - [Deploy on TPU](deployment-tpu.md) for maximum performance
-- [Deploy on GPU](deployment-gpu.md) for cost-effective deployment
+- [Deploy on GPU](deployment-gpu.md) for wider zone availability

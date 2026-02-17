@@ -14,7 +14,6 @@ docs/customer-guides/
 ├── operator-installation.md           # RHAII operator installation
 ├── verification-testing.md            # Validation procedures
 ├── production-hardening.md            # Production checklist
-├── cost-management.md                 # Cost optimization
 ├── troubleshooting.md                 # Common issues
 └── faq.md                             # FAQ
 ```

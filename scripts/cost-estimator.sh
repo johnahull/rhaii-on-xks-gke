@@ -280,7 +280,7 @@ elif [[ -n "$DEPLOYMENT_TYPE" && -n "$ACCELERATOR_TYPE" ]]; then
     echo ""
     echo "4. Monitor with: kubectl top nodes"
     echo ""
-    echo "See: docs/customer-guides/cost-management.md"
+    echo "See: docs/customer-guides/"
     echo ""
     echo "========================================="
 else

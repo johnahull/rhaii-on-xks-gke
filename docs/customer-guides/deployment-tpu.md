@@ -15,10 +15,6 @@ Deploy a production vLLM inference service on TPU v6e with prefix caching and in
 - ~25 req/s parallel requests
 - ~6.3 req/s serial requests
 
-**Cost:**
-- Running: ~$377/day ($11,310/month)
-- Scaled to zero: ~$6/day (cluster overhead only)
-
 **Time:** ~50 minutes total
 
 ---
@@ -34,7 +30,6 @@ Before starting, ensure you have:
 - [ ] Red Hat registry credentials in `redhat-pull-secret.yaml`
 - [ ] HuggingFace token for model access
 - [ ] **TPU v6e quota: 12 chips minimum** (3 nodes × 4 chips)
-- [ ] **Budget approved: ~$377/day** ($11,310/month)
 
 **Need help?** See [Prerequisites Guide](prerequisites.md) for detailed setup instructions.
 
@@ -479,7 +474,6 @@ gcloud container clusters resize rhaii-tpu-scaleout-cluster \
 
 **Requirements:**
 - 5 replicas = 20 TPU chips (5 nodes × 4 chips)
-- Budget: ~$628/day
 
 **Scale down:**
 ```yaml
@@ -519,18 +513,14 @@ KServe performs rolling updates automatically, maintaining availability:
 
 ---
 
-## Cost Management
-
-### Scale to Zero When Not in Use
+## Scale to Zero
 
 ```bash
-# Scale node pool to zero (saves ~$371/day)
+# Scale node pool to zero
 gcloud container clusters resize rhaii-tpu-scaleout-cluster \
   --node-pool tpu-pool \
   --num-nodes 0 \
   --zone europe-west4-a
-
-# Cost when scaled to zero: ~$6/day (cluster overhead)
 ```
 
 ### Scale Back Up
@@ -545,13 +535,6 @@ gcloud container clusters resize rhaii-tpu-scaleout-cluster \
 # Wait for nodes ready (~10 minutes)
 kubectl get nodes -w
 ```
-
-### Scheduled Scaling
-
-For automated cost savings, see [Cost Management Guide](cost-management.md) for:
-- GCP Cloud Scheduler integration
-- Business hours scaling
-- Budget alerts
 
 ---
 
@@ -698,8 +681,6 @@ Prepare for production:
 - `deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml`
 - `deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml`
 - `deployments/istio-kserve/caching-pattern/manifests/networkpolicies/`
-
-**Cost:** ~$377/day ($11,310/month) running, ~$6/day scaled to zero
 
 **Performance:** ~25 req/s parallel, ~6.3 req/s serial, <200ms P50 latency
 

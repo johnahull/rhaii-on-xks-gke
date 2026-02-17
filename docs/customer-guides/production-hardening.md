@@ -249,12 +249,6 @@ gcloud container images describe IMAGEREG/IMAGE:TAG --show-package-vulnerability
 - [ ] Change management process defined
 - [ ] Maintenance windows scheduled
 
-**Cost:**
-- [ ] Budget alerts configured
-- [ ] Resource utilization monitored
-- [ ] Scaling policies defined
-- [ ] Cost optimization reviewed
-
 ## Testing Production Configuration
 
 **Validate before going live:**
@@ -267,6 +261,5 @@ gcloud container images describe IMAGEREG/IMAGE:TAG --show-package-vulnerability
 
 ## Next Steps
 
-- [Cost Management](cost-management.md) - Optimize costs
 - [Troubleshooting](troubleshooting.md) - Common issues
 - [Verification Testing](verification-testing.md) - Validation procedures
