@@ -179,7 +179,7 @@ kubectl apply -f huggingface-token-secret.yaml
 
 **Verify secrets were created:**
 ```bash
-kubectl get secrets rhaiis-pull-secret huggingface-token
+kubectl get secrets
 ```
 
 **Success criteria:**
