@@ -64,32 +64,34 @@ All deployment guides use these automation scripts in `scripts/`:
 
 ```
 rhaii-on-xks-gke/
-├── README.md                          # This file
+├── README.md                              # This file
 │
-├── docs/              # Customer-facing guides
-│   ├── README.md                      # Complete guide index
-│   ├── deployment-tpu.md              # TPU deployment guide
-│   ├── deployment-gpu.md              # GPU deployment guide
-│   ├── prerequisites.md               # Setup requirements
-│   ├── environment-setup.md           # Environment variable configuration
-│   ├── operator-installation.md       # RHAII operator installation
-│   ├── verification-testing.md        # Validation procedures
-│   └── troubleshooting.md             # Common issues
+├── docs/                                  # Guides
+│   ├── README.md                          # Guide index
+│   ├── deployment-tpu.md                  # TPU deployment guide
+│   ├── deployment-gpu.md                  # GPU deployment guide
+│   ├── prerequisites.md                   # Setup requirements
+│   ├── environment-setup.md               # Environment variable configuration
+│   ├── operator-installation.md           # RHAII operator installation
+│   ├── verification-testing.md            # Validation procedures
+│   └── troubleshooting.md                 # Common issues
 │
-├── scripts/                           # Automation scripts
-│   ├── create-gke-cluster.sh          # Cluster creation
-│   ├── delete-gke-cluster.sh          # Cluster deletion / scale-to-zero
-│   ├── verify-deployment.sh           # Post-deployment validation
-│   ├── preflight-check.sh             # Prerequisite validation
+├── scripts/                               # Automation scripts
+│   ├── create-gke-cluster.sh              # Cluster creation
+│   ├── delete-gke-cluster.sh              # Cluster deletion / scale-to-zero
+│   ├── verify-deployment.sh               # Post-deployment validation
+│   ├── test-cache-routing.sh              # Cache routing and throughput test
+│   ├── preflight-check.sh                 # Prerequisite validation
 │   ├── check-accelerator-availability.sh  # Zone validation
 │   └── check-nodepool-prerequisites.sh    # Node pool validation
 │
-├── deployments/                       # Kubernetes manifests
+├── deployments/                           # Kubernetes manifests
 │   └── istio-kserve/
-│       └── caching-pattern/          # Customer deployment manifests
+│       └── caching-pattern/
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml
+│               ├── envoyfilter-route-extproc-body.yaml
 │               └── networkpolicies/
 ```
 
