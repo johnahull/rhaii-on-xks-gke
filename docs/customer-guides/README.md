@@ -18,7 +18,6 @@ Deploy a 3-replica vLLM inference service with prefix caching and intelligent ro
 ## 🛠️ Operations
 
 - **[Verification & Testing](verification-testing.md)** - Validate your deployment
-- **[Production Hardening](production-hardening.md)** - Security and reliability best practices
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
 - **[FAQ](faq.md)** - Frequently asked questions
 

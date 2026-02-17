@@ -26,7 +26,6 @@ Both guides deploy a 3-replica vLLM inference service with prefix caching and in
 
 ### Operations
 - [Verification & Testing](docs/customer-guides/verification-testing.md) - Validate your deployment
-- [Production Hardening](docs/customer-guides/production-hardening.md) - Security and reliability
 - [Troubleshooting](docs/customer-guides/troubleshooting.md) - Common issues and solutions
 - [FAQ](docs/customer-guides/faq.md) - Frequently asked questions
 
@@ -75,7 +74,6 @@ rhaii-on-xks-gke/
 │   ├── prerequisites.md               # Setup requirements
 │   ├── operator-installation.md       # RHAII operator installation
 │   ├── verification-testing.md        # Validation procedures
-│   ├── production-hardening.md        # Production checklist
 │   ├── troubleshooting.md             # Common issues
 │   └── faq.md                         # FAQ
 │

@@ -647,16 +647,6 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 
 ## Next Steps
 
-### Production Hardening
-
-Prepare for production:
-
-**[Production Hardening Guide](production-hardening.md)**
-- mTLS STRICT mode
-- Resource limits and HPA
-- Monitoring and alerting
-- SLO/SLA configuration
-
 ### Advanced Features
 
 **Multi-Model Serving:**

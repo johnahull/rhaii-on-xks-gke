@@ -333,7 +333,7 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
     fi
     echo ""
     echo "Next steps:"
-    echo "  • Production hardening: docs/customer-guides/production-hardening.md"
+    echo "  • Troubleshooting: docs/customer-guides/troubleshooting.md"
 else
     echo -e "${RED}❌ SOME CHECKS FAILED${NC}"
     echo ""

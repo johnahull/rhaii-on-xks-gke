@@ -4,7 +4,7 @@ This repository contains everything needed to deploy RHAII on GKE.
 
 ## What's Included
 
-### Documentation (10 files)
+### Documentation (9 files)
 ```
 docs/customer-guides/
 ├── README.md                          # Navigation index
@@ -13,7 +13,6 @@ docs/customer-guides/
 ├── prerequisites.md                   # Setup requirements
 ├── operator-installation.md           # RHAII operator installation
 ├── verification-testing.md            # Validation procedures
-├── production-hardening.md            # Production checklist
 ├── troubleshooting.md                 # Common issues
 └── faq.md                             # FAQ
 ```
@@ -64,7 +63,7 @@ benchmarks/
 
 ## Total Files
 
-- **Documentation:** 10 customer guides
+- **Documentation:** 9 customer guides
 - **Scripts:** 5 automation scripts
 - **Manifests:** 13 Kubernetes YAML files
 - **Benchmarks:** Benchmarking tools and utilities
@@ -119,7 +118,7 @@ git add .
 # Create initial commit
 git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
-- Customer-facing deployment guides (10 files)
+- Customer-facing deployment guides (9 files)
 - Automation scripts with validation (5 files)
 - Production-ready Kubernetes manifests (TPU + GPU)
 - Benchmarking tools"

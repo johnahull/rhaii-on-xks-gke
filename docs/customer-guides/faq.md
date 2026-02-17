@@ -141,23 +141,7 @@ Breakdown:
 
 ### Can I use this in production?
 
-**Yes**, with production hardening:
-
-**Required steps:**
-1. Enable mTLS STRICT mode
-2. Apply NetworkPolicies
-3. Configure resource limits and HPA
-4. Set up monitoring (Prometheus/Grafana)
-5. Configure backup/restore procedures
-6. Implement disaster recovery plan
-
-See [Production Hardening Guide](production-hardening.md) for checklist.
-
-**Security considerations:**
-- mTLS for pod-to-pod communication
-- NetworkPolicy for traffic isolation
-- RBAC for access control
-- Secret management for credentials
+**Yes.** The deployment guides include NetworkPolicies for traffic isolation, and the Istio service mesh provides mTLS for pod-to-pod communication. Additional hardening (resource limits, HPA, monitoring) should be configured based on your organization's requirements.
 
 ---
 
