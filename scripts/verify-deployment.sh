@@ -205,7 +205,7 @@ else
     kubectl get llminferenceservice -n "$NAMESPACE"
 
     # Check READY status
-    READY_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[?(@.status.conditions[?(@.type=="Ready")].status=="True")].metadata.name}' | wc -w)
+    READY_COUNT=$(kubectl get llminferenceservice -n "$NAMESPACE" -o json | jq '[.items[] | select(.status.conditions[]? | select(.type=="Ready" and .status=="True"))] | length' 2>/dev/null || echo 0)
     if [[ "$READY_COUNT" -eq "$LLMISVC_COUNT" ]]; then
         echo -e "${GREEN}✅ All LLMInferenceServices are READY${NC}"
     else
