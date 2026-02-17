@@ -227,25 +227,28 @@ else
     # Test health endpoint
     echo ""
     echo "Health Endpoint:"
-    # Find the first LLMInferenceService name
+    # Find the first LLMInferenceService name and build path prefix
     LLMISVC_NAME=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
     if [[ -n "$LLMISVC_NAME" ]]; then
-        HEALTH_URL="http://$GATEWAY_IP/v1/health"
-        test_http_endpoint "$HEALTH_URL" "200" "health endpoint"
+        BASE_URL="http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME"
+
+        test_http_endpoint "$BASE_URL/health" "200" "health endpoint"
 
         # Test inference endpoint
         echo ""
         echo "Inference Endpoint:"
-        INFERENCE_URL="http://$GATEWAY_IP/v1/models"
-        test_http_endpoint "$INFERENCE_URL" "200" "models endpoint"
+        test_http_endpoint "$BASE_URL/v1/models" "200" "models endpoint"
+
+        # Get the model name as reported by vLLM
+        MODEL_NAME=$(curl -s "$BASE_URL/v1/models" 2>/dev/null | jq -r '.data[0].id' 2>/dev/null || echo "/mnt/models")
 
         # Perform actual inference test
         echo ""
         echo "Test Inference Request:"
         echo -n "  Sending completion request... "
-        INFERENCE_RESPONSE=$(curl -s -X POST "http://$GATEWAY_IP/v1/completions" \
+        INFERENCE_RESPONSE=$(curl -s -X POST "$BASE_URL/v1/completions" \
             -H "Content-Type: application/json" \
-            -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Hello", "max_tokens": 10}' \
+            -d "{\"model\": \"$MODEL_NAME\", \"prompt\": \"Hello\", \"max_tokens\": 10}" \
             2>/dev/null || echo "")
 
         if echo "$INFERENCE_RESPONSE" | grep -q "choices"; then
@@ -264,7 +267,7 @@ echo ""
 echo "Scale-Out Checks:"
 
 # Check replica count
-REPLICA_COUNT=$(kubectl get pods -n "$NAMESPACE" -l serving.kserve.io/inferenceservice --no-headers 2>/dev/null | wc -l)
+REPLICA_COUNT=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=llminferenceservice-workload --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
 if [[ "$REPLICA_COUNT" -eq 3 ]]; then
     echo -e "${GREEN}✅ 3 replicas running${NC}"
 else
@@ -295,13 +298,13 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
     echo ""
     echo "Your deployment is ready for use."
     echo ""
-    if [[ -n "$GATEWAY_IP" ]]; then
-        echo "Inference endpoint: http://$GATEWAY_IP/v1/completions"
+    if [[ -n "$GATEWAY_IP" && -n "$LLMISVC_NAME" ]]; then
+        echo "Inference endpoint: http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME/v1/completions"
         echo ""
         echo "Test with:"
-        echo "curl -X POST http://$GATEWAY_IP/v1/completions \\"
+        echo "curl -X POST http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME/v1/completions \\"
         echo "  -H 'Content-Type: application/json' \\"
-        echo "  -d '{\"model\": \"Qwen/Qwen2.5-3B-Instruct\", \"prompt\": \"Hello\", \"max_tokens\": 50}'"
+        echo "  -d '{\"model\": \"${MODEL_NAME:-/mnt/models}\", \"prompt\": \"Hello\", \"max_tokens\": 50}'"
     fi
     echo ""
     echo "Next steps:"
