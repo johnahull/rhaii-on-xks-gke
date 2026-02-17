@@ -70,7 +70,7 @@ kubectl get pods -w
 gcloud container clusters resize rhaii-cluster \
   --node-pool tpu-pool \
   --num-nodes 3 \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # Wait for nodes to be ready (~10 minutes)
 kubectl get nodes -w
@@ -174,7 +174,7 @@ KServe performs rolling update automatically, maintaining availability.
 gcloud container clusters resize rhaii-cluster \
   --node-pool tpu-pool \
   --num-nodes 0 \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # Savings: $371/day (from $377 to $6 cluster overhead)
 ```

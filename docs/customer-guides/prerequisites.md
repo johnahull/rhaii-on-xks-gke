@@ -215,11 +215,11 @@ stringData:
 ### TPU Zones
 
 **Recommended zones for TPU v6e:**
-1. `us-central1-b` (Central US) ⭐ Best availability
+1. `europe-west4-a` (Netherlands) ⭐ Most reliable
 2. `us-south1-a` (Dallas)
-3. `us-south1-b` (Dallas)
-4. `us-east5-a` (Columbus)
-5. `us-east5-b` (Columbus)
+3. `us-east5-a` (Columbus)
+4. `europe-west4-a` (Central US)
+5. `us-south1-b` (Dallas)
 
 **Check availability:**
 ```bash
@@ -229,8 +229,8 @@ stringData:
 ### GPU Zones
 
 **Recommended zones for T4 GPUs:**
-1. `us-central1-a` (Central US) ⭐ Currently used
-2. `us-central1-b/c/f` (Central US)
+1. `europe-west4-a/b` (Netherlands) ⭐ Primary
+2. `us-central1-a/b/c/f` (Central US)
 3. `us-east1-b/c/d` (South Carolina)
 4. `us-east4-a/b/c` (Virginia)
 5. `us-west1-a/b` (Oregon)
@@ -291,7 +291,7 @@ cd ~/workspace/rhaii-on-xks-gke
 ./scripts/preflight-check.sh \
   --deployment istio-kserve/baseline-pattern \
   --accelerator tpu \
-  --zone us-central1-b \
+  --zone europe-west4-a \
   --customer
 
 # For GPU deployment

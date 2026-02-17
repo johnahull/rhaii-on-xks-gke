@@ -39,13 +39,13 @@ Optional:
 
 Examples:
   # Check TPU v6e node pool prerequisites
-  $0 --zone us-central1-b --machine-type ct6e-standard-4t --tpu-topology 2x2x1
+  $0 --zone europe-west4-a --machine-type ct6e-standard-4t --tpu-topology 2x2x1
 
   # Check GPU node pool prerequisites
   $0 --zone us-central1-a --machine-type n1-standard-4 --accelerator nvidia-tesla-t4
 
   # Check with existing cluster
-  $0 --zone us-central1-b --machine-type ct6e-standard-4t --cluster my-cluster
+  $0 --zone europe-west4-a --machine-type ct6e-standard-4t --cluster my-cluster
 
 ========================================
 EOF
@@ -722,7 +722,7 @@ if [ "$CUSTOMER_MODE" = true ] && [ "$ALL_CHECKS_PASSED" = true ]; then
         echo "   • TPU node pool: ~10-15 minutes"
         echo "   • Total: ~20 minutes"
         echo ""
-        echo "💰 Estimated costs (us-central1-b TPU v6e):"
+        echo "💰 Estimated costs (europe-west4-a TPU v6e):"
         echo "   • Single node (4 chips): ~\$132/day"
         echo "   • 3-node scale-out (12 chips): ~\$377/day"
     else

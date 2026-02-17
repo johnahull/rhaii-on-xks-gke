@@ -36,13 +36,13 @@ Options:
 
 Examples:
   # Delete cluster with confirmation
-  $0 --cluster-name rhaii-cluster --zone us-central1-b
+  $0 --cluster-name rhaii-cluster --zone europe-west4-a
 
   # Scale to zero (cheaper than deletion if you'll use it again soon)
-  $0 --cluster-name rhaii-cluster --zone us-central1-b --scale-to-zero
+  $0 --cluster-name rhaii-cluster --zone europe-west4-a --scale-to-zero
 
   # Delete without confirmation (use with caution!)
-  $0 --cluster-name rhaii-cluster --zone us-central1-b --force
+  $0 --cluster-name rhaii-cluster --zone europe-west4-a --force
 
 Cost Comparison:
   Running cluster (TPU):     ~\$132/day

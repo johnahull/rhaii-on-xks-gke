@@ -147,8 +147,8 @@ export PROJECT_ID="ecoeng-llmd"
 **Default fallback:** Script-specific (usually `us-central1-a` for GPU, varies by script)
 
 **Recommended values:**
-- **TPU v6e:** `us-central1-b` (primary), `us-south1-a`, `us-east5-a`
-- **GPU T4:** `us-central1-a` (primary), or any `us-*` zone
+- **TPU v6e:** `europe-west4-a` (primary - most reliable), `us-south1-a`, `us-east5-a`, `us-central1-b`
+- **GPU T4:** `europe-west4-a` (primary), `us-central1-a`, or any `europe-*`/`us-*` zone
 
 **Check availability:**
 ```bash

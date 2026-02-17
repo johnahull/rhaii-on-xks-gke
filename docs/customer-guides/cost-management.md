@@ -6,7 +6,7 @@ Strategies to optimize and control RHAII deployment costs on GKE.
 
 ### Single-Model Deployment
 
-**TPU v6e (us-central1-b):**
+**TPU v6e (europe-west4-a):**
 - Running: ~$132/day ($3,960/month)
 - Scaled to zero: ~$6/day ($180/month)
 
@@ -67,12 +67,12 @@ Use the cost estimator script for detailed breakdowns:
 # Scale to zero with confirmation
 ./scripts/delete-gke-cluster.sh \
   --cluster-name rhaii-cluster \
-  --zone us-central1-b \
+  --zone europe-west4-a \
   --scale-to-zero
 
 # Or using environment variables
 export CLUSTER_NAME=rhaii-cluster
-export ZONE=us-central1-b
+export ZONE=europe-west4-a
 ./scripts/delete-gke-cluster.sh --scale-to-zero
 ```
 
@@ -83,7 +83,7 @@ export ZONE=us-central1-b
 gcloud container clusters resize rhaii-cluster \
   --node-pool tpu-pool \
   --num-nodes 0 \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # GPU deployment
 gcloud container clusters resize rhaii-cluster \
@@ -102,7 +102,7 @@ gcloud container clusters resize rhaii-cluster \
 gcloud container clusters resize rhaii-cluster \
   --node-pool tpu-pool \
   --num-nodes 1 \
-  --zone us-central1-b
+  --zone europe-west4-a
 ```
 
 **Startup time:** 5-10 minutes
@@ -119,11 +119,11 @@ gcloud container clusters resize rhaii-cluster \
 # Delete with safety confirmation
 ./scripts/delete-gke-cluster.sh \
   --cluster-name rhaii-cluster \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # Or using environment variables
 export CLUSTER_NAME=rhaii-cluster
-export ZONE=us-central1-b
+export ZONE=europe-west4-a
 ./scripts/delete-gke-cluster.sh
 
 # Force delete without confirmation (use with caution)
@@ -135,7 +135,7 @@ export ZONE=us-central1-b
 ```bash
 # Delete entire cluster
 gcloud container clusters delete rhaii-cluster \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # Saves: 100% of costs
 # Startup time when recreated: ~30-40 minutes
@@ -162,13 +162,13 @@ gcloud container clusters delete rhaii-cluster \
 **Cron job to scale down at 6 PM:**
 ```bash
 0 18 * * * gcloud container clusters resize rhaii-cluster \
-  --node-pool tpu-pool --num-nodes 0 --zone us-central1-b --quiet
+  --node-pool tpu-pool --num-nodes 0 --zone europe-west4-a --quiet
 ```
 
 **Scale up at 8 AM:**
 ```bash
 0 8 * * 1-5 gcloud container clusters resize rhaii-cluster \
-  --node-pool tpu-pool --num-nodes 1 --zone us-central1-b --quiet
+  --node-pool tpu-pool --num-nodes 1 --zone europe-west4-a --quiet
 ```
 
 **Savings:** ~12 hours/day × $5.50/hour = ~$66/day
@@ -182,11 +182,11 @@ gcloud container clusters delete rhaii-cluster \
 ```bash
 # Friday 6 PM - scale to zero
 0 18 * * 5 gcloud container clusters resize rhaii-cluster \
-  --node-pool tpu-pool --num-nodes 0 --zone us-central1-b --quiet
+  --node-pool tpu-pool --num-nodes 0 --zone europe-west4-a --quiet
 
 # Monday 8 AM - scale back up
 0 8 * * 1 gcloud container clusters resize rhaii-cluster \
-  --node-pool tpu-pool --num-nodes 1 --zone us-central1-b --quiet
+  --node-pool tpu-pool --num-nodes 1 --zone europe-west4-a --quiet
 ```
 
 **Savings:** ~2.5 days/week × $132/day = ~$330/week = ~$1,320/month
@@ -336,7 +336,7 @@ kubectl top pods -l serving.kserve.io/inferenceservice
 # Check node pool size
 gcloud container node-pools describe tpu-pool \
   --cluster rhaii-cluster \
-  --zone us-central1-b \
+  --zone europe-west4-a \
   --format="value(initialNodeCount)"
 ```
 
@@ -419,7 +419,7 @@ gcloud container node-pools describe tpu-pool \
 ```bash
 gcloud container clusters update rhaii-cluster \
   --update-labels=environment=production,team=ml-ops \
-  --zone us-central1-b
+  --zone europe-west4-a
 ```
 
 ---

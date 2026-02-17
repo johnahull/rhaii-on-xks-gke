@@ -59,7 +59,7 @@ source env.sh
 After setup, you can run commands without flags:
 ```bash
 ./scripts/preflight-check.sh --deployment istio-kserve/baseline-pattern --accelerator tpu
-# Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone us-central1-b
+# Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone europe-west4-a
 ```
 
 **See:** [Environment Setup Guide](environment-setup.md) for complete instructions.
@@ -78,7 +78,7 @@ cd /path/to/rhaii-on-xks-gke
 ./scripts/preflight-check.sh \
   --deployment istio-kserve/baseline-pattern \
   --accelerator tpu \
-  --zone us-central1-b \
+  --zone europe-west4-a \
   --customer
 ```
 
@@ -103,7 +103,7 @@ Create a production-ready GKE cluster with TPU v6e node pool:
 # Or specify options explicitly
 ./scripts/create-gke-cluster.sh --tpu \
   --project YOUR_PROJECT \
-  --zone us-central1-b \
+  --zone europe-west4-a \
   --cluster-name rhaii-tpu-cluster
 ```
 
@@ -292,13 +292,13 @@ Reduce costs when not in use:
 gcloud container clusters resize rhaii-tpu-cluster \
   --node-pool tpu-pool \
   --num-nodes 0 \
-  --zone us-central1-b
+  --zone europe-west4-a
 
 # Scale back up
 gcloud container clusters resize rhaii-tpu-cluster \
   --node-pool tpu-pool \
   --num-nodes 1 \
-  --zone us-central1-b
+  --zone europe-west4-a
 ```
 
 **Cost savings:**
@@ -344,7 +344,7 @@ rhaii-on-xks-gke/
 └── docs/customer-guides/
 ```
 
-**Estimated Costs (us-central1-b):**
+**Estimated Costs (europe-west4-a):**
 - Single-model TPU: ~$132/day, $3,960/month
 - Control plane: ~$6/day (when scaled to zero)
 

@@ -266,7 +266,7 @@ source env.sh
 **Example:**
 ```bash
 export PROJECT_ID="ecoeng-llmd"
-export ZONE="us-central1-b"
+export ZONE="europe-west4-a"
 
 # Simplified commands
 ./scripts/create-gke-cluster.sh --tpu

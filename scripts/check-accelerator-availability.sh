@@ -649,13 +649,13 @@ echo "========================================="
 echo ""
 
 if [[ "$TYPE_FILTER" == "all" || "$TYPE_FILTER" == "tpu" ]]; then
-    if filter_by_region "us-central1-b" || filter_by_region "us-south1-a" || [[ -z "$REGION_FILTER" ]]; then
+    if filter_by_region "europe-west4-a" || filter_by_region "us-south1-a" || filter_by_region "us-central1-b" || [[ -z "$REGION_FILTER" ]]; then
         echo "TPU v6e (Trillium) - Best Performance:"
-        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-central1 ]] && echo "  1. us-central1-b    (Central US)"
+        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ europe-west4 ]] && echo "  1. europe-west4-a   (Netherlands) ⭐ Most Reliable"
         [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-south1 ]] && echo "  2. us-south1-a      (Dallas)"
-        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-south1 ]] && echo "  3. us-south1-b      (Dallas)"
-        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-east5 ]] && echo "  4. us-east5-a       (Columbus)"
-        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-east5 ]] && echo "  5. us-east5-b       (Columbus)"
+        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-east5 ]] && echo "  3. us-east5-a       (Columbus)"
+        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-central1 ]] && echo "  4. us-central1-b    (Central US)"
+        [[ -z "$REGION_FILTER" || "$REGION_FILTER" =~ us-south1 ]] && echo "  5. us-south1-b      (Dallas)"
         echo ""
     fi
 
@@ -706,27 +706,27 @@ if [[ "$CUSTOMER_MODE" == "true" ]]; then
     if [[ "$TYPE_FILTER" == "tpu" || "$TYPE_FILTER" == "all" ]]; then
         echo "✅ For TPU deployments:"
         echo ""
-        echo "   Best choice: us-central1-b (TPU v6e)"
-        echo "   • Highest performance (Trillium)"
+        echo "   Best choice: europe-west4-a (TPU v6e)"
+        echo "   • Most reliable zone (Trillium)"
         echo "   • Single-model: ~\$132/day"
         echo "   • Scale-out (3 replicas): ~\$377/day"
         echo ""
         echo "   Next step:"
-        echo "   ./scripts/create-gke-cluster.sh --tpu --zone us-central1-b"
+        echo "   ./scripts/create-gke-cluster.sh --tpu --zone europe-west4-a"
         echo ""
     fi
 
     if [[ "$TYPE_FILTER" == "gpu" || "$TYPE_FILTER" == "all" ]]; then
         echo "✅ For GPU deployments:"
         echo ""
-        echo "   Best choice: us-central1-a (T4 GPU)"
+        echo "   Best choice: europe-west4-a (T4 GPU)"
         echo "   • Lower cost than TPU"
         echo "   • Single-model: ~\$80/day"
         echo "   • Scale-out (3 replicas): ~\$228/day"
         echo "   • Good for PoC and development"
         echo ""
         echo "   Next step:"
-        echo "   ./scripts/create-gke-cluster.sh --gpu --zone us-central1-a"
+        echo "   ./scripts/create-gke-cluster.sh --gpu --zone europe-west4-a"
         echo ""
     fi
 

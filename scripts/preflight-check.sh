@@ -48,7 +48,7 @@ Examples:
   # Check Istio/KServe Pattern 1 TPU deployment
   $0 --deployment istio-kserve/baseline-pattern \\
     --accelerator tpu \\
-    --zone us-central1-b
+    --zone europe-west4-a
 
   # Check with detailed output
   $0 --deployment gateway-api/caching-pattern --detailed
