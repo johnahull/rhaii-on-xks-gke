@@ -1,4 +1,4 @@
-# RHAII on GKE - Customer Deployment Repository
+# RHAII Deployment on GKE
 
 Production-ready deployment guides and automation for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
 
