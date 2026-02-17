@@ -14,8 +14,7 @@ docs/customer-guides/
 ├── environment-setup.md               # Environment variable configuration
 ├── operator-installation.md           # RHAII operator installation
 ├── verification-testing.md            # Validation procedures
-├── troubleshooting.md                 # Common issues
-└── faq.md                             # FAQ
+└── troubleshooting.md                 # Common issues
 ```
 
 ### Automation Scripts (6 files)
@@ -151,5 +150,4 @@ git commit -m "Initial commit: RHAII on GKE customer deployment repository
 
 - **Documentation:** `docs/customer-guides/`
 - **Troubleshooting:** `docs/customer-guides/troubleshooting.md`
-- **FAQ:** `docs/customer-guides/faq.md`
 - **Scripts Help:** `./scripts/<script-name>.sh --help`

@@ -510,7 +510,7 @@ kubectl describe pod <pod-name>
 ```
 
 **Check documentation:**
-- [FAQ](faq.md) - Common questions
+- [RHAII on XKS Issues](https://github.com/opendatahub-io/rhaii-on-xks/issues)
 - [RHAII on XKS Issues](https://github.com/opendatahub-io/rhaii-on-xks/issues)
 - [KServe Documentation](https://kserve.github.io/website/)
 - [Istio Documentation](https://istio.io/latest/docs/)

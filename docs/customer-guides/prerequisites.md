@@ -318,4 +318,4 @@ After completing prerequisites:
 2. **TPU Deployment:** Follow [RHAII Deployment Guide (TPU)](deployment-tpu.md)
 3. **GPU Deployment:** Follow [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 
-**Questions?** See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)
+**Questions?** See [Troubleshooting](troubleshooting.md)

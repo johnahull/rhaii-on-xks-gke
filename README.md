@@ -27,7 +27,6 @@ Both guides deploy a 3-replica vLLM inference service with prefix caching and in
 ### Operations
 - [Verification & Testing](docs/customer-guides/verification-testing.md) - Validate your deployment
 - [Troubleshooting](docs/customer-guides/troubleshooting.md) - Common issues and solutions
-- [FAQ](docs/customer-guides/faq.md) - Frequently asked questions
 
 **Complete Index:** [Customer Guides Hub](docs/customer-guides/README.md)
 
@@ -75,8 +74,7 @@ rhaii-on-xks-gke/
 │   ├── environment-setup.md           # Environment variable configuration
 │   ├── operator-installation.md       # RHAII operator installation
 │   ├── verification-testing.md        # Validation procedures
-│   ├── troubleshooting.md             # Common issues
-│   └── faq.md                         # FAQ
+│   └── troubleshooting.md             # Common issues
 │
 ├── scripts/                           # Automation scripts
 │   ├── create-gke-cluster.sh          # Cluster creation
@@ -148,10 +146,9 @@ Before deploying, ensure you have:
 
 ## 🆘 Getting Help
 
-1. **Check the [FAQ](docs/customer-guides/faq.md)** - Common questions answered
-2. **Review [Troubleshooting](docs/customer-guides/troubleshooting.md)** - Solutions to common issues
-3. **Run verification:** `./scripts/verify-deployment.sh --operators-only`
-4. **Check logs:** `kubectl logs -l serving.kserve.io/inferenceservice`
+1. **Review [Troubleshooting](docs/customer-guides/troubleshooting.md)** - Solutions to common issues
+2. **Run verification:** `./scripts/verify-deployment.sh --operators-only`
+3. **Check logs:** `kubectl logs -l serving.kserve.io/inferenceservice`
 
 ---
 

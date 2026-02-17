@@ -119,4 +119,4 @@ After successful operator installation:
 
 **Support:**
 - RHAII on XKS issues: https://github.com/opendatahub-io/rhaii-on-xks/issues
-- General questions: See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)
+- General questions: See [Troubleshooting](troubleshooting.md)

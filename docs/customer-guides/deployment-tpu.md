@@ -702,4 +702,4 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 
 ---
 
-**Need help?** Check [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)
+**Need help?** Check [Troubleshooting](troubleshooting.md)

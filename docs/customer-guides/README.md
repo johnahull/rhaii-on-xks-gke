@@ -19,7 +19,6 @@ Deploy a 3-replica vLLM inference service with prefix caching and intelligent ro
 
 - **[Verification & Testing](verification-testing.md)** - Validate your deployment
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-- **[FAQ](faq.md)** - Frequently asked questions
 
 ## 🔧 Automation Scripts
 
@@ -45,8 +44,7 @@ All guides reference these automation scripts in `/scripts/`:
 
 ## 🆘 Getting Help
 
-1. **Check the [FAQ](faq.md)** - Common questions and answers
-2. **Review [Troubleshooting](troubleshooting.md)** - Solutions to common issues
+1. **Review [Troubleshooting](troubleshooting.md)** - Solutions to common issues
 3. **Check operator logs:** `kubectl logs -n <namespace> <pod-name>`
 4. **Verify deployment:** `./scripts/verify-deployment.sh --operators-only`
 

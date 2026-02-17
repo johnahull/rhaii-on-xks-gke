@@ -421,4 +421,3 @@ After setting up your environment:
 - [RHAII Deployment Guide (TPU)](deployment-tpu.md)
 - [RHAII Deployment Guide (GPU)](deployment-gpu.md)
 - [Troubleshooting Guide](troubleshooting.md)
-- [FAQ](faq.md)
