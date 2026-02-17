@@ -129,13 +129,9 @@ if [[ -z "$ZONE" ]]; then
     ZONE="europe-west4-a"
 fi
 
-# Set default node count: 3 for TPU (matches 3-replica deployment), 1 for GPU (autoscales)
+# Set default node count: 3 for both TPU and GPU (matches 3-replica deployment)
 if [[ -z "$NUM_NODES" ]]; then
-    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-        NUM_NODES=3
-    else
-        NUM_NODES=1
-    fi
+    NUM_NODES=3
 fi
 
 # Get project ID from gcloud if not specified

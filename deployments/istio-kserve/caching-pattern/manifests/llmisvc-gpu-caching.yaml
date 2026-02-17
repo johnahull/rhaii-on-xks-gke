@@ -1,7 +1,7 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: LLMInferenceService
 metadata:
-  name: gemma-2b-gpu-svc
+  name: qwen-3b-gpu-svc
   namespace: rhaii-inference
 spec:
   model:

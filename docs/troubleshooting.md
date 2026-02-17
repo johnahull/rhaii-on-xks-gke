@@ -119,13 +119,13 @@ inference-gateway   Programmed=False
 **Symptom:**
 ```
 NAME              READY   URL
-gemma-2b-tpu-svc  False
+qwen-3b-tpu-svc  False
 ```
 
 **Diagnosis:**
 ```bash
 # Check LLMInferenceService status
-kubectl describe llminferenceservice gemma-2b-tpu-svc
+kubectl describe llminferenceservice qwen-3b-tpu-svc
 
 # Check pods
 kubectl get pods -l serving.kserve.io/inferenceservice
