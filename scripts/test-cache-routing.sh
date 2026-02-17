@@ -108,7 +108,23 @@ if [[ -z "$GATEWAY_IP" ]]; then
     echo -e "${GREEN}$GATEWAY_IP${NC}"
 fi
 
-BASE_URL="http://$GATEWAY_IP"
+# Auto-detect LLMInferenceService name and build path prefix
+NAMESPACE="${NAMESPACE:-rhaii-inference}"
+LLMISVC_NAME=$(kubectl get llminferenceservice -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+if [[ -z "$LLMISVC_NAME" ]]; then
+    echo -e "${RED}No LLMInferenceService found in namespace: $NAMESPACE${NC}"
+    exit 1
+fi
+BASE_URL="http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME"
+
+# Auto-detect model name from vLLM if not overridden
+if [[ "$MODEL" == "Qwen/Qwen2.5-3B-Instruct" ]]; then
+    DETECTED_MODEL=$(curl -s "$BASE_URL/v1/models" 2>/dev/null | jq -r '.data[0].id' 2>/dev/null || echo "")
+    if [[ -n "$DETECTED_MODEL" ]]; then
+        MODEL="$DETECTED_MODEL"
+    fi
+fi
+
 ALL_PASSED=true
 
 echo ""
@@ -131,8 +147,8 @@ echo "========================================="
 echo ""
 
 # Health endpoint
-echo -n "  /v1/health ... "
-HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/v1/health" 2>/dev/null || echo "000")
+echo -n "  /health ... "
+HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/health" 2>/dev/null || echo "000")
 if [[ "$HEALTH_CODE" == "200" ]]; then
     echo -e "${GREEN}OK (200)${NC}"
 else
@@ -247,7 +263,8 @@ for i in $(seq 1 "$CONCURRENT"); do
             -d "{\"model\": \"$MODEL\", \"prompt\": \"$PROMPT $i\", \"max_tokens\": $MAX_TOKENS}" 2>/dev/null)
         TIME=$(echo "$RESP" | tail -1)
         echo "$TIME" > "$TMPDIR/$i.time"
-        CODE=$(echo "$RESP" | sed '$d' | grep -c "choices" || echo "0")
+        CODE=$(echo "$RESP" | sed '$d' | grep -c "choices" 2>/dev/null || true)
+        CODE=${CODE:-0}
         echo "$CODE" > "$TMPDIR/$i.ok"
     ) &
 done
