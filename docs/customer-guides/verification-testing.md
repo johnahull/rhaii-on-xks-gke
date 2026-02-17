@@ -84,12 +84,13 @@ time curl -X POST http://$GATEWAY_IP/v1/completions \
 ### Throughput Test
 
 ```bash
-# Run benchmark
-python3 benchmarks/python/benchmark_vllm.py \
-  --endpoint http://$GATEWAY_IP/v1/completions \
-  --model google/gemma-2b-it \
-  --concurrent 5 \
-  --duration 30
+# Quick throughput test with concurrent requests
+for i in {1..10}; do
+  curl -s -w "%{time_total}\n" -o /dev/null -X POST http://$GATEWAY_IP/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 50}' &
+done
+wait
 ```
 
 **Expected results:**

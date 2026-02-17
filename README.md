@@ -91,10 +91,6 @@ rhaii-on-xks-gke/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml
 │               └── networkpolicies/
-│
-└── benchmarks/                        # Performance testing
-    ├── python/
-    └── config/
 ```
 
 ---

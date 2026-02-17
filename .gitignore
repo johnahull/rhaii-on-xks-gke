@@ -42,12 +42,6 @@ wheels/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Benchmark results
-benchmarks/results/*.json
-benchmarks/results/*.html
-benchmarks/results/*.csv
-!benchmarks/results/.gitkeep
-
 # Logs
 *.log
 logs/

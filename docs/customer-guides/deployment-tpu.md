@@ -414,28 +414,11 @@ done
 - First request: ~200ms (cache miss, XLA compilation)
 - Subsequent requests: <100ms (cache hit on same replica)
 
-### Load Testing
-
-```bash
-# Run benchmark with concurrent requests
-cd /path/to/rhaii-on-xks-gke
-python3 benchmarks/python/benchmark_vllm.py \
-  --endpoint http://$GATEWAY_IP/v1/completions \
-  --model google/gemma-2b-it \
-  --concurrent 10 \
-  --duration 60
-```
-
-**Expected results:**
+**Expected performance:**
 - Throughput: ~25 req/s (parallel)
 - P50 latency: <200ms
 - P99 latency: <500ms
 - Cache hit rate: >70% (for workloads with shared prefixes)
-
-**Success criteria:**
-- ✅ Throughput >20 req/s
-- ✅ Cache routing working (consistent low latency for same prefix)
-- ✅ No errors or failures during benchmark
 
 ---
 

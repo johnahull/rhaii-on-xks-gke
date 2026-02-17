@@ -39,7 +39,6 @@ All guides reference these automation scripts in `/scripts/`:
 
 ### Repository Documentation
 - [Technical Guides](../README.md) - Developer-focused documentation
-- [Benchmarking Guide](../benchmarking.md) - Performance testing procedures
 - [Main README](../../README.md) - Repository overview
 
 ## 🆘 Getting Help
