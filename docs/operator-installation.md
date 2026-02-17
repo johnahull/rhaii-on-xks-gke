@@ -67,7 +67,7 @@ cert-manager:
 
 Istio (Service Mesh):
   Checking istiod pods... ✅ 1/1 running
-  Checking istio-ingressgateway pods... ✅ 1/1 running
+  Checking inference-gateway pods... ✅ 1/1 running
 
 KServe:
   Checking kserve-controller pods... ✅ 1/1 running
@@ -96,8 +96,8 @@ For troubleshooting operator installation issues, refer to:
 ```bash
 kubectl logs -n cert-manager deployment/cert-manager
 kubectl logs -n istio-system deployment/istiod
-kubectl logs -n kserve deployment/kserve-controller-manager
-kubectl logs -n lws-system deployment/lws-controller-manager
+kubectl logs -n opendatahub deployment/kserve-controller-manager
+kubectl logs -n openshift-lws-operator deployment/openshift-lws-operator
 ```
 
 ---

@@ -94,13 +94,13 @@ done
 # Auto-detect Gateway IP if not provided
 if [[ -z "$GATEWAY_IP" ]]; then
     echo -n "Detecting Gateway IP... "
-    GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+    GATEWAY_IP=$(kubectl get gateway "${GATEWAY_NAME:-inference-gateway}" -n "${GATEWAY_NAMESPACE:-opendatahub}" -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || echo "")
     if [[ -z "$GATEWAY_IP" ]]; then
         echo -e "${RED}FAILED${NC}"
         echo ""
         echo "Could not detect Gateway IP. Either:"
-        echo "  1. Ensure istio-ingressgateway has an external IP:"
-        echo "     kubectl get svc istio-ingressgateway -n istio-system"
+        echo "  1. Ensure inference-gateway has an external IP:"
+        echo "     kubectl get gateway inference-gateway -n opendatahub"
         echo "  2. Provide the IP directly:"
         echo "     $0 --endpoint <IP>"
         exit 1

@@ -188,11 +188,10 @@ RHAII uses dedicated namespaces to isolate components:
 | Namespace | Purpose | Managed By |
 |-----------|---------|------------|
 | `rhaii-inference` | Your vLLM workloads, secrets, and NetworkPolicies | You (this guide) |
-| `istio-system` | Istio service mesh and ingress gateway | RHAII operators |
-| `kserve` | KServe inference controller | RHAII operators |
+| `istio-system` | Istio service mesh (istiod) | RHAII operators |
+| `opendatahub` | KServe controller, inference gateway, EnvoyFilter | RHAII operators |
 | `cert-manager` | TLS certificate management | RHAII operators |
-| `lws-system` | LeaderWorkerSet controller | RHAII operators |
-| `opendatahub` | Gateway and EnvoyFilter configuration | RHAII operators |
+| `openshift-lws-operator` | LeaderWorkerSet controller | RHAII operators |
 
 You only interact with the `rhaii-inference` namespace. Operator namespaces are managed automatically.
 
@@ -369,7 +368,7 @@ Verify the deployment is working:
 
 # Manual testing
 # Get Gateway IP
-export GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
 
 # Test health endpoint
 curl http://$GATEWAY_IP/v1/health

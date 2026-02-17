@@ -34,6 +34,10 @@ Options:
   --timeout <seconds>     Timeout for checks (default: 300)
   --help, -h              Show this help message
 
+Environment Variables:
+  GATEWAY_NAMESPACE    Gateway namespace (default: opendatahub)
+  GATEWAY_NAME         Gateway name (default: inference-gateway)
+
 Examples:
   # Verify operators are running
   $0 --operators-only
@@ -109,31 +113,6 @@ check_pod_status() {
         kubectl get pods -n "$namespace" -l "$label" | grep -v Running || true
         return 1
     fi
-}
-
-wait_for_external_ip() {
-    local service=$1
-    local namespace=$2
-    local timeout=$3
-
-    echo -n "  Waiting for external IP on $service... "
-
-    local elapsed=0
-    while [[ $elapsed -lt $timeout ]]; do
-        EXTERNAL_IP=$(kubectl get svc "$service" -n "$namespace" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-        if [[ -n "$EXTERNAL_IP" ]]; then
-            echo -e "${GREEN}✅ $EXTERNAL_IP${NC}"
-            echo "$EXTERNAL_IP"
-            return 0
-        fi
-        sleep 5
-        elapsed=$((elapsed + 5))
-        echo -n "."
-    done
-
-    echo -e "${RED}❌ Timeout${NC}"
-    ALL_CHECKS_PASSED=false
-    return 1
 }
 
 test_http_endpoint() {
@@ -264,7 +243,7 @@ else
         echo ""
         echo "Test Inference Request:"
         echo -n "  Sending completion request... "
-        INFERENCE_RESPONSE=$(curl -s -X POST "$HEALTH_URL/../v1/completions" \
+        INFERENCE_RESPONSE=$(curl -s -X POST "http://$GATEWAY_IP/v1/completions" \
             -H "Content-Type: application/json" \
             -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 10}' \
             2>/dev/null || echo "")

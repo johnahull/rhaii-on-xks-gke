@@ -98,14 +98,14 @@ make deploy-all
 
 **Symptom:**
 ```
-istio-ingressgateway   LoadBalancer   <pending>
+inference-gateway   Programmed=False
 ```
 
 **Solution:**
 1. Wait 2-3 minutes for GCP load balancer provisioning
-2. Check service events:
+2. Check gateway status:
    ```bash
-   kubectl describe svc istio-ingressgateway -n istio-system
+   kubectl describe gateway inference-gateway -n opendatahub
    ```
 3. Verify GCP quotas for load balancers
 4. Check firewall rules allow port 80/443
@@ -203,14 +203,14 @@ curl: (7) Failed to connect
 **Diagnosis:**
 ```bash
 # Verify Gateway IP
-kubectl get svc istio-ingressgateway -n istio-system
+kubectl get gateway inference-gateway -n opendatahub
 
 # Check HTTPRoute
 kubectl get httproute
 
 # Test from within cluster
 kubectl run test --image=curlimages/curl --rm -it -- \
-  curl http://istio-ingressgateway.istio-system/v1/health
+  curl http://inference-gateway-istio.opendatahub/v1/health
 ```
 
 **Solutions:**
@@ -496,7 +496,7 @@ See [Environment Setup Guide](environment-setup.md) for complete troubleshooting
 # Operator logs
 kubectl logs -n cert-manager deployment/cert-manager
 kubectl logs -n istio-system deployment/istiod
-kubectl logs -n kserve deployment/kserve-controller-manager
+kubectl logs -n opendatahub deployment/kserve-controller-manager
 
 # Application logs
 kubectl logs -l serving.kserve.io/inferenceservice --tail=100

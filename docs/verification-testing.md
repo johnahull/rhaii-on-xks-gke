@@ -25,15 +25,17 @@ kubectl get pods -n cert-manager
 
 # Istio
 kubectl get pods -n istio-system
-# Expected: istiod and istio-ingressgateway Running
+# Expected: istiod Running
+kubectl get pods -n opendatahub -l gateway.networking.k8s.io/gateway-name=inference-gateway
+# Expected: inference-gateway pod Running
 
 # KServe
-kubectl get pods -n kserve
+kubectl get pods -n opendatahub -l control-plane=kserve-controller-manager
 # Expected: kserve-controller-manager Running
 
 # LWS
-kubectl get pods -n lws-system
-# Expected: lws-controller-manager Running
+kubectl get pods -n openshift-lws-operator
+# Expected: openshift-lws-operator Running
 ```
 
 ### Deployment Verification
@@ -48,14 +50,14 @@ kubectl get pods -l serving.kserve.io/inferenceservice
 # Expected: All Running
 
 # Gateway IP assigned
-kubectl get svc istio-ingressgateway -n istio-system
-# Expected: EXTERNAL-IP present
+kubectl get gateway inference-gateway -n opendatahub
+# Expected: Programmed=True, address assigned
 ```
 
 ### Endpoint Testing
 
 ```bash
-export GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
 
 # Health endpoint
 curl http://$GATEWAY_IP/v1/health
