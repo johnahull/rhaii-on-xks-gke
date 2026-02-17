@@ -40,7 +40,7 @@ Optional:
   --project <project>     GCP project ID (default: from gcloud config)
   --zone <zone>           Zone for cluster (default: europe-west4-a for TPU, us-central1-a for GPU)
   --cluster-name <name>   Cluster name (default: rhaii-cluster)
-  --num-nodes <n>         Accelerator pool node count (default: 3 for TPU, 1 for GPU)
+  --num-nodes <n>         Accelerator pool node count (default: 3)
   --dry-run               Run validation only, don't create cluster
   --skip-validation       Skip pre-flight validation checks (not recommended)
   --non-interactive       Disable interactive prompts

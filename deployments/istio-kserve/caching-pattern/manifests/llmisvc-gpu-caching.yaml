@@ -32,6 +32,8 @@ spec:
       image: registry.redhat.io/rhaiis/vllm-cuda-rhel9:3.0.0
 
       # vLLM command with prefix caching enabled
+      # KServe mounts TLS certs at /var/run/kserve/tls; vLLM serves HTTPS
+      # Istio mTLS encrypts sidecar-to-sidecar; KServe TLS encrypts sidecar-to-app
       args:
       - |
         python3 -m vllm.entrypoints.openai.api_server \
@@ -39,7 +41,9 @@ spec:
           --dtype=half \
           --max-model-len=4096 \
           --enable-prefix-caching \
-          --disable-log-requests
+          --disable-log-requests \
+          --ssl-certfile=/var/run/kserve/tls/tls.crt \
+          --ssl-keyfile=/var/run/kserve/tls/tls.key
 
       # Environment variables
       env:
@@ -56,12 +60,13 @@ spec:
         requests:
           nvidia.com/gpu: "1"
 
-      # Health probes
+      # Health probes (HTTPS - vLLM serves TLS with KServe-issued certs)
+      # kubelet bypasses Istio sidecar but connects directly to vLLM's HTTPS port
       livenessProbe:
         httpGet:
           path: /health
           port: 8000
-          scheme: HTTP
+          scheme: HTTPS
         initialDelaySeconds: 180  # GPU init + model download
         periodSeconds: 30
         timeoutSeconds: 30
@@ -71,7 +76,7 @@ spec:
         httpGet:
           path: /v1/models
           port: 8000
-          scheme: HTTP
+          scheme: HTTPS
         initialDelaySeconds: 180
         periodSeconds: 10
         timeoutSeconds: 10

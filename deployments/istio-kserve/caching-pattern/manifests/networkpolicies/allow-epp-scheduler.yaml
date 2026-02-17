@@ -46,7 +46,7 @@ spec:
           kserve.io/component: workload
     ports:
     - protocol: TCP
-      port: 8000  # vLLM HTTPS (metrics endpoint /metrics)
+      port: 8000  # vLLM HTTPS serving port
 
   # Allow DNS resolution
   - to:

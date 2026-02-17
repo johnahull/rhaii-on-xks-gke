@@ -54,7 +54,7 @@ This deployment provides high-throughput inference with intelligent request rout
 **Security Isolation:**
 - NetworkPolicies restrict traffic between components
 - mTLS encryption for all service-to-service communication
-- HTTP vLLM endpoints (Istio provides mTLS encryption)
+- HTTPS with KServe-issued TLS certificates for vLLM endpoints
 
 ### Request Flow
 
