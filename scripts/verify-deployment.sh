@@ -11,6 +11,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Gateway configuration (matches setup-gateway.sh defaults)
+GATEWAY_NAMESPACE="${GATEWAY_NAMESPACE:-opendatahub}"
+GATEWAY_NAME="${GATEWAY_NAME:-inference-gateway}"
+
 # Validation flags
 ALL_CHECKS_PASSED=true
 
@@ -167,17 +171,17 @@ echo ""
 # Istio
 echo "Istio (Service Mesh):"
 check_pod_status "istio-system" "app=istiod" "istiod"
-check_pod_status "istio-system" "app=istio-ingressgateway" "istio-ingressgateway"
+check_pod_status "$GATEWAY_NAMESPACE" "gateway.networking.k8s.io/gateway-name=$GATEWAY_NAME" "inference-gateway"
 echo ""
 
 # KServe
 echo "KServe:"
-check_pod_status "kserve" "control-plane=kserve-controller-manager" "kserve-controller"
+check_pod_status "$GATEWAY_NAMESPACE" "control-plane=kserve-controller-manager" "kserve-controller"
 echo ""
 
 # LWS (LeaderWorkerSet)
 echo "LWS (LeaderWorkerSet):"
-check_pod_status "lws-system" "control-plane=controller-manager" "lws-controller"
+check_pod_status "openshift-lws-operator" "name=openshift-lws-operator" "lws-controller"
 echo ""
 
 if [[ "$OPERATORS_ONLY" == "true" ]]; then
@@ -233,8 +237,8 @@ fi
 echo ""
 
 # Check Gateway
-echo "Istio Gateway:"
-GATEWAY_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+echo "Inference Gateway:"
+GATEWAY_IP=$(kubectl get gateway "$GATEWAY_NAME" -n "$GATEWAY_NAMESPACE" -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || echo "")
 if [[ -z "$GATEWAY_IP" ]]; then
     echo -e "${RED}❌ No external IP assigned to Gateway${NC}"
     ALL_CHECKS_PASSED=false
