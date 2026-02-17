@@ -199,15 +199,13 @@ if [[ "$SKIP_VALIDATION" == "false" ]]; then
     echo "✓ Checking node pool prerequisites..."
     if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
         MACHINE_TYPE="ct6e-standard-4t"
-        TPU_TOPOLOGY="2x2x1"
         if ! ./scripts/check-nodepool-prerequisites.sh \
             --zone "$ZONE" \
             --machine-type "$MACHINE_TYPE" \
-            --tpu-topology "$TPU_TOPOLOGY" \
             --customer > /dev/null 2>&1; then
             echo -e "${RED}❌ Node pool prerequisites check failed${NC}"
             echo "Run this command for details:"
-            echo "  ./scripts/check-nodepool-prerequisites.sh --zone $ZONE --machine-type $MACHINE_TYPE --tpu-topology $TPU_TOPOLOGY --customer"
+            echo "  ./scripts/check-nodepool-prerequisites.sh --zone $ZONE --machine-type $MACHINE_TYPE --customer"
             exit 1
         fi
     else
@@ -303,14 +301,13 @@ if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
     echo "Creating TPU v6e node pool..."
     echo "This will take ~10-15 minutes..."
     echo ""
-    echo "Note: TPU topology 2x2x1 requires exactly 1 node (no autoscaling)"
+    echo "Note: TPU machine type ct6e-standard-4t auto-configures topology (no autoscaling)"
     echo ""
 
     NODE_POOL_OUTPUT=$(gcloud container node-pools create tpu-pool \
         --cluster "$CLUSTER_NAME" \
         --zone "$ZONE" \
         --machine-type ct6e-standard-4t \
-        --tpu-topology 2x2x1 \
         --num-nodes 1 \
         --project "$PROJECT_ID" 2>&1)
     NODE_POOL_EXIT=$?
