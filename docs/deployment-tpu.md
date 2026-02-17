@@ -196,7 +196,37 @@ You only interact with the `rhaii-inference` namespace. Operator namespaces are 
 
 ---
 
-## Step 3: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
+## Step 3: Create Namespace and Secrets (2 minutes)
+
+Create the workload namespace and deploy secrets.
+
+**Don't have the secret files yet?** See [Prerequisites — Required Secrets](prerequisites.md#required-secrets) for how to create them.
+
+```bash
+# Create workload namespace
+kubectl create namespace rhaii-inference
+
+# Set as default namespace for kubectl
+kubectl config set-context --current --namespace=rhaii-inference
+
+# Apply Red Hat registry pull secret
+kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
+
+# Apply HuggingFace token secret
+kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
+
+# Verify secrets created
+kubectl get secret rhaiis-pull-secret
+kubectl get secret huggingface-token
+```
+
+**Success criteria:**
+- ✅ Both secrets exist in `rhaii-inference` namespace
+- ✅ No errors during kubectl apply
+
+---
+
+## Step 4: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
 
 **Follow the installation instructions in the official repository:**
 
@@ -223,34 +253,6 @@ cd /path/to/rhaii-on-xks-gke
 **Time:** ~10 minutes
 
 **Troubleshooting:** See [Operator Installation Guide](operator-installation.md)
-
----
-
-## Step 4: Create Namespace and Secrets (2 minutes)
-
-Create the workload namespace and deploy secrets:
-
-```bash
-# Create workload namespace
-kubectl create namespace rhaii-inference
-
-# Set as default namespace for kubectl
-kubectl config set-context --current --namespace=rhaii-inference
-
-# Apply Red Hat registry pull secret
-kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
-
-# Apply HuggingFace token secret
-kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
-
-# Verify secrets created
-kubectl get secret rhaiis-pull-secret
-kubectl get secret huggingface-token
-```
-
-**Success criteria:**
-- ✅ Both secrets exist in `rhaii-inference` namespace
-- ✅ No errors during kubectl apply
 
 ---
 
@@ -393,32 +395,26 @@ kubectl get pods -l serving.kserve.io/inferenceservice
 
 ## Step 8: Performance Validation (5 minutes)
 
-Validate cache-aware routing and throughput:
-
-### Test Cache Routing
+Validate health endpoints, cache-aware routing, and throughput:
 
 ```bash
-# Send 10 requests with identical prefix
-for i in {1..10}; do
-  curl -s -w "\nTime: %{time_total}s\n" -X POST http://$GATEWAY_IP/v1/completions \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "google/gemma-2b-it",
-      "prompt": "Translate to French: Hello world",
-      "max_tokens": 10
-    }' | jq -r '.choices[0].text'
-done
+# Run the cache routing test (auto-detects Gateway IP)
+./scripts/test-cache-routing.sh
+
+# Or with custom options
+./scripts/test-cache-routing.sh --requests 20 --concurrent 10
 ```
 
-**Expected behavior:**
+The script tests three things:
+1. **Health checks** — verifies `/v1/health`, `/v1/models`, and `/v1/completions` endpoints
+2. **Cache routing** — sends repeated requests with identical prefix, measures latency improvement
+3. **Throughput** — fires parallel requests and reports req/s and latency percentiles
+
+**Expected behavior (TPU):**
 - First request: ~200ms (cache miss, XLA compilation)
 - Subsequent requests: <100ms (cache hit on same replica)
-
-**Expected performance:**
 - Throughput: ~25 req/s (parallel)
 - P50 latency: <200ms
-- P99 latency: <500ms
-- Cache hit rate: >70% (for workloads with shared prefixes)
 
 ---
 
