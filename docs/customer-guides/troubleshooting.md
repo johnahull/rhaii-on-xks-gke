@@ -139,10 +139,10 @@ kubectl logs -l serving.kserve.io/inferenceservice -f
 1. **Image pull errors:**
    ```bash
    # Verify pull secret in correct namespace
-   kubectl get secret rhaiis-pull-secret
+   kubectl get secret rhaiis-pull-secret -n rhaii-inference
 
    # Reapply if missing
-   kubectl apply -f redhat-pull-secret.yaml
+   kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
    ```
 
 2. **Model download failures:**

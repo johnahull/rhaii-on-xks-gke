@@ -266,6 +266,13 @@ gcloud container clusters get-credentials "$CLUSTER_NAME" \
 echo -e "${GREEN}✅ kubectl configured${NC}"
 echo ""
 
+# Create workload namespace and set as default context
+echo "Creating workload namespace..."
+kubectl create namespace rhaii-inference --dry-run=client -o yaml | kubectl apply -f -
+kubectl config set-context --current --namespace=rhaii-inference
+echo -e "${GREEN}✅ Namespace rhaii-inference created and set as default${NC}"
+echo ""
+
 # ============================================================================
 # Step 3: Create Accelerator Node Pool
 # ============================================================================

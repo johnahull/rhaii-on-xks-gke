@@ -179,6 +179,23 @@ kubectl get nodes -l cloud.google.com/gke-tpu-accelerator=tpu-v6e-slice
 
 ---
 
+## Namespace Architecture
+
+RHAII uses dedicated namespaces to isolate components:
+
+| Namespace | Purpose | Managed By |
+|-----------|---------|------------|
+| `rhaii-inference` | Your vLLM workloads, secrets, and NetworkPolicies | You (this guide) |
+| `istio-system` | Istio service mesh and ingress gateway | RHAII operators |
+| `kserve` | KServe inference controller | RHAII operators |
+| `cert-manager` | TLS certificate management | RHAII operators |
+| `lws-system` | LeaderWorkerSet controller | RHAII operators |
+| `opendatahub` | Gateway and EnvoyFilter configuration | RHAII operators |
+
+You only interact with the `rhaii-inference` namespace. Operator namespaces are managed automatically.
+
+---
+
 ## Step 3: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
 
 **Follow the installation instructions in the official repository:**
@@ -209,16 +226,22 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 4: Create Secrets (2 minutes)
+## Step 4: Create Namespace and Secrets (2 minutes)
 
-Deploy the required secrets for model access:
+Create the workload namespace and deploy secrets:
 
 ```bash
+# Create workload namespace
+kubectl create namespace rhaii-inference
+
+# Set as default namespace for kubectl
+kubectl config set-context --current --namespace=rhaii-inference
+
 # Apply Red Hat registry pull secret
-kubectl apply -f redhat-pull-secret.yaml
+kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
 
 # Apply HuggingFace token secret
-kubectl apply -f huggingface-token-secret.yaml
+kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
 
 # Verify secrets created
 kubectl get secret rhaiis-pull-secret
@@ -226,7 +249,7 @@ kubectl get secret huggingface-token
 ```
 
 **Success criteria:**
-- ✅ Both secrets exist in default namespace
+- ✅ Both secrets exist in `rhaii-inference` namespace
 - ✅ No errors during kubectl apply
 
 ---

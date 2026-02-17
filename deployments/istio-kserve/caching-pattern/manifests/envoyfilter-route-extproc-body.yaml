@@ -15,7 +15,7 @@ spec:
       routeConfiguration:
         vhost:
           route:
-            name: "llm-d-inference-scheduling.qwen2-3b-pattern3-kserve-route.0"
+            name: "rhaii-inference.qwen2-3b-pattern3-kserve-route.0"
     patch:
       operation: MERGE
       value:
@@ -35,7 +35,7 @@ spec:
       routeConfiguration:
         vhost:
           route:
-            name: "llm-d-inference-scheduling.qwen2-3b-pattern3-kserve-route.1"
+            name: "rhaii-inference.qwen2-3b-pattern3-kserve-route.1"
     patch:
       operation: MERGE
       value:

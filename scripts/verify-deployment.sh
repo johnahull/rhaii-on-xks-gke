@@ -26,7 +26,7 @@ Usage: $0 [OPTIONS]
 
 Options:
   --operators-only        Check operators only (cert-manager, Istio, KServe)
-  --namespace <ns>        Kubernetes namespace (default: default)
+  --namespace <ns>        Kubernetes namespace (default: rhaii-inference)
   --timeout <seconds>     Timeout for checks (default: 300)
   --help, -h              Show this help message
 
@@ -46,7 +46,7 @@ EOF
 
 # Parse arguments
 OPERATORS_ONLY=false
-NAMESPACE="default"
+NAMESPACE="rhaii-inference"
 TIMEOUT=300
 
 while [[ $# -gt 0 ]]; do
