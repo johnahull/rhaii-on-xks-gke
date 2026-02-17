@@ -245,7 +245,7 @@ else
         echo -n "  Sending completion request... "
         INFERENCE_RESPONSE=$(curl -s -X POST "http://$GATEWAY_IP/v1/completions" \
             -H "Content-Type: application/json" \
-            -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 10}' \
+            -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Hello", "max_tokens": 10}' \
             2>/dev/null || echo "")
 
         if echo "$INFERENCE_RESPONSE" | grep -q "choices"; then
@@ -301,7 +301,7 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
         echo "Test with:"
         echo "curl -X POST http://$GATEWAY_IP/v1/completions \\"
         echo "  -H 'Content-Type: application/json' \\"
-        echo "  -d '{\"model\": \"google/gemma-2b-it\", \"prompt\": \"Hello\", \"max_tokens\": 50}'"
+        echo "  -d '{\"model\": \"Qwen/Qwen2.5-3B-Instruct\", \"prompt\": \"Hello\", \"max_tokens\": 50}'"
     fi
     echo ""
     echo "Next steps:"

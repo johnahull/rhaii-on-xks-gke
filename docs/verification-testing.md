@@ -68,7 +68,7 @@ curl http://$GATEWAY_IP/v1/models
 # Completion endpoint
 curl -X POST http://$GATEWAY_IP/v1/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "google/gemma-2b-it", "prompt": "Test", "max_tokens": 10}'
+  -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Test", "max_tokens": 10}'
 ```
 
 ## Performance Baseline
@@ -78,7 +78,7 @@ curl -X POST http://$GATEWAY_IP/v1/completions \
 ```bash
 time curl -X POST http://$GATEWAY_IP/v1/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 50}'
+  -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Hello", "max_tokens": 50}'
 
 # Expected: <500ms after warmup
 ```
@@ -90,7 +90,7 @@ time curl -X POST http://$GATEWAY_IP/v1/completions \
 for i in {1..10}; do
   curl -s -w "%{time_total}\n" -o /dev/null -X POST http://$GATEWAY_IP/v1/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "google/gemma-2b-it", "prompt": "Hello", "max_tokens": 50}' &
+    -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Hello", "max_tokens": 50}' &
 done
 wait
 ```

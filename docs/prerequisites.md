@@ -193,7 +193,7 @@ stringData:
 **How to create:**
 1. Get token from: https://huggingface.co/settings/tokens
 2. Create secret file with token value
-3. Accept license for models you'll use (e.g., google/gemma-2b-it)
+3. Accept license for gated models you'll use (default model Qwen/Qwen2.5-3B-Instruct is ungated)
 
 **Location:** Place in repository root directory
 

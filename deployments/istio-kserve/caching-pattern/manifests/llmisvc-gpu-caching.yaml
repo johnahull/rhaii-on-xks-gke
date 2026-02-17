@@ -5,8 +5,8 @@ metadata:
   namespace: rhaii-inference
 spec:
   model:
-    uri: hf://google/gemma-2b-it
-    name: google/gemma-2b-it
+    uri: hf://Qwen/Qwen2.5-3B-Instruct
+    name: Qwen/Qwen2.5-3B-Instruct
   replicas: 3  # Pattern 3: scale-out with prefix caching
 
   # Router configuration

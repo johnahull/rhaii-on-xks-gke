@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Defaults
-MODEL="google/gemma-2b-it"
+MODEL="Qwen/Qwen2.5-3B-Instruct"
 NUM_REQUESTS=10
 CONCURRENT=5
 PROMPT="Translate to French: Hello world"
@@ -30,7 +30,7 @@ Tests cache-aware routing, health endpoints, and throughput.
 Usage: $0 [OPTIONS]
 
 Options:
-  --model <model>           Model name (default: google/gemma-2b-it)
+  --model <model>           Model name (default: Qwen/Qwen2.5-3B-Instruct)
   --prompt <prompt>         Prompt for cache test (default: "Translate to French: Hello world")
   --requests <n>            Number of sequential cache test requests (default: 10)
   --concurrent <n>          Number of parallel throughput requests (default: 5)

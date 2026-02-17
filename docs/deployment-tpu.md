@@ -262,52 +262,73 @@ Deploy the 3-replica vLLM inference service with prefix caching:
 ```bash
 # Deploy LLMInferenceService with 3 replicas and prefix caching
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
-
-# Monitor deployment
-kubectl get llminferenceservice -w
 ```
 
-**Expected output:**
-```
-NAME                READY   URL
-gemma-2b-tpu-svc    True    http://...
-```
+### Track Deployment Progress
 
-**Wait for READY=True** (may take 10-15 minutes for 3 pods + model downloads)
+Each pod goes through several stages before it's ready to serve. Use these commands to track progress:
 
-**Key configuration in manifest:**
-```yaml
-spec:
-  replicas: 3  # 3 replicas for high throughput
-  router:
-    route: {}      # Auto-create HTTPRoute
-    gateway: {}    # Bind to Gateway
-    scheduler: {}  # Enable EPP scheduler
-  template:
-    containers:
-    - args:
-      - |
-        python3 -m vllm.entrypoints.openai.api_server \
-          --enable-prefix-caching \  # Enable prefix caching
-          --tensor-parallel-size=4 \
-          ...
-```
-
-**Monitor pod creation:**
 ```bash
-# Watch all 3 pods come up
-kubectl get pods -l serving.kserve.io/inferenceservice -w
-
-# Check logs for first pod
-kubectl logs -l serving.kserve.io/inferenceservice --tail=50
+# Watch overall pod status
+kubectl get pods -n rhaii-inference -w
 ```
 
-**Success criteria:**
-- ✅ LLMInferenceService READY=True
-- ✅ 3 inference pods running (1 per TPU node)
-- ✅ Gateway has external IP
+**Expected pod lifecycle:**
 
-**Time:** ~10 minutes (pod scheduling + model downloads across 3 nodes)
+| Status | What's happening | Duration |
+|--------|-----------------|----------|
+| `Pending` | Waiting for TPU node to become available | 1-5 min |
+| `Init:0/1` | storage-initializer downloading model from HuggingFace | 30-60s |
+| `PodInitializing` | Init container finished, main container starting | ~10s |
+| `Running` (0/1) | vLLM loading weights + XLA compilation | 3-5 min |
+| `Running` (1/1) | Ready — serving inference requests | ✅ |
+
+### Monitor Each Stage
+
+**Model download (init container):**
+```bash
+# Check if model download succeeded
+kubectl logs <pod-name> -n rhaii-inference -c storage-initializer
+# Success: "Successfully copied hf://Qwen/Qwen2.5-3B-Instruct to /mnt/models"
+```
+
+**vLLM startup and XLA compilation (main container):**
+```bash
+# Follow vLLM logs in real time
+kubectl logs <pod-name> -n rhaii-inference -f
+
+# Key log messages to look for (in order):
+#   "Loading safetensors checkpoint shards: 100%"  → model weights loaded
+#   "Loading weights took X seconds"               → weights ready
+#   "GPU KV cache size: X tokens"                  → KV cache allocated
+#   "Compiling the model with different input shapes" → XLA compilation started
+#   "Compiled the model with different input shapes"  → XLA compilation done
+```
+
+**LLMInferenceService status:**
+```bash
+kubectl get llminferenceservice -n rhaii-inference -w
+# Wait for READY=True
+```
+
+### Troubleshooting Stuck Pods
+
+```bash
+# Pod stuck in Pending — check for node/resource issues
+kubectl describe pod <pod-name> -n rhaii-inference | tail -20
+
+# Pod in Init:CrashLoopBackOff — check storage-initializer logs
+kubectl logs <pod-name> -n rhaii-inference -c storage-initializer
+
+# Pod Running but 0/1 Ready — vLLM still compiling, check logs
+kubectl logs <pod-name> -n rhaii-inference --tail=10
+```
+
+### Success Criteria
+
+- ✅ LLMInferenceService READY=True
+- ✅ 3 inference pods Running (1/1 Ready, one per TPU node)
+- ✅ Gateway has external IP
 
 ---
 
@@ -372,7 +393,7 @@ curl http://$GATEWAY_IP/v1/health
 curl -X POST http://$GATEWAY_IP/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemma-2b-it",
+    "model": "Qwen/Qwen2.5-3B-Instruct",
     "prompt": "Explain machine learning in one sentence:",
     "max_tokens": 50
   }'
@@ -591,7 +612,7 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 for i in {1..5}; do
   curl -s -w "\nTime: %{time_total}s\n" -X POST http://$GATEWAY_IP/v1/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "google/gemma-2b-it", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
+    -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
 done
 # Should show decreasing latency after first request
 ```

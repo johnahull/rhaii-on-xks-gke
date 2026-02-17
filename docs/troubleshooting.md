@@ -234,7 +234,7 @@ kubectl run test --image=curlimages/curl --rm -it -- \
 kubectl logs -l serving.kserve.io/inferenceservice -f
 
 # Look for model loading messages
-# Expected: "Loaded model google/gemma-2b-it"
+# Expected: "Loaded model Qwen/Qwen2.5-3B-Instruct"
 ```
 
 **Common causes:**
@@ -290,7 +290,7 @@ kubectl describe pod <vllm-pod-name> | grep -A 10 "Limits\|Requests"
 # Test latency
 time curl -X POST http://$GATEWAY_IP/v1/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "google/gemma-2b-it", "prompt": "Test", "max_tokens": 10}'
+  -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Test", "max_tokens": 10}'
 ```
 
 **Common causes:**
@@ -314,7 +314,7 @@ Requests with same prefix go to different replicas
 for i in {1..10}; do
   curl -s http://$GATEWAY_IP/v1/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "google/gemma-2b-it", "prompt": "Shared prefix test", "max_tokens": 5}' | \
+    -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "Shared prefix test", "max_tokens": 5}' | \
   grep -o "pod-name.*"
 done
 

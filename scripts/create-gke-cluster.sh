@@ -17,6 +17,7 @@ PROJECT_ID="${PROJECT_ID:-}"
 ZONE="${ZONE:-}"
 CLUSTER_NAME="${CLUSTER_NAME:-rhaii-cluster}"
 ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-}"
+NUM_NODES="${NUM_NODES:-}"
 DRY_RUN=false
 INTERACTIVE=true
 SKIP_VALIDATION=false
@@ -39,6 +40,7 @@ Optional:
   --project <project>     GCP project ID (default: from gcloud config)
   --zone <zone>           Zone for cluster (default: europe-west4-a)
   --cluster-name <name>   Cluster name (default: rhaii-cluster)
+  --num-nodes <n>         Accelerator pool node count (default: 3 for TPU, 1 for GPU)
   --dry-run               Run validation only, don't create cluster
   --skip-validation       Skip pre-flight validation checks (not recommended)
   --non-interactive       Disable interactive prompts
@@ -50,6 +52,9 @@ Examples:
 
   # GPU cluster in specific zone
   $0 --gpu --zone europe-west4-a
+
+  # TPU cluster with 1 node (for testing)
+  $0 --tpu --num-nodes 1
 
   # Dry run to check prerequisites
   $0 --tpu --dry-run
@@ -92,6 +97,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_VALIDATION=true
             shift
             ;;
+        --num-nodes)
+            NUM_NODES="$2"
+            shift 2
+            ;;
         --non-interactive)
             INTERACTIVE=false
             shift
@@ -120,6 +129,15 @@ if [[ -z "$ZONE" ]]; then
     ZONE="europe-west4-a"
 fi
 
+# Set default node count: 3 for TPU (matches 3-replica deployment), 1 for GPU (autoscales)
+if [[ -z "$NUM_NODES" ]]; then
+    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
+        NUM_NODES=3
+    else
+        NUM_NODES=1
+    fi
+fi
+
 # Get project ID from gcloud if not specified
 if [[ -z "$PROJECT_ID" ]]; then
     PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
@@ -139,6 +157,7 @@ echo "Accelerator:    $ACCELERATOR_TYPE"
 echo "Project:        $PROJECT_ID"
 echo "Zone:           $ZONE"
 echo "Cluster Name:   $CLUSTER_NAME"
+echo "Accel Nodes:    $NUM_NODES"
 echo ""
 
 # Interactive confirmation if not in non-interactive mode
@@ -282,21 +301,19 @@ echo "========================================="
 echo ""
 
 if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-    echo "Creating TPU v6e node pool..."
+    echo "Creating TPU v6e node pool with $NUM_NODES node(s)..."
     echo "This will take ~10-15 minutes..."
-    echo ""
-    echo "Note: TPU machine type ct6e-standard-4t auto-configures topology (no autoscaling)"
     echo ""
 
     NODE_POOL_OUTPUT=$(gcloud container node-pools create tpu-pool \
         --cluster "$CLUSTER_NAME" \
         --zone "$ZONE" \
         --machine-type ct6e-standard-4t \
-        --num-nodes 1 \
+        --num-nodes "$NUM_NODES" \
         --project "$PROJECT_ID" 2>&1)
     NODE_POOL_EXIT=$?
 else
-    echo "Creating GPU T4 node pool..."
+    echo "Creating GPU T4 node pool with $NUM_NODES node(s)..."
     echo "This will take ~5-10 minutes..."
     echo ""
 
@@ -305,10 +322,7 @@ else
         --zone "$ZONE" \
         --machine-type n1-standard-4 \
         --accelerator type=nvidia-tesla-t4,count=1 \
-        --num-nodes 1 \
-        --enable-autoscaling \
-        --min-nodes 0 \
-        --max-nodes 3 \
+        --num-nodes "$NUM_NODES" \
         --project "$PROJECT_ID" 2>&1)
     NODE_POOL_EXIT=$?
 fi
