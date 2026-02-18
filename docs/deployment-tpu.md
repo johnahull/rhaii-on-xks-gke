@@ -673,25 +673,6 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 
 ---
 
-## Next Steps
-
-### Advanced Features
-
-**Multi-Model Serving:**
-- Deploy multiple models (Gemma 2B + Llama 3 8B)
-- Model routing based on request headers
-- See [Multi-Model Setup Guide](multi-model-updates.md)
-
-### Monitoring & Observability
-
-**Set up comprehensive monitoring:**
-- Prometheus metrics collection
-- Grafana dashboards
-- Alerting rules for SLA violations
-- See [Monitoring Guide](monitoring.md)
-
----
-
 ## Reference
 
 **Manifests:**
