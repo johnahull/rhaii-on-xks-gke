@@ -135,10 +135,6 @@ rhaii-on-xks-gke/
 │   ├── redhat-pull.yaml.template          # Red Hat registry credentials template
 │   └── huggingface-token.yaml.template    # HuggingFace token template
 │
-├── benchmarks/                            # Benchmarking tools
-│   └── python/
-│       └── utils/
-│
 └── env.sh.example                         # Environment variable example
 ```
 
