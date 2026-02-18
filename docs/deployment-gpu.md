@@ -6,6 +6,7 @@ Deploy a production vLLM inference service on GPU T4 with prefix caching and int
 
 **What you'll deploy:**
 - GKE cluster with GPU T4 node pool (3 GPUs total)
+- NVIDIA GPU Operator v25.10+ (for GPU injection via CDI)
 - RHAII operators (cert-manager, Istio, KServe, LWS)
 - 3-replica vLLM inference service with prefix caching enabled
 - Cache-aware routing via EnvoyFilter and EPP scheduler
@@ -177,7 +178,75 @@ kubectl get nodes -l cloud.google.com/gke-accelerator=nvidia-tesla-t4
 # Should show 3 nodes
 ```
 
-**Note:** GKE automatically installs NVIDIA drivers. DO NOT install GPU Operator.
+---
+
+## Step 3: Install NVIDIA GPU Operator (5 minutes)
+
+**Why needed:** GKE v1.34+ has broken native CDI injection for GPUs. The NVIDIA GPU Operator provides working GPU device injection via CDI specs.
+
+**Install GPU Operator with GKE-specific configuration:**
+
+```bash
+# 1. Label GPU nodes to disable GKE's default GPU plugin (conflicts with Operator)
+kubectl label nodes -l cloud.google.com/gke-accelerator gke-no-default-nvidia-gpu-device-plugin=true --overwrite
+
+# 2. Add NVIDIA Helm repository (if not already added)
+helm repo add nvidia https://helm.ngc.nvidia.com/nvidia && helm repo update
+
+# 3. Install GPU Operator with GKE-specific settings
+helm install gpu-operator nvidia/gpu-operator \
+  -n gpu-operator --create-namespace \
+  --set driver.enabled=false \
+  --set hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia \
+  --set toolkit.installDir=/home/kubernetes/bin/nvidia \
+  --set cdi.enabled=true \
+  --set toolkit.env[0].name=RUNTIME_CONFIG_SOURCE \
+  --set toolkit.env[0].value=file
+
+# 4. Create ResourceQuota to allow system-critical pods in gpu-operator namespace
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gcp-critical-pods
+  namespace: gpu-operator
+spec:
+  hard:
+    pods: "1000"
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values:
+      - system-node-critical
+      - system-cluster-critical
+EOF
+
+# 5. Patch GPU Operator deployment to remove priority class (GKE quota conflict)
+kubectl patch deployment gpu-operator -n gpu-operator --type=json \
+  -p='[{"op":"remove","path":"/spec/template/spec/priorityClassName"}]'
+
+# 6. Wait for GPU Operator pods to be ready
+kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=gpu-operator -n gpu-operator --timeout=300s
+
+# 7. Verify GPU Operator is working
+kubectl get pods -n gpu-operator
+kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/run/cdi/
+```
+
+**Success criteria:**
+- ✅ GPU Operator controller Running
+- ✅ nvidia-container-toolkit-daemonset Running on all 3 GPU nodes
+- ✅ nvidia-device-plugin-daemonset Running on all 3 GPU nodes
+- ✅ CDI specs exist at `/var/run/cdi/` (output from last command shows JSON/YAML files)
+
+**Time:** ~5 minutes
+
+**Configuration notes:**
+- `driver.enabled=false` uses GKE's pre-installed NVIDIA drivers (DO NOT let operator install drivers)
+- `hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia` points to GKE's writable path (GKE root filesystem is read-only)
+- `cdi.enabled=true` generates CDI device specs for GPU injection into containers
+- ResourceQuota and priority class patch work around GKE's restrictions on system-critical pods
 
 ---
 
@@ -188,6 +257,7 @@ RHAII uses dedicated namespaces to isolate components:
 | Namespace | Purpose | Managed By |
 |-----------|---------|------------|
 | `rhaii-inference` | Your vLLM workloads, secrets, and NetworkPolicies | You (this guide) |
+| `gpu-operator` | NVIDIA GPU Operator (device plugin, CDI toolkit) | NVIDIA GPU Operator |
 | `istio-system` | Istio service mesh (istiod) | RHAII operators |
 | `opendatahub` | KServe controller, inference gateway, EnvoyFilter | RHAII operators |
 | `cert-manager` | TLS certificate management | RHAII operators |
@@ -197,7 +267,7 @@ You only interact with the `rhaii-inference` namespace. Operator namespaces are 
 
 ---
 
-## Step 3: Create Namespace and Secrets (2 minutes)
+## Step 4: Create Namespace and Secrets (2 minutes)
 
 Create the workload namespace and deploy secrets.
 
@@ -233,7 +303,7 @@ kubectl get secret huggingface-token
 
 ---
 
-## Step 4: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
+## Step 5: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
 
 **Follow the installation instructions in the official repository:**
 
@@ -263,7 +333,7 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 5: Deploy Inference Service (10 minutes)
+## Step 6: Deploy Inference Service (10 minutes)
 
 Deploy the 3-replica vLLM inference service with prefix caching:
 
