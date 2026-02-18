@@ -234,11 +234,14 @@ for i in $(seq 1 "$NUM_REQUESTS"); do
         printf "  Request %2d: %6s ms  ${YELLOW}← CACHE MISS${NC} (first request, cold prefix)\n" "$i" "$TIME_MS"
         FIRST=$TIME_MS
     else
-        # Check if this is faster than first (cache hit indicator)
+        # Requests 2+ should ALWAYS be cache hits (identical prefix)
+        # If not faster, cache-aware routing is broken
+        SPEEDUP=$(echo "$FIRST $TIME_MS" | awk '{printf "%.0f", (1 - $2/$1) * 100}')
         if [[ $TIME_MS -lt $FIRST ]]; then
-            printf "  Request %2d: %6s ms  ${GREEN}← CACHE HIT${NC} (prefix cached)\n" "$i" "$TIME_MS"
+            printf "  Request %2d: %6s ms  ${GREEN}← CACHE HIT ✓${NC} (${SPEEDUP}%% faster)\n" "$i" "$TIME_MS"
         else
-            printf "  Request %2d: %6s ms\n" "$i" "$TIME_MS"
+            printf "  Request %2d: %6s ms  ${RED}← CACHE HIT ⚠️  WARNING: Not faster! (Check routing)${NC}\n" "$i" "$TIME_MS"
+            ALL_PASSED=false
         fi
     fi
 done
@@ -268,9 +271,17 @@ if [[ ${#TIMES[@]} -gt 1 ]]; then
     if [[ $AVG -lt $FIRST ]]; then
         SPEEDUP=$(echo "$FIRST $AVG" | awk '{printf "%.0f", (1 - $2/$1) * 100}')
         echo -e "    Cache speedup:      ${GREEN}${SPEEDUP}% faster${NC}"
+        echo "                        ✓ Cache-aware routing is working"
     else
-        echo -e "    Cache speedup:      ${YELLOW}No improvement detected${NC}"
-        echo "    (This may be normal if the model is still warming up)"
+        echo -e "    Cache speedup:      ${RED}No improvement detected${NC}"
+        echo ""
+        echo "    ⚠️  WARNING: Cache hits should be faster than misses!"
+        echo "    Possible issues:"
+        echo "      - EnvoyFilter not applied (check: kubectl get envoyfilter -n opendatahub)"
+        echo "      - EPP scheduler not routing by prefix hash"
+        echo "      - vLLM prefix caching disabled"
+        echo "      - Requests going to different replicas (random routing)"
+        ALL_PASSED=false
     fi
 fi
 
