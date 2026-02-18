@@ -92,8 +92,9 @@ All deployment guides use these automation scripts in `scripts/`:
 ```
 rhaii-on-xks-gke/
 ├── README.md                              # This file
+├── CLAUDE.md                              # Project instructions for Claude Code
 │
-├── docs/                                  # Guides
+├── docs/                                  # Customer guides
 │   ├── README.md                          # Guide index
 │   ├── deployment-tpu.md                  # TPU deployment guide
 │   ├── deployment-gpu.md                  # GPU deployment guide
@@ -101,6 +102,7 @@ rhaii-on-xks-gke/
 │   ├── environment-setup.md               # Environment variable configuration
 │   ├── operator-installation.md           # RHAII operator installation
 │   ├── verification-testing.md            # Validation procedures
+│   ├── prefix-caching-verification.md     # Prefix caching configuration verification
 │   └── troubleshooting.md                 # Common issues
 │
 ├── scripts/                               # Automation scripts
@@ -118,8 +120,27 @@ rhaii-on-xks-gke/
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml
+│               ├── envoyfilter-epp-mtls-fix.yaml
+│               ├── envoyfilter-epp-mtls-fix-tpu.yaml
+│               ├── envoyfilter-ext-proc-gpu.yaml
+│               ├── envoyfilter-ext-proc-tpu.yaml
 │               ├── envoyfilter-route-extproc-body.yaml
+│               ├── istio-cni.yaml
 │               └── networkpolicies/
+│                   ├── allow-gateway-to-vllm.yaml
+│                   ├── allow-epp-scheduler.yaml
+│                   ├── allow-istio.yaml
+│                   └── allow-vllm-egress.yaml
+│
+├── templates/                             # Secret templates
+│   ├── redhat-pull.yaml.template          # Red Hat registry credentials template
+│   └── huggingface-token.yaml.template    # HuggingFace token template
+│
+├── benchmarks/                            # Benchmarking tools
+│   └── python/
+│       └── utils/
+│
+└── env.sh.example                         # Environment variable example
 ```
 
 ---
