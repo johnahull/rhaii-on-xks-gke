@@ -186,23 +186,26 @@ podSelector:
 Final Score = (prefix-cache-scorer × 1.0) + (least-requests × 0.5)
 ```
 
-**Example:**
-```
-Request: "Translate to French: Hello"
-
-Replica Scores:
-┌──────────┬──────────────────┬────────────────┬──────────────┐
-│ Replica  │ Cache Score×1.0  │ Load Score×0.5 │ FINAL SCORE  │
-├──────────┼──────────────────┼────────────────┼──────────────┤
-│ Replica 1│ 0.2 × 1.0 = 0.20 │ 0.8 × 0.5 = 0.40│ 0.60        │
-│ Replica 2│ 0.9 × 1.0 = 0.90 │ 0.5 × 0.5 = 0.25│ 1.15 ← WIN  │
-│ Replica 3│ 0.1 × 1.0 = 0.10 │ 0.7 × 0.5 = 0.35│ 0.45        │
-└──────────┴──────────────────┴────────────────┴──────────────┘
-
-Result: Request routed to Replica 2 (highest total score)
-```
-
 **Key Insight:** Cache affinity (weight 1.0) dominates over load balancing (weight 0.5), ensuring requests with the same prefix route to the same replica for maximum cache hits.
+
+### Verify Real Scoring Behavior
+
+Instead of hypothetical examples, verify actual EPP scheduler state:
+
+```bash
+# Check InferencePool resource (created by KServe)
+kubectl get inferencepool -n rhaii-inference
+
+# Check EPP scheduler pod status
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=router-scheduler
+
+# View EPP metrics (shows actual scoring decisions)
+EPP_POD=$(kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=router-scheduler -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n rhaii-inference $EPP_POD -- curl -s localhost:9090/metrics | grep scorer
+
+# View real-time routing decisions in logs
+kubectl logs -n rhaii-inference -l app.kubernetes.io/component=router-scheduler --tail=50 -f
+```
 
 ---
 
