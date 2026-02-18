@@ -151,6 +151,28 @@ kubectl describe nodes | grep -E "nvidia.com/gpu|cloud-tpus.google.com/chip"
 ✅ Performance meets baseline
 ✅ Resource usage within limits
 
+## Advanced: vLLM Metrics
+
+vLLM exposes Prometheus metrics at the `/metrics` endpoint.
+
+**Access metrics:**
+
+```bash
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/metrics
+```
+
+For GPU deployments, replace `qwen-3b-tpu-svc` with `qwen-3b-gpu-svc`.
+
+**Relevant cache metrics:**
+
+- `vllm:cache_config_cache_block_size` - KV cache block size
+- `vllm:cache_config_num_gpu_blocks` - Number of GPU/TPU cache blocks
+- `vllm:cache_config_num_cpu_blocks` - Number of CPU cache blocks
+- `vllm:request_success_total` - Total successful requests
+
+**Note:** vLLM does not expose cache hit/miss rates directly in metrics. Cache effectiveness is measured through latency reduction on repeated prefixes (see deployment guides for testing procedures).
+
 ## Troubleshooting
 
 If any checks fail, see [Troubleshooting Guide](troubleshooting.md).

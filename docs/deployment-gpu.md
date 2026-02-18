@@ -530,6 +530,156 @@ The script tests three things:
 
 ---
 
+## Step 10: Verify Model Configuration and Cache Behavior
+
+Confirm the correct model is loaded and prefix caching is functioning.
+
+### Confirm Model Identity and Configuration
+
+**Query the models endpoint to see what model is actually loaded:**
+
+```bash
+# Get internal service URL
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-gpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
+```
+
+**Expected response:**
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "/mnt/models",
+      "object": "model",
+      "created": 1234567890,
+      "owned_by": "vllm"
+    }
+  ]
+}
+```
+
+The `"id": "/mnt/models"` confirms vLLM is serving the model mounted from the HuggingFace storage initializer.
+
+**Check pod logs for model loading details:**
+
+```bash
+# Get one of the vLLM pods
+POD=$(kubectl get pods -n rhaii-inference -l kserve.io/component=workload -o jsonpath='{.items[0].metadata.name}')
+
+# View model loading logs
+kubectl logs $POD -n rhaii-inference | grep -A 5 "Loading weights"
+```
+
+**Expected log output:**
+```
+INFO: Loading safetensors checkpoint shards: 100%
+INFO: Loading weights took 12.3 seconds
+INFO: Model Qwen/Qwen2.5-3B-Instruct
+INFO: # GPU blocks: 1234, # CPU blocks: 567
+INFO: GPU KV cache size: 3145728 tokens
+```
+
+**Key verification points:**
+- ✅ "Loading safetensors checkpoint shards: 100%" - All model weights loaded successfully
+- ✅ Model name matches `Qwen/Qwen2.5-3B-Instruct` (or your specified model)
+- ✅ KV cache size allocated (indicates caching infrastructure ready)
+
+### Prove Prefix Caching is Working
+
+**Test cache hit behavior with identical prefixes:**
+
+```bash
+# Export Gateway IP
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
+
+# Run 5 requests with IDENTICAL prefix
+for i in {1..5}; do
+  echo "Request $i:"
+  curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "/mnt/models",
+      "prompt": "Translate to French: Hello world",
+      "max_tokens": 10
+    }'
+done
+```
+
+**Expected behavior (GPU):**
+```
+Request 1:
+{...generated text...}
+Latency: 0.280s   ← CACHE MISS (first request, cold prefix)
+
+Request 2:
+{...generated text...}
+Latency: 0.110s   ← CACHE HIT (prefix cached from request 1)
+
+Request 3:
+{...generated text...}
+Latency: 0.108s   ← CACHE HIT
+
+Request 4:
+{...generated text...}
+Latency: 0.112s   ← CACHE HIT
+
+Request 5:
+{...generated text...}
+Latency: 0.109s   ← CACHE HIT
+```
+
+**Key verification points:**
+- ✅ First request has higher latency (~280ms)
+- ✅ Subsequent requests with same prefix are **60-75% faster**
+- ✅ Latency reduction proves prefix caching is working
+
+**Test cache miss with different prefix:**
+
+```bash
+# Now try a DIFFERENT prefix
+curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "/mnt/models",
+    "prompt": "Summarize in one sentence: The quick brown fox",
+    "max_tokens": 10
+  }'
+```
+
+**Expected:** Latency returns to ~280ms (cache miss for new prefix)
+
+This proves the cache is prefix-specific, not just a response cache.
+
+### Automated Cache Verification
+
+**Use the test-cache-routing.sh script:**
+
+```bash
+./scripts/test-cache-routing.sh --requests 10 --prompt "Translate to Spanish: Hello"
+```
+
+The script will:
+1. Test health endpoints
+2. Measure cache hit speedup (reports percentage improvement)
+3. Run throughput test with concurrent requests
+
+**Expected output:**
+```
+========================================
+Cache Routing Test
+========================================
+First request latency: 0.280s
+Average subsequent latency: 0.110s
+Speedup: 60.7%
+
+✓ Cache hit acceleration detected
+```
+
+**Reference documentation:** See [Verification and Testing](verification-testing.md) for complete verification procedures.
+
+---
+
 ## 🎉 Success!
 
 Your RHAII GPU deployment is ready for production traffic!
@@ -537,8 +687,10 @@ Your RHAII GPU deployment is ready for production traffic!
 ### Quick Reference
 
 **Inference Endpoint:**
-```
-http://$GATEWAY_IP/v1/completions
+```bash
+curl -k -X POST https://$GATEWAY_IP/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "/mnt/models", "prompt": "What is 2+2?", "max_tokens": 20}'
 ```
 
 **OpenAI-Compatible API:**
@@ -550,7 +702,7 @@ http://$GATEWAY_IP/v1/completions
 **Monitor Deployment:**
 ```bash
 # Check all 3 replicas
-kubectl get pods -l serving.kserve.io/inferenceservice
+kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 
 # View logs for specific replica
 kubectl logs <pod-name> -f
@@ -685,21 +837,32 @@ kubectl get events --sort-by='.lastTimestamp' | grep -i quota
 
 **Symptoms:**
 - vLLM fails to start
-- Logs show "No GPU detected"
+- Logs show "No GPU detected" or "Failed to infer device type"
+- CUDA initialization errors
 
 **Causes:**
+- GPU Operator not installed or not running correctly
+- CDI specs not generated
 - GPU not allocated to pod
-- NVIDIA drivers not installed
 
 **Solution:**
 ```bash
-# Verify GPU allocation on nodes
-kubectl describe nodes | grep -A 5 "Allocated resources" | grep nvidia
+# 1. Verify GPU Operator is running
+kubectl get pods -n gpu-operator
+# All pods should be Running
 
-# Check pod resource requests
-kubectl describe pod <vllm-pod> | grep -A 5 "Limits"
+# 2. Check CDI specs are generated
+kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/run/cdi/
+# Should show nvidia.yaml
 
-# DO NOT install GPU Operator (GKE provides native GPU support)
+# 3. Verify GPU allocation on nodes
+kubectl describe nodes -l cloud.google.com/gke-accelerator=nvidia-tesla-t4 | grep -A 5 "Allocated resources" | grep nvidia
+
+# 4. Check pod resource requests
+kubectl describe pod <vllm-pod> -n rhaii-inference | grep -A 5 "Limits"
+# Should show nvidia.com/gpu: 1
+
+# 5. If GPU Operator not working, reinstall (see Step 3)
 ```
 
 ### Cache Routing Not Working
@@ -725,7 +888,7 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 for i in {1..5}; do
   curl -s -w "\nTime: %{time_total}s\n" -X POST http://$GATEWAY_IP/v1/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
+    -d '{"model": "/mnt/models", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
 done
 # Should show decreasing latency after first request
 ```

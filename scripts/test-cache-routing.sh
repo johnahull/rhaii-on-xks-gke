@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Defaults
-MODEL="Qwen/Qwen2.5-3B-Instruct"
+MODEL="/mnt/models"  # vLLM serves model mounted at /mnt/models (auto-detected)
 NUM_REQUESTS=10
 CONCURRENT=5
 PROMPT="Translate to French: Hello world"
@@ -30,7 +30,7 @@ Tests cache-aware routing, health endpoints, and throughput.
 Usage: $0 [OPTIONS]
 
 Options:
-  --model <model>           Model name (default: Qwen/Qwen2.5-3B-Instruct)
+  --model <model>           Model name (default: /mnt/models, auto-detected)
   --prompt <prompt>         Prompt for cache test (default: "Translate to French: Hello world")
   --requests <n>            Number of sequential cache test requests (default: 10)
   --concurrent <n>          Number of parallel throughput requests (default: 5)
@@ -118,7 +118,7 @@ fi
 BASE_URL="http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME"
 
 # Auto-detect model name from vLLM if not overridden
-if [[ "$MODEL" == "Qwen/Qwen2.5-3B-Instruct" ]]; then
+if [[ "$MODEL" == "/mnt/models" ]]; then
     DETECTED_MODEL=$(curl -s "$BASE_URL/v1/models" 2>/dev/null | jq -r '.data[0].id' 2>/dev/null || echo "")
     if [[ -n "$DETECTED_MODEL" ]]; then
         MODEL="$DETECTED_MODEL"
@@ -139,10 +139,32 @@ echo "Requests:    $NUM_REQUESTS (sequential) + $CONCURRENT (parallel)"
 echo ""
 
 # ============================================================================
+# Model Information
+# ============================================================================
+echo "========================================="
+echo "1. Model Information"
+echo "========================================="
+echo ""
+
+MODEL_INFO=$(curl -s "$BASE_URL/v1/models" 2>/dev/null)
+if [[ $? -eq 0 ]] && [[ -n "$MODEL_INFO" ]]; then
+    echo -e "${GREEN}✓${NC} /v1/models endpoint accessible"
+    echo ""
+    echo "Model response:"
+    echo "$MODEL_INFO" | jq '.' 2>/dev/null || echo "$MODEL_INFO"
+    echo ""
+else
+    echo -e "${RED}✗${NC} Failed to retrieve model information"
+    ALL_PASSED=false
+fi
+
+echo ""
+
+# ============================================================================
 # Health Checks
 # ============================================================================
 echo "========================================="
-echo "1. Health Checks"
+echo "2. Health Checks"
 echo "========================================="
 echo ""
 
@@ -186,14 +208,18 @@ echo ""
 # Cache Routing Test
 # ============================================================================
 echo "========================================="
-echo "2. Cache Routing Test ($NUM_REQUESTS sequential requests)"
+echo "3. Cache Routing Test ($NUM_REQUESTS sequential requests)"
 echo "========================================="
+echo ""
+echo "Testing with model: $MODEL"
+echo "Prompt: \"$PROMPT\""
 echo ""
 echo "Sending $NUM_REQUESTS requests with identical prefix..."
 echo "First request should be slower (cache miss), subsequent faster (cache hit)."
 echo ""
 
 TIMES=()
+FIRST=""
 for i in $(seq 1 "$NUM_REQUESTS"); do
     RESPONSE=$(curl -s -w "\n%{time_total}" -X POST "$BASE_URL/v1/completions" \
         -H "Content-Type: application/json" \
@@ -203,10 +229,17 @@ for i in $(seq 1 "$NUM_REQUESTS"); do
     TIME_MS=$(echo "$TIME_TOTAL" | awk '{printf "%.0f", $1 * 1000}')
     TIMES+=("$TIME_MS")
 
+    # Label cache behavior explicitly
     if [[ $i -eq 1 ]]; then
-        printf "  Request %2d: %6s ms  (first request — cache miss expected)\n" "$i" "$TIME_MS"
+        printf "  Request %2d: %6s ms  ${YELLOW}← CACHE MISS${NC} (first request, cold prefix)\n" "$i" "$TIME_MS"
+        FIRST=$TIME_MS
     else
-        printf "  Request %2d: %6s ms\n" "$i" "$TIME_MS"
+        # Check if this is faster than first (cache hit indicator)
+        if [[ $TIME_MS -lt $FIRST ]]; then
+            printf "  Request %2d: %6s ms  ${GREEN}← CACHE HIT${NC} (prefix cached)\n" "$i" "$TIME_MS"
+        else
+            printf "  Request %2d: %6s ms\n" "$i" "$TIME_MS"
+        fi
     fi
 done
 
@@ -247,7 +280,7 @@ echo ""
 # Throughput Test
 # ============================================================================
 echo "========================================="
-echo "3. Throughput Test ($CONCURRENT parallel requests)"
+echo "4. Throughput Test ($CONCURRENT parallel requests)"
 echo "========================================="
 echo ""
 echo "Firing $CONCURRENT requests in parallel..."

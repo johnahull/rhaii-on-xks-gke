@@ -392,30 +392,44 @@ Verify the deployment is working:
 # Get Gateway IP
 export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
 
-# Test health endpoint
-curl http://$GATEWAY_IP/v1/health
+# Test health endpoint (internal service - use port-forward or test pod)
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/health
+
+# Test models endpoint to verify service is ready
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
 
 # Test inference endpoint
-curl -X POST http://$GATEWAY_IP/v1/completions \
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k -X POST https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "Qwen/Qwen2.5-3B-Instruct",
+    "model": "/mnt/models",
     "prompt": "Explain machine learning in one sentence:",
     "max_tokens": 50
   }'
 ```
 
 **Success criteria:**
-- ✅ Health endpoint returns 200
+- ✅ Health endpoint returns healthy status
+- ✅ Models endpoint shows `/mnt/models` available
 - ✅ Inference request succeeds
-- ✅ Response contains "choices" field
-- ✅ All 3 replicas healthy
+- ✅ Response contains "choices" field with generated text
+- ✅ All 3 vLLM replicas healthy
 
 **Check replica status:**
 ```bash
-kubectl get pods -l serving.kserve.io/inferenceservice
+# Check vLLM workload pods (LLMInferenceService uses different labels)
+kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 # Should show 3 Running pods
+
+# Check all LLMInferenceService components (workload + router)
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/part-of=llminferenceservice
+# Should show 4 Running pods (3 vLLM + 1 router/scheduler)
 ```
+
+**Note:** Gateway external access may require additional firewall configuration. Internal service access (via ClusterIP) works immediately.
 
 ---
 
@@ -444,6 +458,156 @@ The script tests three things:
 
 ---
 
+## Step 9: Verify Model Configuration and Cache Behavior
+
+Confirm the correct model is loaded and prefix caching is functioning.
+
+### Confirm Model Identity and Configuration
+
+**Query the models endpoint to see what model is actually loaded:**
+
+```bash
+# Get internal service URL
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
+```
+
+**Expected response:**
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "/mnt/models",
+      "object": "model",
+      "created": 1234567890,
+      "owned_by": "vllm"
+    }
+  ]
+}
+```
+
+The `"id": "/mnt/models"` confirms vLLM is serving the model mounted from the HuggingFace storage initializer.
+
+**Check pod logs for model loading details:**
+
+```bash
+# Get one of the vLLM pods
+POD=$(kubectl get pods -n rhaii-inference -l kserve.io/component=workload -o jsonpath='{.items[0].metadata.name}')
+
+# View model loading logs
+kubectl logs $POD -n rhaii-inference | grep -A 5 "Loading weights"
+```
+
+**Expected log output:**
+```
+INFO: Loading safetensors checkpoint shards: 100%
+INFO: Loading weights took 12.3 seconds
+INFO: Model Qwen/Qwen2.5-3B-Instruct
+INFO: # GPU blocks: 1234, # CPU blocks: 567
+INFO: TPU KV cache size: 3145728 tokens
+```
+
+**Key verification points:**
+- ✅ "Loading safetensors checkpoint shards: 100%" - All model weights loaded successfully
+- ✅ Model name matches `Qwen/Qwen2.5-3B-Instruct` (or your specified model)
+- ✅ KV cache size allocated (indicates caching infrastructure ready)
+
+### Prove Prefix Caching is Working
+
+**Test cache hit behavior with identical prefixes:**
+
+```bash
+# Export Gateway IP
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
+
+# Run 5 requests with IDENTICAL prefix
+for i in {1..5}; do
+  echo "Request $i:"
+  curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "/mnt/models",
+      "prompt": "Translate to French: Hello world",
+      "max_tokens": 10
+    }'
+done
+```
+
+**Expected behavior (TPU):**
+```
+Request 1:
+{...generated text...}
+Latency: 0.215s   ← CACHE MISS (first request, cold prefix)
+
+Request 2:
+{...generated text...}
+Latency: 0.082s   ← CACHE HIT (prefix cached from request 1)
+
+Request 3:
+{...generated text...}
+Latency: 0.078s   ← CACHE HIT
+
+Request 4:
+{...generated text...}
+Latency: 0.081s   ← CACHE HIT
+
+Request 5:
+{...generated text...}
+Latency: 0.079s   ← CACHE HIT
+```
+
+**Key verification points:**
+- ✅ First request has higher latency (~200ms)
+- ✅ Subsequent requests with same prefix are **60-75% faster**
+- ✅ Latency reduction proves prefix caching is working
+
+**Test cache miss with different prefix:**
+
+```bash
+# Now try a DIFFERENT prefix
+curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "/mnt/models",
+    "prompt": "Summarize in one sentence: The quick brown fox",
+    "max_tokens": 10
+  }'
+```
+
+**Expected:** Latency returns to ~200ms (cache miss for new prefix)
+
+This proves the cache is prefix-specific, not just a response cache.
+
+### Automated Cache Verification
+
+**Use the test-cache-routing.sh script:**
+
+```bash
+./scripts/test-cache-routing.sh --requests 10 --prompt "Translate to Spanish: Hello"
+```
+
+The script will:
+1. Test health endpoints
+2. Measure cache hit speedup (reports percentage improvement)
+3. Run throughput test with concurrent requests
+
+**Expected output:**
+```
+========================================
+Cache Routing Test
+========================================
+First request latency: 0.215s
+Average subsequent latency: 0.081s
+Speedup: 62.3%
+
+✓ Cache hit acceleration detected
+```
+
+**Reference documentation:** See [Verification and Testing](verification-testing.md) for complete verification procedures.
+
+---
+
 ## 🎉 Success!
 
 Your RHAII TPU deployment is ready for production traffic!
@@ -451,8 +615,10 @@ Your RHAII TPU deployment is ready for production traffic!
 ### Quick Reference
 
 **Inference Endpoint:**
-```
-http://$GATEWAY_IP/v1/completions
+```bash
+curl -k -X POST https://$GATEWAY_IP/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "/mnt/models", "prompt": "What is 2+2?", "max_tokens": 20}'
 ```
 
 **OpenAI-Compatible API:**
@@ -464,7 +630,7 @@ http://$GATEWAY_IP/v1/completions
 **Monitor Deployment:**
 ```bash
 # Check all 3 replicas
-kubectl get pods -l serving.kserve.io/inferenceservice
+kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 
 # View logs for specific replica
 kubectl logs <pod-name> -f
@@ -618,7 +784,7 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 for i in {1..5}; do
   curl -s -w "\nTime: %{time_total}s\n" -X POST http://$GATEWAY_IP/v1/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "Qwen/Qwen2.5-3B-Instruct", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
+    -d '{"model": "/mnt/models", "prompt": "SAME PREFIX HERE", "max_tokens": 10}'
 done
 # Should show decreasing latency after first request
 ```
