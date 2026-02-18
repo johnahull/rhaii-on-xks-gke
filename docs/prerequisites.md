@@ -197,6 +197,114 @@ Then edit `huggingface-token-secret.yaml` and replace `YOUR_HF_TOKEN_HERE` with 
 
 ---
 
+## Istio CNI Requirement
+
+**CRITICAL:** This deployment requires Istio service mesh with CNI (Container Network Interface) plugin enabled.
+
+### What is Istio CNI?
+
+Istio CNI is a container network plugin that replaces Istio's default init container approach for configuring pod networking. It's required for proper sidecar injection and mTLS communication between services.
+
+### Why is CNI Required?
+
+**This architecture depends on Istio CNI for:**
+
+1. **EPP Scheduler mTLS Communication**
+   - EPP (External Processing Protocol) scheduler pod requires Istio sidecar injection
+   - Without CNI, init container network conflicts prevent proper mTLS setup
+   - ext_proc filter communication will fail without CNI
+
+2. **Gateway to EPP Routing**
+   - Istio Gateway uses ext_proc filter to communicate with EPP scheduler via gRPC
+   - Communication uses Istio mTLS (mutual TLS) for security
+   - CNI ensures proper network namespace setup for mTLS handshake
+
+3. **Service Mesh Security**
+   - Zero-trust architecture with mutual TLS authentication
+   - SPIFFE workload identity for service-to-service auth
+   - Network policies work correctly with CNI-managed networking
+
+### Istio CNI vs Init Container
+
+| Aspect | Init Container (Default) | CNI Plugin (Required) |
+|--------|-------------------------|----------------------|
+| **Network Setup** | Per-pod init container | DaemonSet on each node |
+| **Permissions** | Requires NET_ADMIN capability | No elevated pod permissions needed |
+| **Startup Order** | Init container runs first | Network setup before pod starts |
+| **mTLS with ext_proc** | ❌ Conflicts with EPP scheduler | ✅ Works correctly |
+| **Security** | Higher pod privileges | Lower pod privileges (better) |
+
+### Installation
+
+**Istio CNI is installed automatically via the RHAII on XKS repository.**
+
+See [Operator Installation Guide](operator-installation.md) for complete installation instructions.
+
+**Installation command (from rhaii-on-xks repository):**
+```bash
+cd /path/to/rhaii-on-xks
+make deploy-all  # Installs Istio with CNI enabled
+```
+
+### Verification
+
+**After operator installation, verify Istio CNI is running:**
+
+```bash
+# Check CNI DaemonSet exists
+kubectl get daemonset -n istio-system istio-cni-node
+
+# Verify CNI pods are running on all nodes
+kubectl get pods -n istio-system -l k8s-app=istio-cni-node
+
+# Check CNI configuration
+kubectl get configmap -n istio-system istio-cni-config -o yaml
+```
+
+**Expected output:**
+```
+NAME              DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE
+istio-cni-node    3         3         3       3            3
+```
+
+**If CNI is missing:**
+```bash
+❌ ERROR: Istio CNI not detected
+
+This deployment requires Istio CNI for EPP scheduler mTLS communication.
+
+Install RHAII operators with CNI enabled:
+  cd /path/to/rhaii-on-xks
+  make deploy-all
+```
+
+### Troubleshooting CNI Issues
+
+**EPP scheduler mTLS failures:**
+```bash
+# Check if CNI is running
+kubectl get pods -n istio-system -l k8s-app=istio-cni-node
+
+# Check sidecar injection on EPP scheduler
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=router-scheduler -o yaml | grep -A 5 "istio-proxy"
+
+# Verify mTLS cluster connectivity
+kubectl logs -n opendatahub <gateway-pod> | grep -i "epp.*mtls\|ext_proc"
+```
+
+**Common CNI issues:**
+- CNI pods not running: Re-deploy Istio operators
+- Sidecar not injected: Check namespace has `istio-injection=enabled` label
+- mTLS handshake failures: Verify CNI network configuration
+
+### Additional Resources
+
+- **RHAII on XKS:** https://github.com/opendatahub-io/rhaii-on-xks
+- **Istio CNI Documentation:** https://istio.io/latest/docs/setup/additional-setup/cni/
+- **GKE + Istio CNI:** https://cloud.google.com/service-mesh/docs/managed/configure-cni
+
+---
+
 ## Zone Selection
 
 ### TPU Zones

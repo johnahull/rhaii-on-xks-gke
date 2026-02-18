@@ -45,41 +45,55 @@ make status
 
 ---
 
-## Install Istio CNI (Required for Cache-Aware Routing)
+## Istio CNI Verification (Critical Requirement)
+
+**⚠️ CRITICAL:** This deployment requires Istio CNI to be enabled during operator installation.
 
 **What is Istio CNI:**
-Istio CNI enables sidecar injection for pods with restrictive security contexts (read-only filesystems, no privilege escalation). This is required for the EPP (Endpoint Picker Protocol) scheduler to communicate with the Istio Gateway for cache-aware routing.
+Istio CNI is a container network plugin that enables proper sidecar injection and mTLS communication. It's required for the EPP (External Processing Protocol) scheduler to communicate with the Istio Gateway.
 
-**Why it's needed:**
-The EPP scheduler requires an Istio sidecar to enable mTLS communication with the Gateway's ext_proc filter. Without Istio CNI, sidecar injection fails due to the EPP's security constraints.
+**Why it's critical:**
+- EPP scheduler needs Istio sidecar for mTLS communication with Gateway
+- ext_proc filter uses gRPC over mTLS to route requests for cache awareness
+- Without CNI, init container network conflicts prevent proper mTLS setup
+- Cache-aware routing will fail without CNI
 
 **Installation:**
+Istio CNI is automatically installed when you run `make deploy-all` from the rhaii-on-xks repository. The RHAII operators include Istio with CNI enabled by default.
+
+**Verify Istio CNI is enabled:**
 
 ```bash
-# Apply IstioCNI resource
-kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
+# Check CNI DaemonSet exists in istio-system namespace
+kubectl get daemonset -n istio-system istio-cni-node
 
-# Wait for CNI to be ready (takes ~1-2 minutes)
-kubectl wait --for=condition=Ready istiocni/default --timeout=300s
+# Expected output (shows CNI running on all nodes):
+# NAME             DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE
+# istio-cni-node   3         3         3       3            3
+
+# Verify CNI pods are running
+kubectl get pods -n istio-system -l k8s-app=istio-cni-node
+
+# Check CNI configuration
+kubectl get configmap -n istio-system istio-cni-config
 ```
 
-**Verify Istio CNI installation:**
+**If CNI is missing:**
+
+The rhaii-on-xks installation should have enabled CNI automatically. If it's missing:
 
 ```bash
-# Check IstioCNI resource status
-kubectl get istiocni
+# Re-run operator installation
+cd /path/to/rhaii-on-xks
+make deploy-all
 
-# Expected output:
-# NAME      NAMESPACE     PROFILE   READY   STATUS   VERSION       AGE
-# default   kube-system             True    Healthy  v1.27-latest  1m
-
-# Check CNI DaemonSet is running
-kubectl get daemonset -n kube-system | grep istio-cni-node
-
-# Expected: istio-cni-node should show DESIRED = CURRENT = READY
+# Verify CNI is now present
+kubectl get daemonset -n istio-system istio-cni-node
 ```
 
-**Time:** ~2 minutes
+**Important:** Do not proceed with deployment if CNI is not running. EPP scheduler mTLS communication will fail.
+
+**Time:** ~1 minute verification
 
 ---
 
