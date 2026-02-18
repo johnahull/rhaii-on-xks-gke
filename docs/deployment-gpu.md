@@ -266,18 +266,19 @@ kubectl label nodes -l cloud.google.com/gke-accelerator gke-no-default-nvidia-gp
 # 2. Add NVIDIA Helm repository (if not already added)
 helm repo add nvidia https://helm.ngc.nvidia.com/nvidia && helm repo update
 
-# 3. Install GPU Operator with GKE-specific settings
+# 3. Create gpu-operator namespace and apply ResourceQuota BEFORE installation
+kubectl create namespace gpu-operator
+kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
+
+# 4. Install GPU Operator with GKE-specific settings
 helm install gpu-operator nvidia/gpu-operator \
-  -n gpu-operator --create-namespace \
+  -n gpu-operator \
   --set driver.enabled=false \
   --set hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia \
   --set toolkit.installDir=/home/kubernetes/bin/nvidia \
   --set cdi.enabled=true \
   --set toolkit.env[0].name=RUNTIME_CONFIG_SOURCE \
   --set toolkit.env[0].value=file
-
-# 4. Create ResourceQuota to allow system-critical pods in gpu-operator namespace
-kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
 
 # 5. Wait for GPU Operator pods to be ready
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=gpu-operator -n gpu-operator --timeout=300s
@@ -299,7 +300,7 @@ kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/ru
 - `driver.enabled=false` uses GKE's pre-installed NVIDIA drivers (DO NOT let operator install drivers)
 - `hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia` points to GKE's writable path (GKE root filesystem is read-only)
 - `cdi.enabled=true` generates CDI device specs for GPU injection into containers
-- ResourceQuota allows system-critical priority pods to exceed GKE's default quota limits (permits up to 1000 system-critical pods in gpu-operator namespace)
+- **ResourceQuota must be applied BEFORE GPU Operator installation** to avoid quota errors on system-critical pods (permits up to 1000 system-critical pods in gpu-operator namespace)
 
 ---
 
