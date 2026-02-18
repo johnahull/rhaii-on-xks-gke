@@ -9,9 +9,8 @@ spec:
     labels:
       gateway.networking.k8s.io/gateway-name: inference-gateway
   configPatches:
-  # Fix the ext_proc filter's "dummy" cluster to use Istio-managed mTLS cluster
-  # The EPP scheduler pod has an Istio sidecar injected (requires Istio CNI)
-  # Istio automatically creates an outbound cluster with mTLS for the EPP service
+  # Fix the ext_proc filter to use plain gRPC cluster (no Istio mTLS)
+  # Uses the plain cluster created by envoyfilter-ext-proc-base.yaml
   - applyTo: HTTP_FILTER
     match:
       context: GATEWAY
@@ -28,5 +27,5 @@ spec:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
           grpc_service:
             envoy_grpc:
-              cluster_name: outbound|9002||qwen-3b-gpu-svc-epp-service.rhaii-inference.svc.cluster.local
+              cluster_name: epp-plain-cluster
             timeout: 10s

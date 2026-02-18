@@ -1,0 +1,39 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: epp-ext-proc-plain-cluster
+  namespace: opendatahub
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: inference-gateway
+  priority: 10
+  configPatches:
+  # Create HTTPS cluster for EPP scheduler (TLS without Istio mTLS)
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+    patch:
+      operation: ADD
+      value:
+        name: "epp-plain-cluster"
+        type: STRICT_DNS
+        connect_timeout: 5s
+        lb_policy: ROUND_ROBIN
+        http2_protocol_options: {}
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            common_tls_context:
+              validation_context:
+                trust_chain_verification: ACCEPT_UNTRUSTED
+        load_assignment:
+          cluster_name: "epp-plain-cluster"
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: qwen-3b-gpu-svc-epp-service.rhaii-inference.svc.cluster.local
+                    port_value: 9002

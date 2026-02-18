@@ -48,6 +48,26 @@ spec:
                 response_header_mode: SEND
                 request_body_mode: BUFFERED
                 response_body_mode: NONE
+  # Patch per-route ext_proc configuration for GPU deployment - third replica route
+  - applyTo: HTTP_ROUTE
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        vhost:
+          route:
+            name: "rhaii-inference.qwen-3b-gpu-svc-kserve-route.2"
+    patch:
+      operation: MERGE
+      value:
+        typed_per_filter_config:
+          envoy.filters.http.ext_proc:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+            overrides:
+              processing_mode:
+                request_header_mode: SEND
+                response_header_mode: SEND
+                request_body_mode: BUFFERED
+                response_body_mode: NONE
   # Patch per-route ext_proc configuration for TPU deployment - chat/completions endpoint
   - applyTo: HTTP_ROUTE
     match:
