@@ -279,14 +279,10 @@ helm install gpu-operator nvidia/gpu-operator \
 # 4. Create ResourceQuota to allow system-critical pods in gpu-operator namespace
 kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
 
-# 5. Patch GPU Operator deployment to remove priority class (GKE quota conflict)
-kubectl patch deployment gpu-operator -n gpu-operator --type=json \
-  -p='[{"op":"remove","path":"/spec/template/spec/priorityClassName"}]'
-
-# 6. Wait for GPU Operator pods to be ready
+# 5. Wait for GPU Operator pods to be ready
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=gpu-operator -n gpu-operator --timeout=300s
 
-# 7. Verify GPU Operator is working
+# 6. Verify GPU Operator is working
 kubectl get pods -n gpu-operator
 kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/run/cdi/
 ```
@@ -303,7 +299,7 @@ kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/ru
 - `driver.enabled=false` uses GKE's pre-installed NVIDIA drivers (DO NOT let operator install drivers)
 - `hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia` points to GKE's writable path (GKE root filesystem is read-only)
 - `cdi.enabled=true` generates CDI device specs for GPU injection into containers
-- ResourceQuota and priority class patch work around GKE's restrictions on system-critical pods
+- ResourceQuota allows system-critical priority pods to exceed GKE's default quota limits (permits up to 1000 system-critical pods in gpu-operator namespace)
 
 ---
 
