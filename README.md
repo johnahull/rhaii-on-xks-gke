@@ -114,6 +114,8 @@ rhaii-on-xks-gke/
 │   └── check-nodepool-prerequisites.sh    # Node pool validation
 │
 ├── deployments/                           # Kubernetes manifests
+│   ├── gpu-operator/
+│   │   └── resourcequota-gcp-critical-pods.yaml
 │   └── istio-kserve/
 │       └── caching-pattern/
 │           └── manifests/

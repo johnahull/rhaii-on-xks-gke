@@ -277,23 +277,7 @@ helm install gpu-operator nvidia/gpu-operator \
   --set toolkit.env[0].value=file
 
 # 4. Create ResourceQuota to allow system-critical pods in gpu-operator namespace
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: gcp-critical-pods
-  namespace: gpu-operator
-spec:
-  hard:
-    pods: "1000"
-  scopeSelector:
-    matchExpressions:
-    - operator: In
-      scopeName: PriorityClass
-      values:
-      - system-node-critical
-      - system-cluster-critical
-EOF
+kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
 
 # 5. Patch GPU Operator deployment to remove priority class (GKE quota conflict)
 kubectl patch deployment gpu-operator -n gpu-operator --type=json \
