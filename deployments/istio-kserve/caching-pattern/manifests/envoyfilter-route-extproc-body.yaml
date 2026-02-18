@@ -1,21 +1,21 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: inference-pool-route-body-forwarding-pattern3
+  name: inference-pool-route-body-forwarding-caching
   namespace: opendatahub
 spec:
   workloadSelector:
     labels:
       gateway.networking.k8s.io/gateway-name: inference-gateway
   configPatches:
-  # Patch per-route ext_proc configuration for chat/completions endpoint
+  # Patch per-route ext_proc configuration for GPU deployment - chat/completions endpoint
   - applyTo: HTTP_ROUTE
     match:
       context: GATEWAY
       routeConfiguration:
         vhost:
           route:
-            name: "rhaii-inference.qwen2-3b-pattern3-kserve-route.0"
+            name: "rhaii-inference.qwen-3b-gpu-svc-kserve-route.0"
     patch:
       operation: MERGE
       value:
@@ -28,14 +28,54 @@ spec:
                 response_header_mode: SEND
                 request_body_mode: BUFFERED
                 response_body_mode: NONE
-  # Patch per-route ext_proc configuration for completions endpoint
+  # Patch per-route ext_proc configuration for GPU deployment - completions endpoint
   - applyTo: HTTP_ROUTE
     match:
       context: GATEWAY
       routeConfiguration:
         vhost:
           route:
-            name: "rhaii-inference.qwen2-3b-pattern3-kserve-route.1"
+            name: "rhaii-inference.qwen-3b-gpu-svc-kserve-route.1"
+    patch:
+      operation: MERGE
+      value:
+        typed_per_filter_config:
+          envoy.filters.http.ext_proc:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+            overrides:
+              processing_mode:
+                request_header_mode: SEND
+                response_header_mode: SEND
+                request_body_mode: BUFFERED
+                response_body_mode: NONE
+  # Patch per-route ext_proc configuration for TPU deployment - chat/completions endpoint
+  - applyTo: HTTP_ROUTE
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        vhost:
+          route:
+            name: "rhaii-inference.qwen-3b-tpu-svc-kserve-route.0"
+    patch:
+      operation: MERGE
+      value:
+        typed_per_filter_config:
+          envoy.filters.http.ext_proc:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+            overrides:
+              processing_mode:
+                request_header_mode: SEND
+                response_header_mode: SEND
+                request_body_mode: BUFFERED
+                response_body_mode: NONE
+  # Patch per-route ext_proc configuration for TPU deployment - completions endpoint
+  - applyTo: HTTP_ROUTE
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        vhost:
+          route:
+            name: "rhaii-inference.qwen-3b-tpu-svc-kserve-route.1"
     patch:
       operation: MERGE
       value:
