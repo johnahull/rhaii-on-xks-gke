@@ -27,8 +27,8 @@ Before starting, ensure you have:
 - [ ] Project: `YOUR_PROJECT` (or your project) with Owner/Editor role
 - [ ] `gcloud` CLI installed and authenticated
 - [ ] `kubectl` CLI installed
-- [ ] Red Hat registry credentials in `redhat-pull-secret.yaml`
-- [ ] HuggingFace token for model access
+- [ ] Red Hat registry credentials in `redhat-pull-secret.yaml` (create from `templates/redhat-pull.yaml.template`)
+- [ ] HuggingFace token in `huggingface-token-secret.yaml` (create from `templates/huggingface-token.yaml.template`)
 - [ ] **GPU T4 quota: 3 GPUs minimum**
 
 **Need help?** See [Prerequisites Guide](prerequisites.md) for detailed setup instructions.
@@ -201,7 +201,13 @@ You only interact with the `rhaii-inference` namespace. Operator namespaces are 
 
 Create the workload namespace and deploy secrets.
 
-**Don't have the secret files yet?** See [Prerequisites — Required Secrets](prerequisites.md#required-secrets) for how to create them.
+**Don't have the secret files yet?** Create them from the included templates:
+```bash
+cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
+cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
+# Edit each file and replace placeholders with your credentials
+```
+See [Prerequisites — Required Secrets](prerequisites.md#required-secrets) for details.
 
 ```bash
 # Create workload namespace

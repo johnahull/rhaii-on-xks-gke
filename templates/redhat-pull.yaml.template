@@ -1,0 +1,26 @@
+# Template: Red Hat Registry Pull Secret
+# Replace BASE64_ENCODED_DOCKERCONFIGJSON with your base64-encoded Docker config.
+#
+# To create the base64 value:
+#   1. Log in to the Red Hat registry: podman login registry.redhat.io
+#   2. Base64-encode your Docker config: base64 -w0 ~/.docker/config.json
+#   3. Paste the output below
+#
+# Or create directly with kubectl:
+#   kubectl create secret docker-registry rhaiis-pull-secret \
+#     --docker-server=registry.redhat.io \
+#     --docker-username=YOUR_USERNAME \
+#     --docker-password=YOUR_PASSWORD \
+#     -n rhaii-inference
+#
+# Usage:
+#   cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
+#   # Edit the file and replace the placeholder
+#   kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rhaiis-pull-secret
+data:
+  .dockerconfigjson: BASE64_ENCODED_DOCKERCONFIGJSON
+type: kubernetes.io/dockerconfigjson

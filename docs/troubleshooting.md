@@ -141,7 +141,8 @@ kubectl logs -l serving.kserve.io/inferenceservice -f
    # Verify pull secret in correct namespace
    kubectl get secret rhaiis-pull-secret -n rhaii-inference
 
-   # Reapply if missing
+   # Reapply if missing (create from template if needed)
+   # cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
    kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
    ```
 

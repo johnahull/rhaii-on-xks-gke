@@ -154,48 +154,46 @@ Request quota increases before creating clusters:
 
 ### Red Hat Pull Secret
 
-**File:** `redhat-pull-secret.yaml`
+**Template:** `templates/redhat-pull.yaml.template`
 
-**Format:**
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rhaiis-pull-secret
-type: kubernetes.io/dockerconfigjson
-data:
-  .dockerconfigjson: <base64-encoded-credentials>
+**Create from template:**
+```bash
+cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
 ```
 
-**How to obtain:**
+Then edit `redhat-pull-secret.yaml` and replace `BASE64_ENCODED_DOCKERCONFIGJSON` with your credentials.
+
+**How to obtain credentials:**
 1. Log in to Red Hat registry: https://registry.redhat.io
 2. Navigate to: Registry Service Accounts
 3. Create or use existing service account
-4. Download Kubernetes secret (YAML format)
+4. Download Kubernetes secret (YAML format) and copy the `.dockerconfigjson` value
 
-**Location:** Place in repository root directory
+**Alternative — create directly with kubectl:**
+```bash
+kubectl create secret docker-registry rhaiis-pull-secret \
+  --docker-server=registry.redhat.io \
+  --docker-username=YOUR_USERNAME \
+  --docker-password=YOUR_PASSWORD \
+  -n rhaii-inference
+```
 
 ### HuggingFace Token Secret
 
-**File:** `huggingface-token-secret.yaml`
+**Template:** `templates/huggingface-token.yaml.template`
 
-**Format:**
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: huggingface-token
-type: Opaque
-stringData:
-  token: YOUR_HF_TOKEN_HERE
+**Create from template:**
+```bash
+cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
 ```
 
-**How to create:**
-1. Get token from: https://huggingface.co/settings/tokens
-2. Create secret file with token value
-3. Accept license for gated models you'll use (default model Qwen/Qwen2.5-3B-Instruct is ungated)
+Then edit `huggingface-token-secret.yaml` and replace `YOUR_HF_TOKEN_HERE` with your token.
 
-**Location:** Place in repository root directory
+**How to obtain:**
+1. Get token from: https://huggingface.co/settings/tokens
+2. Accept license for gated models you'll use (default model Qwen/Qwen2.5-3B-Instruct is ungated)
+
+**Note:** Secret files (`*secret*.yaml`) are git-ignored and will not be committed.
 
 ---
 
@@ -254,17 +252,20 @@ git clone https://github.com/opendatahub-io/rhaii-on-xks.git
 └── rhaii-on-xks/          # Operator installation (https://github.com/opendatahub-io/rhaii-on-xks)
 ```
 
-### Add Secrets
+### Create Secrets from Templates
 
 ```bash
 cd ~/workspace/rhaii-on-xks-gke
 
-# Copy or create secret files
-cp /path/to/redhat-pull-secret.yaml .
-cp /path/to/huggingface-token-secret.yaml .
+# Create secret files from templates
+cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
+cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
+
+# Edit each file and replace placeholders with your credentials
+# (see "Required Secrets" section above for details)
 
 # Verify secrets exist
-ls -l *secret.yaml
+ls -l *secret*.yaml
 ```
 
 ---

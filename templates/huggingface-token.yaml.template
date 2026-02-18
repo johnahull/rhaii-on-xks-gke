@@ -1,0 +1,15 @@
+# Template: HuggingFace Token Secret
+# Replace YOUR_HF_TOKEN_HERE with your HuggingFace access token.
+# Get a token from: https://huggingface.co/settings/tokens
+#
+# Usage:
+#   cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
+#   # Edit the file and replace YOUR_HF_TOKEN_HERE with your token
+#   kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: huggingface-token
+type: Opaque
+stringData:
+  token: YOUR_HF_TOKEN_HERE

@@ -105,8 +105,8 @@ Before deploying, ensure you have:
 - ✅ GCP project with appropriate quotas
 - ✅ `gcloud` CLI installed and authenticated
 - ✅ `kubectl` CLI installed
-- ✅ Red Hat registry credentials (pull secret)
-- ✅ HuggingFace token for model access
+- ✅ Red Hat registry credentials — create from `templates/redhat-pull.yaml.template`
+- ✅ HuggingFace token — create from `templates/huggingface-token.yaml.template`
 
 **Detailed setup:** [Prerequisites Guide](docs/prerequisites.md)
 

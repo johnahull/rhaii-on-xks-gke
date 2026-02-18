@@ -14,6 +14,9 @@ redhat-pull-secret.yaml
 *hf-token*
 *huggingface*
 
+# Allow template files (safe to commit — contain only placeholders)
+!templates/*.template
+
 # Python
 __pycache__/
 *.py[cod]

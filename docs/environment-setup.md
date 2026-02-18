@@ -401,7 +401,8 @@ git commit -m "Remove environment files from tracking"
 
 **Token management:**
 - HuggingFace tokens are managed via Kubernetes secrets (not environment variables)
-- See [Deployment Guide (TPU)](deployment-tpu.md) for secret creation
+- Create from template: `cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml`
+- See [Prerequisites — Required Secrets](prerequisites.md#required-secrets) for details
 
 ## Next Steps
 
