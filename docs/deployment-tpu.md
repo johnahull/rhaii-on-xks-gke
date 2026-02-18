@@ -338,21 +338,55 @@ kubectl logs <pod-name> -n rhaii-inference --tail=10
 
 ---
 
-## Step 6: Apply EnvoyFilter and NetworkPolicies (2 minutes)
+## Step 6: Enable EPP Sidecar Injection (1 minute)
+
+Enable Istio sidecar on the EPP scheduler for mTLS communication:
+
+```bash
+# Patch EPP deployment to enable sidecar injection
+kubectl patch deployment qwen-3b-tpu-svc-kserve-router-scheduler -n rhaii-inference \
+  -p '{"spec":{"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}}}'
+
+# Wait for EPP pod to restart with sidecar (2/2 containers)
+kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
+  deployment/qwen-3b-tpu-svc-kserve-router-scheduler -n rhaii-inference --timeout=120s
+```
+
+**What this does:**
+- Injects Istio sidecar into EPP scheduler pod
+- Enables mTLS communication between Gateway and EPP
+- Required for ext_proc filter to work with Istio CNI
+
+**Verify sidecar injection:**
+```bash
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferenceservice-router-scheduler
+# Should show READY 2/2 (main + istio-proxy containers)
+```
+
+---
+
+## Step 7: Apply EnvoyFilters and NetworkPolicies (2 minutes)
 
 Apply cache-aware routing and security policies:
 
-### EnvoyFilter for Cache-Aware Routing
+### EnvoyFilters for Cache-Aware Routing
 
 ```bash
+# Apply EnvoyFilter for ext_proc cluster fix (fixes Istio issue #57855)
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-ext-proc-tpu.yaml
+
 # Apply EnvoyFilter for body forwarding (enables cache-aware routing)
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml
 ```
 
-**What this does:**
-- Enables request body forwarding to EPP scheduler
-- Allows EPP to hash request prefixes
-- Routes requests with same prefix to same replica for cache hits
+**What these do:**
+1. **envoyfilter-ext-proc-tpu.yaml** - Fixes ext_proc filter to use Istio mTLS cluster for EPP communication
+2. **envoyfilter-route-extproc-body.yaml** - Enables request body forwarding to EPP scheduler
+
+**How cache-aware routing works:**
+- EPP scheduler receives request body from Istio Gateway
+- EPP hashes the request prefix to identify cache affinity
+- Requests with same prefix route to same replica for cache hits
 
 ### NetworkPolicies for Security
 
@@ -374,7 +408,7 @@ kubectl get networkpolicies
 ```
 
 **Success criteria:**
-- ✅ EnvoyFilter applied
+- ✅ 2 EnvoyFilters applied (ext_proc fix + body forwarding)
 - ✅ 4 NetworkPolicies created
 - ✅ No errors during apply
 

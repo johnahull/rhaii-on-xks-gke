@@ -1,0 +1,18 @@
+apiVersion: sailoperator.io/v1
+kind: IstioCNI
+metadata:
+  name: default
+spec:
+  version: v1.27-latest
+  namespace: kube-system
+  values:
+    cni:
+      # GKE-specific CNI directories
+      cniBinDir: /home/kubernetes/bin
+      cniConfDir: /etc/cni/net.d
+      # Exclude system namespaces from CNI processing
+      excludeNamespaces:
+        - istio-system
+        - kube-system
+        - cert-manager
+        - opendatahub

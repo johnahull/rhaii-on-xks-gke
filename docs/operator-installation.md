@@ -7,10 +7,11 @@ Install RHAII operators using the official [RHAII on XKS](https://github.com/ope
 **What gets installed:**
 - cert-manager (certificate management for TLS)
 - Red Hat OpenShift Service Mesh (Istio for traffic routing)
+- **Istio CNI** (enables sidecar injection for cache-aware routing)
 - KServe v0.15 (inference serving platform)
 - LeaderWorkerSet (LWS) controller (workload orchestration)
 
-**Time:** ~10 minutes
+**Time:** ~12 minutes
 
 **Prerequisites:**
 - ✅ GKE cluster created and kubectl configured
@@ -41,6 +42,44 @@ make deploy-all
 # Verify installation
 make status
 ```
+
+---
+
+## Install Istio CNI (Required for Cache-Aware Routing)
+
+**What is Istio CNI:**
+Istio CNI enables sidecar injection for pods with restrictive security contexts (read-only filesystems, no privilege escalation). This is required for the EPP (Endpoint Picker Protocol) scheduler to communicate with the Istio Gateway for cache-aware routing.
+
+**Why it's needed:**
+The EPP scheduler requires an Istio sidecar to enable mTLS communication with the Gateway's ext_proc filter. Without Istio CNI, sidecar injection fails due to the EPP's security constraints.
+
+**Installation:**
+
+```bash
+# Apply IstioCNI resource
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
+
+# Wait for CNI to be ready (takes ~1-2 minutes)
+kubectl wait --for=condition=Ready istiocni/default --timeout=300s
+```
+
+**Verify Istio CNI installation:**
+
+```bash
+# Check IstioCNI resource status
+kubectl get istiocni
+
+# Expected output:
+# NAME      NAMESPACE     PROFILE   READY   STATUS   VERSION       AGE
+# default   kube-system             True    Healthy  v1.27-latest  1m
+
+# Check CNI DaemonSet is running
+kubectl get daemonset -n kube-system | grep istio-cni-node
+
+# Expected: istio-cni-node should show DESIRED = CURRENT = READY
+```
+
+**Time:** ~2 minutes
 
 ---
 

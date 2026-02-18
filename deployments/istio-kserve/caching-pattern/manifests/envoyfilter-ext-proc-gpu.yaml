@@ -1,0 +1,32 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: inference-pool-ext-proc-gpu-fix
+  namespace: opendatahub
+spec:
+  priority: 20  # Ensures MERGE runs after Istio's auto-creation
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: inference-gateway
+  configPatches:
+  # Fix the ext_proc filter's "dummy" cluster to use Istio-managed mTLS cluster
+  # The EPP scheduler pod has an Istio sidecar injected (requires Istio CNI)
+  # Istio automatically creates an outbound cluster with mTLS for the EPP service
+  - applyTo: HTTP_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.ext_proc
+    patch:
+      operation: MERGE
+      value:
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+          grpc_service:
+            envoy_grpc:
+              cluster_name: outbound|9002||qwen-3b-gpu-svc-epp-service.rhaii-inference.svc.cluster.local
+            timeout: 10s

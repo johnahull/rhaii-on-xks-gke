@@ -6,7 +6,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/component: router-scheduler
+      app.kubernetes.io/component: llminferenceservice-router-scheduler
   policyTypes:
   - Ingress
   - Egress
