@@ -590,13 +590,14 @@ INFO: GPU KV cache size: 3145728 tokens
 **Test cache hit behavior with identical prefixes:**
 
 ```bash
-# Export Gateway IP
+# Export Gateway IP and construct base URL
 export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
+export BASE_URL="http://$GATEWAY_IP/rhaii-inference/qwen-3b-gpu-svc"
 
 # Run 5 requests with IDENTICAL prefix
 for i in {1..5}; do
   echo "Request $i:"
-  curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+  curl -s -w "\nLatency: %{time_total}s\n\n" -X POST $BASE_URL/v1/completions \
     -H "Content-Type: application/json" \
     -d '{
       "model": "/mnt/models",
@@ -638,7 +639,7 @@ Latency: 0.109s   ← CACHE HIT
 
 ```bash
 # Now try a DIFFERENT prefix
-curl -s -w "\nLatency: %{time_total}s\n\n" -X POST http://$GATEWAY_IP/v1/completions \
+curl -s -w "\nLatency: %{time_total}s\n\n" -X POST $BASE_URL/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "/mnt/models",
