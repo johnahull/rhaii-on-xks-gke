@@ -390,16 +390,44 @@ echo "└───────────────────────�
 echo ""
 echo "Final Score = (cache × 1.0) + (load × 0.5)"
 echo ""
-echo "Example:"
-echo "┌──────────┬────────────┬───────────┬──────────────┐"
-echo "│ Replica  │ Cache×1.0  │ Load×0.5  │ FINAL SCORE  │"
-echo "├──────────┼────────────┼───────────┼──────────────┤"
-echo "│ Replica 1│    0.20    │   0.40    │     0.60     │"
-echo "│ Replica 2│    0.90    │   0.25    │ 1.15 ← WIN   │"
-echo "│ Replica 3│    0.10    │   0.35    │     0.45     │"
-echo "└──────────┴────────────┴───────────┴──────────────┘"
+echo "Verifying actual EPP scheduler state..."
 echo ""
-echo "Result: Cache affinity (1.0) dominates load (0.5)"
-echo "        → Maximizes cache hits for repeated prefixes"
+
+# Check InferencePool exists
+INFERENCEPOOL_COUNT=$(kubectl get inferencepool -n "$NAMESPACE" 2>/dev/null | grep -v NAME | wc -l)
+if [[ $INFERENCEPOOL_COUNT -gt 0 ]]; then
+    echo -e "  ${GREEN}✓${NC} InferencePool resource exists"
+    kubectl get inferencepool -n "$NAMESPACE" 2>/dev/null | head -2 | sed 's/^/    /'
+else
+    echo -e "  ${YELLOW}⚠${NC} No InferencePool found (may not be created yet)"
+fi
+echo ""
+
+# Check EPP scheduler pod
+EPP_POD=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=router-scheduler -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [[ -n "$EPP_POD" ]]; then
+    EPP_STATUS=$(kubectl get pod "$EPP_POD" -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [[ "$EPP_STATUS" == "Running" ]]; then
+        echo -e "  ${GREEN}✓${NC} EPP scheduler pod: $EPP_POD (Running)"
+    else
+        echo -e "  ${YELLOW}⚠${NC} EPP scheduler pod: $EPP_POD (Status: $EPP_STATUS)"
+    fi
+
+    # Try to get EPP metrics
+    echo ""
+    echo "  EPP Scheduler Metrics (scorer activity):"
+    METRICS=$(kubectl exec -n "$NAMESPACE" "$EPP_POD" -- curl -s localhost:9090/metrics 2>/dev/null | grep -E "scorer|routing" | head -5)
+    if [[ -n "$METRICS" ]]; then
+        echo "$METRICS" | sed 's/^/    /'
+    else
+        echo "    (Metrics endpoint not accessible or no scorer metrics yet)"
+    fi
+else
+    echo -e "  ${YELLOW}⚠${NC} EPP scheduler pod not found"
+fi
+
+echo ""
+echo "To view real-time routing decisions:"
+echo "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=router-scheduler --tail=50 -f"
 echo ""
 echo "========================================="
