@@ -776,7 +776,7 @@ kubectl get events --sort-by='.lastTimestamp' | grep -i quota
 **Solution:**
 ```bash
 # Verify EnvoyFilter applied
-kubectl get envoyfilter -n istio-system
+kubectl get envoyfilter -n opendatahub
 
 # If missing, apply
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml

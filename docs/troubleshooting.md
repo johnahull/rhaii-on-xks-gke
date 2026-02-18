@@ -125,13 +125,13 @@ qwen-3b-tpu-svc  False
 **Diagnosis:**
 ```bash
 # Check LLMInferenceService status
-kubectl describe llminferenceservice qwen-3b-tpu-svc
+kubectl describe llminferenceservice qwen-3b-tpu-svc -n rhaii-inference
 
 # Check pods
-kubectl get pods -l serving.kserve.io/inferenceservice
+kubectl get pods -l serving.kserve.io/inferenceservice -n rhaii-inference
 
 # View logs
-kubectl logs -l serving.kserve.io/inferenceservice -f
+kubectl logs -l serving.kserve.io/inferenceservice -n rhaii-inference -f
 ```
 
 **Common causes:**
@@ -149,7 +149,7 @@ kubectl logs -l serving.kserve.io/inferenceservice -f
 2. **Model download failures:**
    ```bash
    # Check HuggingFace token
-   kubectl get secret huggingface-token
+   kubectl get secret huggingface-token -n rhaii-inference
 
    # Verify network connectivity
    kubectl run test --image=curlimages/curl --rm -it -- curl https://huggingface.co
@@ -207,7 +207,7 @@ curl: (7) Failed to connect
 kubectl get gateway inference-gateway -n opendatahub
 
 # Check HTTPRoute
-kubectl get httproute
+kubectl get httproute -n rhaii-inference
 
 # Test from within cluster
 kubectl run test --image=curlimages/curl --rm -it -- \
@@ -232,7 +232,7 @@ kubectl run test --image=curlimages/curl --rm -it -- \
 **Diagnosis:**
 ```bash
 # Check vLLM logs
-kubectl logs -l serving.kserve.io/inferenceservice -f
+kubectl logs -l serving.kserve.io/inferenceservice -n rhaii-inference -f
 
 # Look for model loading messages
 # Expected: "Loaded model Qwen/Qwen2.5-3B-Instruct"
@@ -323,7 +323,7 @@ done
 ```
 
 **Solution:**
-Verify EnvoyFilter for extproc body forwarding is applied (Pattern 3 specific)
+Verify EnvoyFilter for extproc body forwarding is applied
 
 ---
 
@@ -337,7 +337,7 @@ Error: connection refused from pod to pod
 **Diagnosis:**
 ```bash
 # List NetworkPolicies
-kubectl get networkpolicy
+kubectl get networkpolicy -n rhaii-inference
 
 # Test connectivity
 kubectl run test --image=curlimages/curl --rm -it -- \
@@ -500,14 +500,14 @@ kubectl logs -n istio-system deployment/istiod
 kubectl logs -n opendatahub deployment/kserve-controller-manager
 
 # Application logs
-kubectl logs -l serving.kserve.io/inferenceservice --tail=100
+kubectl logs -l serving.kserve.io/inferenceservice -n rhaii-inference --tail=100
 
 # Events
 kubectl get events --sort-by='.lastTimestamp' | tail -50
 
 # Resource status
-kubectl describe llminferenceservice <name>
-kubectl describe pod <pod-name>
+kubectl describe llminferenceservice <name> -n rhaii-inference
+kubectl describe pod <pod-name> -n rhaii-inference
 ```
 
 **Check documentation:**

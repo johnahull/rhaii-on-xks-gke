@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-gateway-to-epp-scheduler-pattern3
+  name: allow-gateway-to-epp-scheduler
   namespace: rhaii-inference
 spec:
   podSelector:
@@ -37,12 +37,11 @@ spec:
       port: 9090
 
   egress:
-  # Allow EPP scheduler to scrape vLLM metrics from all 3 replicas (for scheduling decisions)
-  # Pattern 3: EPP needs to query all replicas to calculate prefix-cache-scorer
+  # Allow EPP scheduler to scrape vLLM metrics from all replicas (for scheduling decisions)
+  # EPP needs to query all replicas to calculate prefix-cache-scorer for cache-aware routing
   - to:
     - podSelector:
         matchLabels:
-          app.kubernetes.io/name: qwen2-3b-pattern3
           kserve.io/component: workload
     ports:
     - protocol: TCP

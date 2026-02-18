@@ -880,7 +880,7 @@ kubectl describe pod <vllm-pod> -n rhaii-inference | grep -A 5 "Limits"
 **Solution:**
 ```bash
 # Verify EnvoyFilter applied
-kubectl get envoyfilter -n istio-system
+kubectl get envoyfilter -n opendatahub
 
 # If missing, apply
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml
