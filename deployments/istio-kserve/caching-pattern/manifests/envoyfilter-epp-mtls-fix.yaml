@@ -1,0 +1,40 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: epp-scheduler-mtls-fix
+  namespace: opendatahub
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: inference-gateway
+  priority: 10  # Apply before ext_proc filter patch (priority 20)
+  configPatches:
+  # Override the EPP service cluster to use proper Istio mTLS
+  # KServe creates a DestinationRule with mode: SIMPLE (client-side HTTPS)
+  # which conflicts with Istio's mTLS expectations. This EnvoyFilter overrides
+  # the cluster configuration to use proper Istio mutual TLS authentication.
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+      cluster:
+        name: "outbound|9002||qwen-3b-gpu-svc-epp-service.rhaii-inference.svc.cluster.local"
+    patch:
+      operation: MERGE
+      value:
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            common_tls_context:
+              alpn_protocols:
+              - istio-peer-exchange
+              - istio
+              tls_certificates:
+              - certificate_chain:
+                  filename: /var/run/secrets/workload-spiffe-credentials/cert-chain.pem
+                private_key:
+                  filename: /var/run/secrets/workload-spiffe-credentials/key.pem
+              validation_context:
+                trusted_ca:
+                  filename: /var/run/secrets/istio/root-cert.pem
+            sni: "outbound_.9002_._.qwen-3b-gpu-svc-epp-service.rhaii-inference.svc.cluster.local"

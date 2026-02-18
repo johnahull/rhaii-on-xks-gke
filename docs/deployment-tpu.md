@@ -372,7 +372,10 @@ Apply cache-aware routing and security policies:
 ### EnvoyFilters for Cache-Aware Routing
 
 ```bash
-# Apply EnvoyFilter for ext_proc cluster fix (fixes Istio issue #57855)
+# Apply EnvoyFilter for EPP mTLS fix (overrides KServe DestinationRule)
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-epp-mtls-fix-tpu.yaml
+
+# Apply EnvoyFilter for ext_proc cluster configuration
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-ext-proc-tpu.yaml
 
 # Apply EnvoyFilter for body forwarding (enables cache-aware routing)
@@ -380,11 +383,12 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 ```
 
 **What these do:**
-1. **envoyfilter-ext-proc-tpu.yaml** - Fixes ext_proc filter to use Istio mTLS cluster for EPP communication
-2. **envoyfilter-route-extproc-body.yaml** - Enables request body forwarding to EPP scheduler
+1. **envoyfilter-epp-mtls-fix-tpu.yaml** - Configures proper Istio mTLS for EPP scheduler communication
+2. **envoyfilter-ext-proc-tpu.yaml** - Configures ext_proc filter to use Istio mTLS cluster for EPP
+3. **envoyfilter-route-extproc-body.yaml** - Enables request body forwarding to EPP scheduler
 
 **How cache-aware routing works:**
-- EPP scheduler receives request body from Istio Gateway
+- EPP scheduler receives request body from Istio Gateway via mTLS
 - EPP hashes the request prefix to identify cache affinity
 - Requests with same prefix route to same replica for cache hits
 
@@ -408,7 +412,7 @@ kubectl get networkpolicies
 ```
 
 **Success criteria:**
-- ✅ 2 EnvoyFilters applied (ext_proc fix + body forwarding)
+- ✅ 3 EnvoyFilters applied (mTLS fix + ext_proc config + body forwarding)
 - ✅ 4 NetworkPolicies created
 - ✅ No errors during apply
 
