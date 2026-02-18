@@ -16,7 +16,7 @@ Deploy a production vLLM inference service on GPU T4 with prefix caching and int
 - ~18 req/s parallel requests
 - ~4.8 req/s serial requests
 
-**Time:** ~45 minutes total
+**Time:** ~50 minutes total
 
 ---
 
@@ -410,7 +410,7 @@ kubectl logs <pod-name> -n rhaii-inference --tail=10
 
 ---
 
-## Step 6: Apply EnvoyFilter and NetworkPolicies (2 minutes)
+## Step 7: Apply EnvoyFilter and NetworkPolicies (2 minutes)
 
 Apply cache-aware routing and security policies:
 
@@ -452,7 +452,7 @@ kubectl get networkpolicies
 
 ---
 
-## Step 7: Verify Deployment (5 minutes)
+## Step 8: Verify Deployment (5 minutes)
 
 Verify the deployment is working:
 
@@ -464,34 +464,48 @@ Verify the deployment is working:
 # Get Gateway IP
 export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
 
-# Test health endpoint
-curl http://$GATEWAY_IP/v1/health
+# Test health endpoint (internal service - use port-forward or test pod)
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-gpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/health
+
+# Test models endpoint to verify service is ready
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k https://qwen-3b-gpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
 
 # Test inference endpoint
-curl -X POST http://$GATEWAY_IP/v1/completions \
+kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
+  --command -- curl -k -X POST https://qwen-3b-gpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "Qwen/Qwen2.5-3B-Instruct",
+    "model": "/mnt/models",
     "prompt": "Explain machine learning in one sentence:",
     "max_tokens": 50
   }'
 ```
 
 **Success criteria:**
-- ✅ Health endpoint returns 200
+- ✅ Health endpoint returns healthy status
+- ✅ Models endpoint shows `/mnt/models` available
 - ✅ Inference request succeeds
-- ✅ Response contains "choices" field
-- ✅ All 3 replicas healthy
+- ✅ Response contains "choices" field with generated text
+- ✅ All 3 vLLM replicas healthy
 
 **Check replica status:**
 ```bash
-kubectl get pods -l serving.kserve.io/inferenceservice
+# Check vLLM workload pods (LLMInferenceService uses different labels)
+kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 # Should show 3 Running pods
+
+# Check all LLMInferenceService components (workload + router)
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/part-of=llminferenceservice
+# Should show 4 Running pods (3 vLLM + 1 router/scheduler)
 ```
+
+**Note:** Gateway external access may require additional firewall configuration. Internal service access (via ClusterIP) works immediately.
 
 ---
 
-## Step 8: Performance Validation (5 minutes)
+## Step 9: Performance Validation (5 minutes)
 
 Validate health endpoints, cache-aware routing, and throughput:
 
