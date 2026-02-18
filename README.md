@@ -92,7 +92,6 @@ All deployment guides use these automation scripts in `scripts/`:
 ```
 rhaii-on-xks-gke/
 ├── README.md                              # This file
-├── CLAUDE.md                              # Project instructions for Claude Code
 │
 ├── docs/                                  # Customer guides
 │   ├── README.md                          # Guide index
