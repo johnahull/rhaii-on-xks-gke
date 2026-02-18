@@ -415,7 +415,8 @@ fi
 echo ""
 
 # Check EPP scheduler pod
-EPP_POD=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=router-scheduler -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+# KServe uses label: app.kubernetes.io/component=llminferenceservice-router-scheduler
+EPP_POD=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=llminferenceservice-router-scheduler -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
 if [[ -n "$EPP_POD" ]]; then
     EPP_STATUS=$(kubectl get pod "$EPP_POD" -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null)
     if [[ "$EPP_STATUS" == "Running" ]]; then
@@ -439,6 +440,6 @@ fi
 
 echo ""
 echo "To view real-time routing decisions:"
-echo "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=router-scheduler --tail=50 -f"
+echo "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=llminferenceservice-router-scheduler --tail=50 -f"
 echo ""
 echo "========================================="
