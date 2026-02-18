@@ -40,6 +40,95 @@ Before starting, ensure you have:
 
 This deployment provides high-throughput inference with intelligent request routing.
 
+### Deployment Overview
+
+```mermaid
+graph TB
+    subgraph cluster["GKE Cluster (rhaii-gpu-scaleout-cluster)"]
+        subgraph nodes["Node Pools"]
+            subgraph stdpool["Standard Pool (2 nodes)"]
+                STD1[Standard Node]
+                STD2[Standard Node]
+            end
+            subgraph gpupool["GPU Pool (3 nodes)"]
+                GPU1["GPU Node 1<br/>n1-standard-4<br/>1x T4 GPU"]
+                GPU2["GPU Node 2<br/>n1-standard-4<br/>1x T4 GPU"]
+                GPU3["GPU Node 3<br/>n1-standard-4<br/>1x T4 GPU"]
+            end
+        end
+
+        subgraph operators["Operator Namespaces (Managed)"]
+            CM["cert-manager<br/>TLS certificates"]
+            ISTIO["istio-system<br/>Service mesh"]
+            ODH["opendatahub<br/>KServe + Gateway"]
+            LWS["openshift-lws-operator<br/>Workload controller"]
+            GPUOP["gpu-operator<br/>GPU device plugin"]
+        end
+
+        subgraph workload["rhaii-inference Namespace (Your Workload)"]
+            VLLM1["vLLM Replica 1<br/>Qwen-2.5-3B<br/>Prefix caching"]
+            VLLM2["vLLM Replica 2<br/>Qwen-2.5-3B<br/>Prefix caching"]
+            VLLM3["vLLM Replica 3<br/>Qwen-2.5-3B<br/>Prefix caching"]
+            EPP["EPP Scheduler<br/>Cache-aware routing"]
+            NP["NetworkPolicies<br/>(optional)"]
+        end
+    end
+
+    GPUOP -.->|CDI injection| GPU1
+    GPUOP -.->|CDI injection| GPU2
+    GPUOP -.->|CDI injection| GPU3
+    GPU1 -.->|runs on| VLLM1
+    GPU2 -.->|runs on| VLLM2
+    GPU3 -.->|runs on| VLLM3
+
+    style workload fill:#e1f5ff
+    style operators fill:#fff4e1
+    style NP fill:#f0f0f0,stroke-dasharray: 5 5
+```
+
+### Request Flow with Cache-Aware Routing
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway as Istio Gateway<br/>(LoadBalancer)
+    participant EnvoyFilter as EnvoyFilter<br/>(ext_proc)
+    participant EPP as EPP Scheduler<br/>(Hash-based routing)
+    participant VLLM1 as vLLM Replica 1<br/>(GPU Node 1)
+    participant VLLM2 as vLLM Replica 2<br/>(GPU Node 2)
+    participant VLLM3 as vLLM Replica 3<br/>(GPU Node 3)
+
+    Note over Client,VLLM3: Request 1: "Translate to Spanish: Hello"
+    Client->>Gateway: POST /v1/completions
+    Gateway->>EnvoyFilter: Forward request
+    EnvoyFilter->>EPP: Extract body via mTLS
+    EPP->>EPP: Hash prefix: "Translate to Spanish:"
+    EPP->>EPP: Score replicas (cache affinity + load)
+    EPP-->>EnvoyFilter: Route to Replica 1
+    EnvoyFilter->>VLLM1: Forward request
+    VLLM1->>VLLM1: CACHE MISS<br/>Process from scratch
+    VLLM1-->>Client: Response (280ms)
+
+    Note over Client,VLLM3: Request 2: "Translate to Spanish: Goodbye"
+    Client->>Gateway: POST /v1/completions
+    Gateway->>EnvoyFilter: Forward request
+    EnvoyFilter->>EPP: Extract body via mTLS
+    EPP->>EPP: Hash prefix: "Translate to Spanish:" (SAME)
+    EPP->>EPP: Score replicas (cache affinity + load)
+    EPP-->>EnvoyFilter: Route to Replica 1 (SAME)
+    EnvoyFilter->>VLLM1: Forward request
+    VLLM1->>VLLM1: CACHE HIT ✓<br/>Reuse cached prefix
+    VLLM1-->>Client: Response (110ms - 60% faster)
+```
+
+**Key Points:**
+- 🔵 **Blue boxes** - Your workload namespace (you manage this)
+- 🟡 **Yellow boxes** - Operator namespaces (automatically managed)
+- ⚪ **Dashed boxes** - Optional components (NetworkPolicies)
+- EnvoyFilter enables body forwarding to EPP scheduler via mTLS
+- EPP scheduler uses hash-based routing to maximize cache hits
+- Requests with identical prefixes always route to the same replica
+
 ### Components
 
 **3 vLLM Replicas:**
@@ -56,22 +145,6 @@ This deployment provides high-throughput inference with intelligent request rout
 - mTLS encryption for all service-to-service communication (required)
 - HTTPS with KServe-issued TLS certificates for vLLM endpoints (required)
 - NetworkPolicies restrict traffic between components (optional - recommended for production)
-
-### Request Flow
-
-```
-Client Request: "Translate to Spanish: Hello"
-    ↓
-Istio Gateway (external IP)
-    ↓
-EnvoyFilter (hash request prefix)
-    ↓
-EPP Scheduler (select replica based on hash)
-    ↓
-Replica 1 (has cached "Translate to Spanish:" prefix)
-    ↓
-Fast response (~80ms vs ~250ms without cache)
-```
 
 ### Cache Benefits
 

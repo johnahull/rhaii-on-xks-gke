@@ -11,6 +11,33 @@ Choose your accelerator and follow the deployment guide:
 
 Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
 
+### Architecture Overview
+
+```mermaid
+graph LR
+    Client[Client] -->|HTTP/HTTPS| Gateway[Istio Gateway<br/>LoadBalancer]
+    Gateway -->|mTLS| EnvoyFilter[EnvoyFilter<br/>ext_proc]
+    EnvoyFilter -->|Request body| EPP[EPP Scheduler<br/>Cache-aware routing]
+    EPP -->|Route by prefix hash| VLLM1[vLLM Replica 1<br/>GPU/TPU]
+    EPP -->|Route by prefix hash| VLLM2[vLLM Replica 2<br/>GPU/TPU]
+    EPP -->|Route by prefix hash| VLLM3[vLLM Replica 3<br/>GPU/TPU]
+
+    VLLM1 -.->|Cache hit: 60-75% faster| Client
+    VLLM2 -.->|Cache hit: 60-75% faster| Client
+    VLLM3 -.->|Cache hit: 60-75% faster| Client
+
+    style EPP fill:#ffe6cc
+    style VLLM1 fill:#e1f5ff
+    style VLLM2 fill:#e1f5ff
+    style VLLM3 fill:#e1f5ff
+```
+
+**Key Features:**
+- 🚀 **Cache-aware routing** - Identical prefixes route to same replica for cache hits
+- 📈 **60-75% latency reduction** - Cached prefix processing is dramatically faster
+- 🔒 **mTLS encryption** - Secure service-to-service communication
+- ⚖️ **Load balancing** - Smart routing balances cache affinity and replica load
+
 ---
 
 ## 📖 Documentation
