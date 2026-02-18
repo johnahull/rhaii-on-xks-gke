@@ -42,6 +42,8 @@ spec:
           --max-model-len=4096 \
           --enable-prefix-caching \
           --disable-log-requests \
+          --gpu-memory-utilization=0.85 \
+          --max-num-seqs=128 \
           --ssl-certfile=/var/run/kserve/tls/tls.crt \
           --ssl-keyfile=/var/run/kserve/tls/tls.key
 
