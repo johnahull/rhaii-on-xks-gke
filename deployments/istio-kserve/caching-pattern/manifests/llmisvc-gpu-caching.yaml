@@ -29,7 +29,7 @@ spec:
 
     containers:
     - name: main
-      image: registry.redhat.io/rhaiis/vllm-cuda-rhel9:3.0.0
+      image: registry.redhat.io/rhaiis/vllm-cuda-rhel9:3.2.5
 
       # vLLM command with prefix caching enabled
       # KServe mounts TLS certs at /var/run/kserve/tls; vLLM serves HTTPS
