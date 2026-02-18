@@ -107,7 +107,9 @@ wait
 
 ## Security Validation
 
-### NetworkPolicy Testing
+### NetworkPolicy Testing (Optional)
+
+**Note:** If you applied NetworkPolicies in Step 9 (GPU) or Step 8 (TPU) of the deployment guide, verify them here.
 
 ```bash
 # List NetworkPolicies

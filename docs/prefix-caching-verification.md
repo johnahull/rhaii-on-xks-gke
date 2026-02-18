@@ -130,9 +130,23 @@ spec:
 
 ---
 
-## ✅ Component 4: NetworkPolicies Allow Required Traffic
+## ✅ Component 4: NetworkPolicies Allow Required Traffic (Optional)
 
-### Fixed Pod Selectors
+**Status:** ✅ Optional - Provides security isolation but not required for functionality
+
+**When to use:**
+- ✅ Production deployments
+- ✅ Multi-tenant clusters
+- ✅ Compliance requirements (SOC2, HIPAA, PCI-DSS)
+- ✅ Handling sensitive or customer data
+
+**When to skip:**
+- ✅ PoC or demo environment (< 2 weeks lifetime)
+- ✅ Non-sensitive test data only
+- ✅ Single-purpose cluster
+- ✅ Time-constrained evaluation
+
+### Fixed Pod Selectors (If Applied)
 All NetworkPolicies now use correct KServe labels:
 
 ```yaml
@@ -148,13 +162,13 @@ podSelector:
     app.kubernetes.io/name: qwen2-3b-pattern3  # ❌ NEVER MATCHED
 ```
 
-### Applied Policies:
+### Applied Policies (If Using NetworkPolicies):
 1. **allow-gateway-to-vllm** - Gateway → vLLM pods (port 8000)
 2. **allow-vllm-egress** - vLLM → HuggingFace (model downloads)
 3. **allow-istio** - Istio control plane communication
 4. **allow-epp-scheduler** - EPP ↔ vLLM metrics + K8s API
 
-**Status:** ✅ All NetworkPolicies apply correctly and allow required traffic
+**Status:** ✅ NetworkPolicies (if applied) correctly allow required traffic
 
 ---
 
@@ -303,7 +317,10 @@ kubectl describe envoyfilter inference-pool-route-body-forwarding-caching -n ope
 
 **Expected:** Filter with 4 route matches (GPU + TPU, chat + completions)
 
-### Check NetworkPolicies Applied
+### Check NetworkPolicies Applied (Optional)
+
+**Note:** Only run if you applied NetworkPolicies in Step 9 (GPU) or Step 8 (TPU).
+
 ```bash
 # List NetworkPolicies
 kubectl get networkpolicy -n rhaii-inference
@@ -312,7 +329,7 @@ kubectl get networkpolicy -n rhaii-inference
 kubectl get networkpolicy allow-gateway-to-vllm -n rhaii-inference -o yaml | grep -A 2 "podSelector"
 ```
 
-**Expected:** `kserve.io/component: workload` selector
+**Expected (if applied):** `kserve.io/component: workload` selector
 
 ---
 
@@ -320,10 +337,10 @@ kubectl get networkpolicy allow-gateway-to-vllm -n rhaii-inference -o yaml | gre
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| vLLM Prefix Caching | ✅ | Enabled with `--enable-prefix-caching` |
-| EPP Scheduler | ✅ | Default weights: prefix-cache-scorer=1.0, least-requests=0.5 |
-| EnvoyFilter | ✅ | Body forwarding enabled for 4 routes |
-| NetworkPolicies | ✅ | Correct selectors, traffic allowed |
-| Cache-Aware Routing | ✅ | Hash-based routing to maximize cache hits |
+| vLLM Prefix Caching | ✅ Required | Enabled with `--enable-prefix-caching` |
+| EPP Scheduler | ✅ Required | Default weights: prefix-cache-scorer=1.0, least-requests=0.5 |
+| EnvoyFilter | ✅ Required | Body forwarding enabled for 4 routes |
+| NetworkPolicies | ⚪ Optional | Security isolation (not required for cache routing) |
+| Cache-Aware Routing | ✅ Required | Hash-based routing to maximize cache hits |
 
 **Prefix caching is fully operational and configured correctly!** 🎉

@@ -10,7 +10,7 @@ Deploy a production vLLM inference service on GPU T4 with prefix caching and int
 - RHAII operators (cert-manager, Istio, KServe, LWS)
 - 3-replica vLLM inference service with prefix caching enabled
 - Cache-aware routing via EnvoyFilter and EPP scheduler
-- Security isolation via NetworkPolicies
+- Security isolation via NetworkPolicies (optional)
 
 **Performance:**
 - ~18 req/s parallel requests
@@ -53,9 +53,9 @@ This deployment provides high-throughput inference with intelligent request rout
 - EPP (External Processing Protocol) scheduler integration
 
 **Security Isolation:**
-- NetworkPolicies restrict traffic between components
-- mTLS encryption for all service-to-service communication
-- HTTPS with KServe-issued TLS certificates for vLLM endpoints
+- mTLS encryption for all service-to-service communication (required)
+- HTTPS with KServe-issued TLS certificates for vLLM endpoints (required)
+- NetworkPolicies restrict traffic between components (optional - recommended for production)
 
 ### Request Flow
 
@@ -437,11 +437,9 @@ kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferences
 
 ---
 
-## Step 8: Apply EnvoyFilters and NetworkPolicies (2 minutes)
+## Step 8: Apply EnvoyFilters for Cache-Aware Routing (2 minutes)
 
-Apply cache-aware routing and security policies:
-
-### EnvoyFilters for Cache-Aware Routing
+Apply EnvoyFilters to enable cache-aware routing:
 
 ```bash
 # Apply EnvoyFilter for EPP mTLS fix (overrides KServe DestinationRule)
@@ -464,10 +462,45 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 - EPP hashes the request prefix to identify cache affinity
 - Requests with same prefix route to same replica for cache hits
 
-### NetworkPolicies for Security
-
+**Verify:**
 ```bash
-# Apply all NetworkPolicies
+kubectl get envoyfilter -n opendatahub
+# Should show 3 EnvoyFilters
+```
+
+**Success criteria:**
+- ✅ 3 EnvoyFilters applied (mTLS fix + ext_proc config + body forwarding)
+- ✅ No errors during apply
+- ✅ Cache-aware routing ready to test
+
+---
+
+## Step 9 (Optional): Apply NetworkPolicies for Security Isolation
+
+**⚠️ Optional for PoC, recommended for production**
+
+NetworkPolicies provide network-level isolation and segmentation. They are **not required** for cache-aware routing to work, but provide important security benefits for production deployments.
+
+**Skip this step if:**
+- ✅ PoC or demo environment (< 2 weeks lifetime)
+- ✅ Non-sensitive test data only
+- ✅ Single-purpose cluster (no other workloads)
+- ✅ Time-constrained evaluation
+
+**Apply NetworkPolicies if:**
+- ✅ Production deployment or production pilot
+- ✅ Multi-tenant cluster with multiple workloads
+- ✅ Compliance requirements (SOC2, HIPAA, PCI-DSS)
+- ✅ Handling any sensitive or customer data
+
+**What NetworkPolicies provide:**
+- 🔒 Restricts Gateway access to vLLM pods only
+- 🔒 Isolates EPP scheduler communication
+- 🔒 Controls egress to HuggingFace only
+- 🔒 Prevents lateral movement between namespaces
+
+**To apply:**
+```bash
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/networkpolicies/
 ```
 
@@ -483,14 +516,14 @@ kubectl get networkpolicies
 # Should show 4 policies
 ```
 
-**Success criteria:**
-- ✅ 3 EnvoyFilters applied (mTLS fix + ext_proc config + body forwarding)
+**Success criteria (if applied):**
 - ✅ 4 NetworkPolicies created
 - ✅ No errors during apply
+- ✅ Network isolation enabled
 
 ---
 
-## Step 8: Verify Deployment (5 minutes)
+## Step 10: Verify Deployment (5 minutes)
 
 Verify the deployment is working:
 
@@ -543,7 +576,7 @@ kubectl get pods -n rhaii-inference -l app.kubernetes.io/part-of=llminferenceser
 
 ---
 
-## Step 9: Performance Validation (5 minutes)
+## Step 11: Performance Validation (5 minutes)
 
 Validate health endpoints, cache-aware routing, and throughput:
 
@@ -568,7 +601,7 @@ The script tests three things:
 
 ---
 
-## Step 10: Verify Model Configuration and Cache Behavior
+## Step 12: Verify Model Configuration and Cache Behavior
 
 Confirm the correct model is loaded and prefix caching is functioning.
 
@@ -944,7 +977,9 @@ done
 # Should show decreasing latency after first request
 ```
 
-### NetworkPolicy Blocking Traffic
+### NetworkPolicy Blocking Traffic (Only if NetworkPolicies Applied)
+
+**Note:** This only applies if you applied NetworkPolicies in Step 9.
 
 **Symptoms:**
 - Inference requests fail with connection refused
