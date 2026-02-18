@@ -615,25 +615,37 @@ Latency: 0.280s   ← CACHE MISS (first request, cold prefix)
 
 Request 2:
 {...generated text...}
-Latency: 0.110s   ← CACHE HIT (prefix cached from request 1)
+Latency: 0.110s   ← CACHE HIT ✓ (61% faster)
 
 Request 3:
 {...generated text...}
-Latency: 0.108s   ← CACHE HIT
+Latency: 0.108s   ← CACHE HIT ✓ (61% faster)
 
 Request 4:
 {...generated text...}
-Latency: 0.112s   ← CACHE HIT
+Latency: 0.112s   ← CACHE HIT ✓ (60% faster)
 
 Request 5:
 {...generated text...}
-Latency: 0.109s   ← CACHE HIT
+Latency: 0.109s   ← CACHE HIT ✓ (61% faster)
 ```
 
 **Key verification points:**
 - ✅ First request has higher latency (~280ms)
-- ✅ Subsequent requests with same prefix are **60-75% faster**
-- ✅ Latency reduction proves prefix caching is working
+- ✅ Subsequent requests **MUST be 60-75% faster** (cache hits)
+- ⚠️ **If requests 2+ are NOT faster, cache-aware routing is broken!**
+
+**If cache hits are NOT faster, check:**
+```bash
+# Verify EnvoyFilter is applied
+kubectl get envoyfilter -n opendatahub
+
+# Check EPP scheduler is running
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=router-scheduler
+
+# Verify vLLM has prefix caching enabled
+kubectl get pod <vllm-pod> -n rhaii-inference -o yaml | grep enable-prefix-caching
+```
 
 **Test cache miss with different prefix:**
 
