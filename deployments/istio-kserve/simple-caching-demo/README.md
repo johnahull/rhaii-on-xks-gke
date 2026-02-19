@@ -4,7 +4,7 @@ Single-replica deployment demonstrating vLLM prefix caching on GKE with KServe a
 
 ## Overview
 
-This pattern demonstrates vLLM prefix caching achieving 60-75% latency reduction on repeated prompt prefixes. Single-replica deployment sidesteps the EPP scheduler ALPN bug while proving cache effectiveness.
+This pattern demonstrates vLLM prefix caching achieving 60-75% latency reduction on repeated prompt prefixes.
 
 **What this includes:**
 - vLLM prefix caching (60-75% latency speedup on repeated prefixes)
@@ -14,21 +14,19 @@ This pattern demonstrates vLLM prefix caching achieving 60-75% latency reduction
 - Single replica (1 node) deployment
 
 **What this doesn't include:**
-- Cache-aware routing across replicas (requires EPP scheduler - blocked by ALPN bug)
+- Cache-aware routing across replicas
 - Multi-replica scale-out
 - EnvoyFilters or NetworkPolicies
 
 ## Why Single Replica
 
-The EPP scheduler has a critical ALPN bug that prevents cache-aware routing across multiple replicas. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
-
 Single-replica deployment characteristics:
 - Simpler configuration (no EnvoyFilters needed)
 - Lower cost (1 node vs 3 nodes)
 - All requests naturally hit same cache (guaranteed cache hits)
-- Proves caching works while avoiding EPP scheduler bug
+- Proves caching works effectively
 
-To scale to multi-replica, see 3-replica deployment guides when EPP scheduler is fixed.
+To scale to multi-replica, see 3-replica deployment guides.
 
 ## Deployment Guides
 
@@ -262,7 +260,7 @@ Key metrics:
 
 ### Scale to Multi-Replica
 
-When the EPP scheduler ALPN bug is resolved:
+To scale to multi-replica deployment:
 
 1. Follow 3-replica deployment guides:
    - [3-Replica TPU Deployment](../../../docs/deployment-tpu.md)
@@ -367,7 +365,6 @@ Repository documentation:
 - [3-Replica GPU Deployment](../../../docs/deployment-gpu.md) - 3-replica with cache-aware routing
 
 External resources:
-- [EPP Scheduler ALPN Bug](../../../docs/BUG-EPP-Scheduler-ALPN.md) - Why multi-replica is blocked
 - [vLLM Prefix Caching Documentation](https://docs.vllm.ai/en/latest/features/prefix_caching.html)
 - [KServe Documentation](https://kserve.github.io/website/)
 - [Istio Documentation](https://istio.io/latest/docs/)
