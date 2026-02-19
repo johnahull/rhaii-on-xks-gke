@@ -278,7 +278,8 @@ helm install gpu-operator nvidia/gpu-operator \
   --set toolkit.installDir=/home/kubernetes/bin/nvidia \
   --set cdi.enabled=true \
   --set toolkit.env[0].name=RUNTIME_CONFIG_SOURCE \
-  --set toolkit.env[0].value=file
+  --set toolkit.env[0].value=file \
+  --set dcgmExporter.enabled=false
 
 # 5. Wait for GPU Operator pods to be ready
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=gpu-operator -n gpu-operator --timeout=300s
@@ -300,6 +301,7 @@ kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/ru
 - `driver.enabled=false` uses GKE's pre-installed NVIDIA drivers (DO NOT let operator install drivers)
 - `hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia` points to GKE's writable path (GKE root filesystem is read-only)
 - `cdi.enabled=true` generates CDI device specs for GPU injection into containers
+- `dcgmExporter.enabled=false` disables DCGM metrics exporter (T4 GPUs don't support DCGM profiling in GKE containers)
 - **ResourceQuota must be applied BEFORE GPU Operator installation** to avoid quota errors on system-critical pods (permits up to 1000 system-critical pods in gpu-operator namespace)
 
 ---
