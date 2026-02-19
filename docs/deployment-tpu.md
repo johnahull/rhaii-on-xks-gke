@@ -334,6 +334,58 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
+## Step 4.1: Configure Istio CNI (3 minutes)
+
+**Why needed:** GKE containers don't include iptables binaries. Istio CNI bypasses this requirement by handling traffic redirection at the CNI plugin level instead of using init containers.
+
+**Configure Istio to use CNI:**
+
+```bash
+# 1. Deploy Istio CNI plugin
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
+
+# 2. Wait for CNI daemonset pods to be ready
+kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
+
+# 3. Configure Istio control plane to use CNI
+kubectl patch istio default -n istio-system --type=merge -p '
+{
+  "spec": {
+    "values": {
+      "pilot": {
+        "cni": {
+          "enabled": true
+        }
+      }
+    }
+  }
+}'
+
+# 4. Restart istiod to apply CNI configuration
+kubectl rollout restart deployment/istiod -n istio-system
+kubectl rollout status deployment/istiod -n istio-system --timeout=120s
+
+# 5. Verify CNI is enabled
+kubectl get configmap istio-sidecar-injector -n istio-system -o jsonpath='{.data.values}' | jq '.pilot.cni'
+# Should show: { "enabled": true, "provider": "default" }
+```
+
+**What this does:**
+- Deploys istio-cni-node daemonset to all nodes (handles iptables setup)
+- Configures Istio sidecar injector to skip istio-init container
+- Eliminates iptables dependency in application pods
+- Enables CNI-based traffic redirection (more secure, no privileged init containers)
+
+**Success criteria:**
+- ✅ istio-cni-node pods Running on all nodes (in kube-system)
+- ✅ Istio CR shows `pilot.cni.enabled: true`
+- ✅ istiod restarted successfully
+- ✅ No iptables errors in new pods
+
+**Time:** ~3 minutes
+
+---
+
 ## Step 5: Deploy Inference Service (10 minutes)
 
 Deploy the 3-replica vLLM inference service with prefix caching:
