@@ -118,13 +118,11 @@ fi
 BASE_URL="http://$GATEWAY_IP/$NAMESPACE/$LLMISVC_NAME"
 
 # Auto-detect model name from vLLM if not overridden
-# Note: /v1/models may not be routed through gateway in PoC deployments
 if [[ "$MODEL" == "/mnt/models" ]]; then
     DETECTED_MODEL=$(curl -s "$BASE_URL/v1/models" 2>/dev/null | jq -r '.data[0].id' 2>/dev/null || echo "")
-    if [[ -n "$DETECTED_MODEL" ]] && [[ "$DETECTED_MODEL" != "null" ]]; then
+    if [[ -n "$DETECTED_MODEL" ]]; then
         MODEL="$DETECTED_MODEL"
     fi
-    # If detection failed, /mnt/models will work (vLLM's default mount point)
 fi
 
 ALL_PASSED=true
@@ -149,17 +147,15 @@ echo "========================================="
 echo ""
 
 MODEL_INFO=$(curl -s "$BASE_URL/v1/models" 2>/dev/null)
-if [[ $? -eq 0 ]] && [[ -n "$MODEL_INFO" ]] && echo "$MODEL_INFO" | grep -q "data"; then
+if [[ $? -eq 0 ]] && [[ -n "$MODEL_INFO" ]]; then
     echo -e "${GREEN}✓${NC} /v1/models endpoint accessible"
     echo ""
     echo "Model response:"
     echo "$MODEL_INFO" | jq '.' 2>/dev/null || echo "$MODEL_INFO"
     echo ""
 else
-    echo -e "${YELLOW}⚠${NC} /v1/models not routed through gateway (PoC limitation)"
-    echo ""
-    echo "Model: $MODEL (configured)"
-    echo ""
+    echo -e "${RED}✗${NC} Failed to retrieve model information"
+    ALL_PASSED=false
 fi
 
 echo ""
@@ -172,22 +168,24 @@ echo "2. Health Checks"
 echo "========================================="
 echo ""
 
-# Health endpoint (optional - not routed through gateway for PoC)
+# Health endpoint
 echo -n "  /health ... "
 HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/health" 2>/dev/null || echo "000")
 if [[ "$HEALTH_CODE" == "200" ]]; then
     echo -e "${GREEN}OK (200)${NC}"
 else
-    echo -e "${YELLOW}SKIPPED ($HEALTH_CODE)${NC} (not routed through gateway)"
+    echo -e "${RED}FAILED ($HEALTH_CODE)${NC}"
+    ALL_PASSED=false
 fi
 
-# Models endpoint (optional - not routed through gateway for PoC)
+# Models endpoint
 echo -n "  /v1/models ... "
 MODELS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/v1/models" 2>/dev/null || echo "000")
 if [[ "$MODELS_CODE" == "200" ]]; then
     echo -e "${GREEN}OK (200)${NC}"
 else
-    echo -e "${YELLOW}SKIPPED ($MODELS_CODE)${NC} (not routed through gateway)"
+    echo -e "${RED}FAILED ($MODELS_CODE)${NC}"
+    ALL_PASSED=false
 fi
 
 # Completions endpoint (single request)
