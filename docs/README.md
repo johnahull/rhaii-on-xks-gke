@@ -1,6 +1,6 @@
-# Customer Guides - RHAII on GKE
+# RHAII on GKE - Deployment Guides
 
-Welcome to the customer-facing documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kubernetes Engine (GKE).
+Documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kubernetes Engine (GKE).
 
 ## Get Started
 

@@ -138,7 +138,7 @@ spec:
 - ✅ Production deployments
 - ✅ Multi-tenant clusters
 - ✅ Compliance requirements (SOC2, HIPAA, PCI-DSS)
-- ✅ Handling sensitive or customer data
+- ✅ Handling sensitive data
 
 **When to skip:**
 - ✅ PoC or demo environment (< 2 weeks lifetime)

@@ -318,8 +318,7 @@ kubectl logs -n opendatahub <gateway-pod> | grep -i "epp.*mtls\|ext_proc"
 
 **Check availability:**
 ```bash
-./scripts/check-accelerator-availability.sh --type tpu --customer
-```
+./scripts/check-accelerator-availability.sh --type tpu```
 
 ### GPU Zones
 
@@ -332,8 +331,7 @@ kubectl logs -n opendatahub <gateway-pod> | grep -i "epp.*mtls\|ext_proc"
 
 **Check availability:**
 ```bash
-./scripts/check-accelerator-availability.sh --type gpu --customer
-```
+./scripts/check-accelerator-availability.sh --type gpu```
 
 ---
 
@@ -386,14 +384,11 @@ Run the comprehensive preflight check to verify all prerequisites:
 cd ~/workspace/rhaii-on-xks-gke
 
 # For TPU deployment (defaults to europe-west4-a)
-./scripts/preflight-check.sh --tpu --customer
-
+./scripts/preflight-check.sh --tpu
 # For GPU deployment (defaults to us-central1-a)
-./scripts/preflight-check.sh --gpu --customer
-
+./scripts/preflight-check.sh --gpu
 # Or with explicit zone:
-# ./scripts/preflight-check.sh --tpu --zone us-south1-a --customer
-```
+# ./scripts/preflight-check.sh --tpu --zone us-south1-a```
 
 **What it checks:**
 - ✅ Tool installation (gcloud, kubectl, jq)

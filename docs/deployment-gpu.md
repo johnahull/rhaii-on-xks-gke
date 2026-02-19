@@ -202,11 +202,11 @@ Validate your environment before creating resources:
 # Navigate to repository
 cd /path/to/rhaii-on-xks-gke
 
-# Run preflight check with customer-friendly output (shorthand)
-./scripts/preflight-check.sh --gpu --customer
+# Run preflight check (shorthand)
+./scripts/preflight-check.sh --gpu
 
 # Or with explicit zone (if not using default us-central1-a)
-# ./scripts/preflight-check.sh --accelerator gpu --zone europe-west4-a --customer
+# ./scripts/preflight-check.sh --accelerator gpu --zone europe-west4-a
 ```
 
 **Success criteria:**

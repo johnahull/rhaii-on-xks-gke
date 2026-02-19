@@ -197,11 +197,11 @@ Validate your environment before creating resources:
 # Navigate to repository
 cd /path/to/rhaii-on-xks-gke
 
-# Run preflight check with customer-friendly output (shorthand)
-./scripts/preflight-check.sh --tpu --customer
+# Run preflight check (shorthand)
+./scripts/preflight-check.sh --tpu
 
 # Zone defaults to europe-west4-a (primary recommended zone for TPU v6e)
-# To use a different zone: ./scripts/preflight-check.sh --tpu --zone us-south1-a --customer
+# To use a different zone: ./scripts/preflight-check.sh --tpu --zone us-south1-a
 ```
 
 **Success criteria:**

@@ -411,11 +411,9 @@ After setting up your environment:
 1. **Validate configuration:**
    ```bash
    # For TPU (defaults to europe-west4-a)
-   ./scripts/preflight-check.sh --tpu --customer
-
+   ./scripts/preflight-check.sh --tpu
    # For GPU (defaults to us-central1-a)
-   ./scripts/preflight-check.sh --gpu --customer
-   ```
+   ./scripts/preflight-check.sh --gpu   ```
 
 2. **Deploy RHAII:**
    - [RHAII Deployment Guide (TPU)](deployment-tpu.md)

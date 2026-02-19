@@ -57,7 +57,7 @@ graph LR
 
 ## 📖 Documentation
 
-**Complete Index:** [Customer Guides Hub](docs/README.md)
+**Complete Index:** [Deployment Guides](docs/README.md)
 
 ### Operations
 - [Verification & Testing](docs/verification-testing.md) - Validate your deployment
@@ -82,7 +82,7 @@ All deployment guides use these automation scripts in `scripts/`:
 **Example:**
 ```bash
 # Run validation
-./scripts/preflight-check.sh --customer --accelerator tpu
+./scripts/preflight-check.sh --accelerator tpu
 
 # Create cluster
 ./scripts/create-gke-cluster.sh --tpu
@@ -99,7 +99,7 @@ All deployment guides use these automation scripts in `scripts/`:
 rhaii-on-xks-gke/
 ├── README.md                              # This file
 │
-├── docs/                                  # Customer guides
+├── docs/                                  # Deployment guides
 │   ├── README.md                          # Guide index
 │   ├── deployment-tpu.md                  # TPU deployment guide
 │   ├── deployment-gpu.md                  # GPU deployment guide

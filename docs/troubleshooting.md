@@ -49,8 +49,7 @@ ERROR: Zone does not support TPU v6e
 **Solution:**
 ```bash
 # Check which zones have the accelerator
-./scripts/check-accelerator-availability.sh --type tpu --customer
-
+./scripts/check-accelerator-availability.sh --type tpu
 # Try recommended alternative zones
 ./scripts/create-gke-cluster.sh --tpu --zone us-south1-a
 ```
