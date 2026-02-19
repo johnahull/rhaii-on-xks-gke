@@ -288,24 +288,30 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/namespace-rh
 # Set as default namespace for kubectl
 kubectl config set-context --current --namespace=rhaii-inference
 
-# Apply Red Hat registry pull secret
+# Apply Red Hat registry pull secret to workload namespace
 kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
+
+# Apply Red Hat registry pull secret to kube-system (needed for Istio CNI DaemonSet)
+kubectl apply -n kube-system -f redhat-pull-secret.yaml
 
 # Apply HuggingFace token secret
 kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
 
 # Verify namespace has Istio injection enabled and secrets created
 kubectl get namespace rhaii-inference --show-labels
-kubectl get secret rhaiis-pull-secret
+kubectl get secret rhaiis-pull-secret -n rhaii-inference
+kubectl get secret rhaiis-pull-secret -n kube-system
 kubectl get secret huggingface-token
 ```
 
 **Success criteria:**
 - ✅ Namespace created with `istio-injection: enabled` label
-- ✅ Both secrets exist in `rhaii-inference` namespace
+- ✅ `rhaiis-pull-secret` exists in `rhaii-inference` namespace
+- ✅ `rhaiis-pull-secret` exists in `kube-system` namespace (for Istio CNI)
+- ✅ `huggingface-token` secret exists in `rhaii-inference` namespace
 - ✅ No errors during kubectl apply
 
-**Note:** The `istio-injection: enabled` label automatically injects Istio sidecars into all pods deployed in this namespace, including the EPP scheduler and vLLM workloads. This enables end-to-end mTLS encryption and uniform observability.
+**Note:** The `istio-injection: enabled` label automatically injects Istio sidecars into all pods deployed in this namespace, including the EPP scheduler and vLLM workloads. This enables end-to-end mTLS encryption and uniform observability. The pull secret in `kube-system` allows the Istio CNI DaemonSet to pull images from Red Hat registry.
 
 ---
 
