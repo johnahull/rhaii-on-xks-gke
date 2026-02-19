@@ -1,6 +1,8 @@
 # RHAII Deployment Guide (TPU)
 
-Deploy a production vLLM inference service on TPU v6e with prefix caching and intelligent routing.
+Deploy a vLLM inference service on TPU v6e with prefix caching and intelligent routing.
+
+**Purpose:** Proof of concept to demonstrate KServe and prefix caching functionality.
 
 ## Overview
 
@@ -16,6 +18,8 @@ Deploy a production vLLM inference service on TPU v6e with prefix caching and in
 - ~6.3 req/s serial requests
 
 **Time:** ~50 minutes total
+
+**💰 Cost:** ~$46/day if left running (3 TPU nodes). Remember to scale down when not testing!
 
 ---
 
@@ -139,7 +143,7 @@ sequenceDiagram
 **Security Isolation:**
 - mTLS encryption for all service-to-service communication (required)
 - HTTPS with KServe-issued TLS certificates for vLLM endpoints (required)
-- NetworkPolicies restrict traffic between components (optional - recommended for production)
+- NetworkPolicies restrict traffic between components (optional)
 
 ### Cache Benefits
 
@@ -212,7 +216,7 @@ cd /path/to/rhaii-on-xks-gke
 
 ## Step 2: Create GKE Cluster with 3-Node TPU Pool (20 minutes)
 
-Create a production-ready GKE cluster with 3-node TPU v6e pool:
+Create a GKE cluster with 3-node TPU v6e pool:
 
 ```bash
 # Interactive cluster creation (recommended)
@@ -516,27 +520,11 @@ kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 
 ## Step 7 (Optional): Apply NetworkPolicies for Security Isolation
 
-**⚠️ Optional for PoC, recommended for production**
+**⚠️ Optional - not required for PoC**
 
-NetworkPolicies provide network-level isolation and segmentation. They are **not required** for cache-aware routing to work, but provide important security benefits for production deployments.
+NetworkPolicies provide network-level isolation and segmentation. They are **not required** for cache-aware routing to work.
 
-**Skip this step if:**
-- ✅ PoC or demo environment (< 2 weeks lifetime)
-- ✅ Non-sensitive test data only
-- ✅ Single-purpose cluster (no other workloads)
-- ✅ Time-constrained evaluation
-
-**Apply NetworkPolicies if:**
-- ✅ Production deployment or production pilot
-- ✅ Multi-tenant cluster with multiple workloads
-- ✅ Compliance requirements (SOC2, HIPAA, PCI-DSS)
-- ✅ Handling any sensitive or customer data
-
-**What NetworkPolicies provide:**
-- 🔒 Restricts Gateway access to vLLM pods only
-- 🔒 Isolates EPP scheduler communication
-- 🔒 Controls egress to HuggingFace only
-- 🔒 Prevents lateral movement between namespaces
+**You can skip this step** since this is a PoC/demo deployment with test data only.
 
 **To apply:**
 ```bash
@@ -805,7 +793,7 @@ Speedup: 62.3%
 
 ## 🎉 Success!
 
-Your RHAII TPU deployment is ready for production traffic!
+Your RHAII TPU deployment is ready to test!
 
 ### Quick Reference
 
@@ -1033,6 +1021,29 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 ```
 
 **See [Troubleshooting Guide](troubleshooting.md) for more solutions.**
+
+---
+
+## Complete Teardown
+
+When you're done with the PoC:
+
+```bash
+# Option 1: Delete entire cluster (fastest cleanup, stops all costs)
+gcloud container clusters delete rhaii-tpu-scaleout-cluster \
+  --zone europe-west4-a \
+  --quiet
+
+# Option 2: Scale to zero (keeps cluster for later testing)
+gcloud container clusters resize rhaii-tpu-scaleout-cluster \
+  --node-pool tpu-pool \
+  --num-nodes 0 \
+  --zone europe-west4-a
+```
+
+**Cost impact:**
+- Option 1: Stops all costs immediately
+- Option 2: Saves ~$46/day (TPU nodes), but keeps control plane costs (~$3/day)
 
 ---
 

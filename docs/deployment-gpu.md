@@ -1,6 +1,8 @@
 # RHAII Deployment Guide (GPU)
 
-Deploy a production vLLM inference service on GPU T4 with prefix caching and intelligent routing.
+Deploy a vLLM inference service on GPU T4 with prefix caching and intelligent routing.
+
+**Purpose:** Proof of concept to demonstrate KServe and prefix caching functionality.
 
 ## Overview
 
@@ -17,6 +19,8 @@ Deploy a production vLLM inference service on GPU T4 with prefix caching and int
 - ~4.8 req/s serial requests
 
 **Time:** ~50 minutes total
+
+**💰 Cost:** ~$36/day if left running (3 GPU nodes). Remember to scale down when not testing!
 
 ---
 
@@ -217,7 +221,7 @@ cd /path/to/rhaii-on-xks-gke
 
 ## Step 2: Create GKE Cluster with GPU Node Pool (15 minutes)
 
-Create a production-ready GKE cluster with GPU T4 node pool:
+Create a GKE cluster with GPU T4 node pool:
 
 ```bash
 # Interactive cluster creation (recommended)
@@ -575,21 +579,11 @@ kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 
 ## Step 8 (Optional): Apply NetworkPolicies for Security Isolation
 
-**⚠️ Optional for PoC, recommended for production**
+**⚠️ Optional - not required for PoC**
 
-NetworkPolicies provide network-level isolation and segmentation. They are **not required** for cache-aware routing to work, but provide important security benefits for production deployments.
+NetworkPolicies provide network-level isolation and segmentation. They are **not required** for cache-aware routing to work.
 
-**Skip this step if:**
-- ✅ PoC or demo environment (< 2 weeks lifetime)
-- ✅ Non-sensitive test data only
-- ✅ Single-purpose cluster (no other workloads)
-- ✅ Time-constrained evaluation
-
-**Apply NetworkPolicies if:**
-- ✅ Production deployment or production pilot
-- ✅ Multi-tenant cluster with multiple workloads
-- ✅ Compliance requirements (SOC2, HIPAA, PCI-DSS)
-- ✅ Handling any sensitive or customer data
+**You can skip this step** since this is a PoC/demo deployment with test data only.
 
 **What NetworkPolicies provide:**
 - 🔒 Restricts Gateway access to vLLM pods only
@@ -864,7 +858,7 @@ Speedup: 60.7%
 
 ## 🎉 Success!
 
-Your RHAII GPU deployment is ready for production traffic!
+Your RHAII GPU deployment is ready to test!
 
 ### Quick Reference
 
@@ -1127,6 +1121,29 @@ kubectl logs -l serving.kserve.io/inferenceservice | grep "prompt"
 ```
 
 **See [Troubleshooting Guide](troubleshooting.md) for more solutions.**
+
+---
+
+## Complete Teardown
+
+When you're done with the PoC:
+
+```bash
+# Option 1: Delete entire cluster (fastest cleanup, stops all costs)
+gcloud container clusters delete rhaii-gpu-scaleout-cluster \
+  --zone us-central1-a \
+  --quiet
+
+# Option 2: Scale to zero (keeps cluster for later testing)
+gcloud container clusters resize rhaii-gpu-scaleout-cluster \
+  --node-pool gpu-pool \
+  --num-nodes 0 \
+  --zone us-central1-a
+```
+
+**Cost impact:**
+- Option 1: Stops all costs immediately
+- Option 2: Saves ~$36/day (GPU nodes), but keeps control plane costs (~$3/day)
 
 ---
 
