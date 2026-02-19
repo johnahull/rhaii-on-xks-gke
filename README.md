@@ -11,6 +11,43 @@ Choose your accelerator and follow the deployment guide:
 
 Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
 
+---
+
+## ⚡ Quick Demo: Prefix Caching in Action
+
+**Want to see vLLM prefix caching working immediately?**
+
+Try our **[Simple Caching Demo](deployments/istio-kserve/simple-caching-demo/)** - a single-replica deployment that demonstrates 60-75% latency reduction on repeated prompts.
+
+```bash
+# Deploy single-replica demo (~20 minutes)
+cd deployments/istio-kserve/simple-caching-demo
+kubectl apply -f namespace-rhaii-inference.yaml
+kubectl apply -f llmisvc-tpu-single-replica.yaml  # or llmisvc-gpu-single-replica.yaml
+
+# Run cache test
+cd ../../..  # Return to repo root
+./scripts/test-cache-routing.sh
+```
+
+**Expected Result:**
+- First request: ~215ms (cache miss)
+- Subsequent requests: ~82ms (cache hit) → **62% faster!** ✓
+
+**What this demonstrates:**
+- ✅ vLLM prefix caching delivering 60-75% speedup
+- ✅ KServe declarative management
+- ✅ Istio service mesh integration
+- ✅ OpenAI-compatible API endpoints
+
+**Limitations:**
+- ❌ Single replica only (no multi-replica cache-aware routing)
+- ❌ EPP scheduler not included (blocked by upstream ALPN bug)
+
+See **[Simple Caching Demo README](deployments/istio-kserve/simple-caching-demo/README.md)** for complete instructions.
+
+---
+
 ### Architecture Overview
 
 ```mermaid
@@ -117,7 +154,13 @@ rhaii-on-xks-gke/
 │   ├── gpu-operator/
 │   │   └── resourcequota-gcp-critical-pods.yaml
 │   └── istio-kserve/
-│       └── caching-pattern/
+│       ├── simple-caching-demo/           # Quick demo (single replica)
+│       │   ├── README.md
+│       │   ├── namespace-rhaii-inference.yaml
+│       │   ├── llmisvc-tpu-single-replica.yaml
+│       │   ├── llmisvc-gpu-single-replica.yaml
+│       │   └── httproute-health-models.yaml
+│       └── caching-pattern/               # Production (3 replicas)
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml

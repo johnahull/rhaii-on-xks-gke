@@ -4,6 +4,18 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 
 ## 📖 Deployment Guides
 
+### Quick Demo (Recommended Starting Point)
+
+**Try this first to see prefix caching in action:**
+
+- **[Simple Caching Demo](../deployments/istio-kserve/simple-caching-demo/README.md)** - Single-replica deployment demonstrating 60-75% latency reduction with vLLM prefix caching
+
+**Perfect for:**
+- Evaluating vLLM prefix caching effectiveness
+- Quick proof-of-concept (~20 minute deployment)
+- Understanding KServe + Istio integration
+- Testing before production deployment
+
 ### Prerequisites and Setup
 - **[Prerequisites](prerequisites.md)** - Everything you need before starting
 - **[Environment Setup](environment-setup.md)** - Optional: Configure environment variables to streamline commands

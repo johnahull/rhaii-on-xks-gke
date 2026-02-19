@@ -1,0 +1,48 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: qwen-3b-tpu-svc-health-models
+  namespace: rhaii-inference
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: inference-gateway
+    namespace: opendatahub
+
+  rules:
+  # Route /health through InferencePool (with mTLS)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rhaii-inference/qwen-3b-tpu-svc/health
+    backendRefs:
+    - group: inference.networking.k8s.io
+      kind: InferencePool
+      name: qwen-3b-tpu-svc-inference-pool
+      port: 8000
+      weight: 1
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /health
+
+  # Route /v1/models through InferencePool (with mTLS)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rhaii-inference/qwen-3b-tpu-svc/v1/models
+    backendRefs:
+    - group: inference.networking.k8s.io
+      kind: InferencePool
+      name: qwen-3b-tpu-svc-inference-pool
+      port: 8000
+      weight: 1
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /v1/models

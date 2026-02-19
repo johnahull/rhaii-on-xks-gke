@@ -1,0 +1,87 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: qwen-3b-gpu-svc
+  namespace: rhaii-inference
+spec:
+  model:
+    uri: hf://Qwen/Qwen2.5-3B-Instruct
+    name: Qwen/Qwen2.5-3B-Instruct
+  replicas: 1  # Single replica for simple caching demo
+
+  # Router configuration - basic load balancing (no EPP scheduler)
+  router:
+    route: {}    # Auto-create HTTPRoute
+    gateway: {}  # Bind to Gateway
+
+  # vLLM container template
+  template:
+    # GPU node selection
+    nodeSelector:
+      cloud.google.com/gke-accelerator: nvidia-tesla-t4
+
+    # Tolerate GPU node pool taint (if configured)
+    tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+
+    containers:
+    - name: main
+      image: registry.redhat.io/rhaiis/vllm-cuda-rhel9:3.2.5
+
+      # vLLM command with prefix caching enabled
+      # KServe mounts TLS certs at /var/run/kserve/tls; vLLM serves HTTPS
+      # Istio mTLS encrypts sidecar-to-sidecar; KServe TLS encrypts sidecar-to-app
+      args:
+      - |
+        python3 -m vllm.entrypoints.openai.api_server \
+          --model=/mnt/models \
+          --dtype=half \
+          --max-model-len=4096 \
+          --enable-prefix-caching \
+          --disable-log-requests \
+          --gpu-memory-utilization=0.85 \
+          --max-num-seqs=128 \
+          --ssl-certfile=/var/run/kserve/tls/tls.crt \
+          --ssl-keyfile=/var/run/kserve/tls/tls.key
+
+      # Environment variables
+      env:
+      - name: HF_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: huggingface-token
+            key: token
+
+      # Resource allocation for T4 GPU
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+        requests:
+          nvidia.com/gpu: "1"
+
+      # Health probes (HTTPS - vLLM serves TLS with KServe-issued certs)
+      # kubelet bypasses Istio sidecar but connects directly to vLLM's HTTPS port
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8000
+          scheme: HTTPS
+        initialDelaySeconds: 180  # GPU init + model download
+        periodSeconds: 30
+        timeoutSeconds: 30
+        failureThreshold: 5
+
+      readinessProbe:
+        httpGet:
+          path: /v1/models
+          port: 8000
+          scheme: HTTPS
+        initialDelaySeconds: 180
+        periodSeconds: 10
+        timeoutSeconds: 10
+
+    # Pull secret
+    imagePullSecrets:
+    - name: rhaiis-pull-secret
