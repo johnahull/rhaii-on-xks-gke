@@ -1,120 +1,100 @@
 # Simple vLLM Prefix Caching Demo
 
-This deployment pattern demonstrates vLLM prefix caching working on GKE with KServe and Istio, using a single-replica deployment.
+Single-replica deployment demonstrating vLLM prefix caching on GKE with KServe and Istio.
 
-## What This Demonstrates
+## Overview
 
-- ✅ **vLLM prefix caching achieving 60-75% latency speedup** on repeated prefixes
-- ✅ **KServe LLMInferenceService** for declarative vLLM management
-- ✅ **Istio service mesh integration** with mTLS and intelligent routing
-- ✅ **OpenAI-compatible API endpoints** for easy integration
-- ✅ **Production-ready deployment** on GKE with TPU or GPU accelerators
+This pattern demonstrates vLLM prefix caching achieving 60-75% latency reduction on repeated prompt prefixes. Single-replica deployment sidesteps the EPP scheduler ALPN bug while proving cache effectiveness.
 
-## What This Doesn't Demonstrate
+**What this includes:**
+- vLLM prefix caching (60-75% latency speedup on repeated prefixes)
+- KServe LLMInferenceService for declarative vLLM management
+- Istio service mesh integration with mTLS
+- OpenAI-compatible API endpoints
+- Single replica (1 node) deployment
 
-- ❌ **Cache-aware routing across replicas** (requires EPP scheduler - currently blocked by upstream ALPN bug)
-- ❌ **Multi-replica scale-out** (single replica deployment for simplicity)
-- ❌ **Distributed cache coordination** (not needed with single replica)
+**What this doesn't include:**
+- Cache-aware routing across replicas (requires EPP scheduler - blocked by ALPN bug)
+- Multi-replica scale-out
+- EnvoyFilters or NetworkPolicies
 
-**Note:** Multi-replica cache-aware routing via EPP (External Processing Protocol) scheduler is currently unavailable due to an upstream bug in the scheduler's ALPN negotiation. See `docs/BUG-EPP-Scheduler-ALPN.md` in this repository for details. This demo uses single-replica deployment to sidestep that issue while proving prefix caching delivers real performance benefits.
+## Why Single Replica
 
-## Why Single Replica?
+The EPP scheduler has a critical ALPN bug that prevents cache-aware routing across multiple replicas. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
 
-The EPP scheduler (External Processing Protocol) has a critical ALPN bug that prevents cache-aware routing across multiple replicas. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+Single-replica deployment characteristics:
+- Simpler configuration (no EnvoyFilters needed)
+- Lower cost (1 node vs 3 nodes)
+- All requests naturally hit same cache (guaranteed cache hits)
+- Proves caching works while avoiding EPP scheduler bug
 
-**Single-replica deployment advantages:**
-- ✅ Proves vLLM prefix caching works (60-75% speedup)
-- ✅ Simpler deployment (no EnvoyFilters)
-- ✅ Lower cost (1 node vs 3 nodes)
-- ✅ Perfect for PoC and testing
-- ✅ All requests naturally hit same cache (guaranteed cache hits)
-
-**To scale to multi-replica:** See production deployment guides when EPP scheduler is fixed.
+To scale to multi-replica, see production deployment guides when EPP scheduler is fixed.
 
 ## Deployment Guides
 
-Choose your accelerator and follow the comprehensive deployment guide:
-
 ### TPU v6e Deployment
 
-**[→ Deploy on TPU v6e (deployment-tpu.md)](deployment-tpu.md)**
+[deployment-tpu.md](deployment-tpu.md) - Complete deployment guide for TPU
 
-- **Performance:** ~8.3 req/s parallel, ~2.1 req/s serial
-- **Cache speedup:** 62% (215ms → 82ms)
-- **Cost:** ~$15/day (1 TPU node with 4 chips)
-- **Time to deploy:** ~45 minutes
+- Performance: ~8.3 req/s parallel, ~2.1 req/s serial
+- Cache speedup: 62% (215ms → 82ms)
+- Cost: ~$15/day (1 TPU node with 4 chips)
+- Deployment time: ~45 minutes
 
-**Complete guide includes:**
-- Cluster creation with 1-node TPU pool
-- Operator installation (cert-manager, Istio, KServe, LWS)
-- Deployment steps with verification
-- Performance validation and testing
-- Troubleshooting
+Includes: cluster creation, operator installation, deployment steps, verification, troubleshooting
 
 ### GPU T4 Deployment
 
-**[→ Deploy on GPU T4 (deployment-gpu.md)](deployment-gpu.md)**
+[deployment-gpu.md](deployment-gpu.md) - Complete deployment guide for GPU
 
-- **Performance:** ~6 req/s parallel, ~1.6 req/s serial
-- **Cache speedup:** 61% (280ms → 110ms)
-- **Cost:** ~$12/day (1 GPU node)
-- **Time to deploy:** ~45 minutes
+- Performance: ~6 req/s parallel, ~1.6 req/s serial
+- Cache speedup: 61% (280ms → 110ms)
+- Cost: ~$12/day (1 GPU node)
+- Deployment time: ~45 minutes
 
-**Complete guide includes:**
-- Cluster creation with 1-node GPU pool
-- GPU Operator installation (required for GKE v1.34+)
-- RHAII operator installation
-- Deployment steps with verification
-- Performance validation and testing
-- Troubleshooting
+Includes: cluster creation, GPU Operator installation, RHAII operators, deployment steps, verification, troubleshooting
 
-## Performance Summary
+## Performance Comparison
 
-**Single-replica performance comparison:**
+**Single-replica performance:**
 
 | Metric | TPU v6e | GPU T4 |
 |--------|---------|---------|
-| **Parallel throughput** | ~8.3 req/s | ~6 req/s |
-| **Serial throughput** | ~2.1 req/s | ~1.6 req/s |
-| **Cache speedup** | 62% | 61% |
-| **First request (cache miss)** | 215ms | 280ms |
-| **Cached request (cache hit)** | 82ms | 110ms |
-| **Cost per day** | ~$15 | ~$12 |
-| **Accelerator** | 4 TPU chips | 1 T4 GPU |
+| Parallel throughput | ~8.3 req/s | ~6 req/s |
+| Serial throughput | ~2.1 req/s | ~1.6 req/s |
+| Cache speedup | 62% | 61% |
+| First request (cache miss) | 215ms | 280ms |
+| Cached request (cache hit) | 82ms | 110ms |
+| Cost per day | ~$15 | ~$12 |
+| Accelerator | 4 TPU chips | 1 T4 GPU |
 
-**Cache effectiveness is identical** across both accelerators - the 60-75% speedup proves vLLM prefix caching works regardless of hardware.
+Cache effectiveness is identical across accelerators - the 60-75% speedup demonstrates vLLM prefix caching works regardless of hardware.
 
-## Comparison to Production Deployment
+**vs. 3-replica production deployment:**
 
-| Aspect | Single-replica (Demo) | 3-replica (Production) |
-|--------|----------------------|------------------------|
-| **Purpose** | Prove caching works | Production serving |
-| **Replicas** | 1 | 3 |
-| **Throughput (TPU)** | ~8.3 req/s | ~25 req/s |
-| **Throughput (GPU)** | ~6 req/s | ~18 req/s |
-| **Cache speedup** | 60-75% | 60-75% (same) |
-| **Latency (cached)** | 82-110ms | 82-110ms (same) |
-| **Cost (TPU)** | ~$15/day | ~$46/day |
-| **Cost (GPU)** | ~$12/day | ~$36/day |
-| **Nodes** | 1 | 3 |
-| **EPP scheduler** | Not needed | Required (blocked by bug) |
-| **EnvoyFilters** | Not deployed | Required for routing |
-| **Complexity** | Simple | Advanced |
-| **Deployment time** | ~45 min | ~50 min |
-
-**When to use each:**
-- **Demo (single-replica):** PoC, testing, evaluation, learning
-- **Production (3-replica):** High-throughput serving, redundancy, when EPP is fixed
+| Aspect | Single-replica | 3-replica |
+|--------|----------------|-----------|
+| Replicas | 1 | 3 |
+| Throughput (TPU) | ~8.3 req/s | ~25 req/s |
+| Throughput (GPU) | ~6 req/s | ~18 req/s |
+| Cache speedup | 60-75% | 60-75% |
+| Latency (cached) | 82-110ms | 82-110ms |
+| Cost (TPU) | ~$15/day | ~$46/day |
+| Cost (GPU) | ~$12/day | ~$36/day |
+| Nodes | 1 | 3 |
+| EPP scheduler | Not needed | Required (blocked) |
+| EnvoyFilters | Not deployed | Required |
+| Deployment time | ~45 min | ~50 min |
 
 ## Quick Start
 
-**Prerequisites:**
+Prerequisites:
 - GKE cluster with TPU v6e or GPU T4 node pool
 - RHAII operators installed (cert-manager, Istio, KServe, LWS)
 - GPU Operator installed (GPU deployments only)
 - Secrets configured (Red Hat pull secret, HuggingFace token)
 
-**Deploy:**
+Deploy:
 
 ```bash
 # Create namespace
@@ -128,41 +108,38 @@ kubectl apply -f llmisvc-gpu-single-replica.yaml  # GPU
 # Deploy HTTPRoute
 kubectl apply -f httproute-health-models.yaml
 
-# Test deployment
+# Verify deployment
 ./scripts/verify-deployment.sh
 ./scripts/test-cache-routing.sh
 ```
 
-**See deployment guides above for complete step-by-step instructions.**
+See deployment guides above for complete step-by-step instructions.
 
 ## Manifests
 
-All manifests in this directory:
-
 | File | Purpose | Required |
 |------|---------|----------|
-| `namespace-rhaii-inference.yaml` | Namespace with Istio injection | ✅ Yes |
-| `llmisvc-tpu-single-replica.yaml` | TPU single-replica deployment | ✅ TPU deployments |
-| `llmisvc-gpu-single-replica.yaml` | GPU single-replica deployment | ✅ GPU deployments |
-| `httproute-health-models.yaml` | HTTPRoute for health/models endpoints | ✅ Yes |
+| `namespace-rhaii-inference.yaml` | Namespace with Istio injection | Yes |
+| `llmisvc-tpu-single-replica.yaml` | TPU single-replica deployment | TPU deployments |
+| `llmisvc-gpu-single-replica.yaml` | GPU single-replica deployment | GPU deployments |
+| `httproute-health-models.yaml` | HTTPRoute for health/models endpoints | Yes |
 
-**Not included (vs production):**
-- ❌ EnvoyFilters (no EPP scheduler for single replica)
-- ❌ NetworkPolicies (simplified demo)
+Not included (vs production):
+- EnvoyFilters (no EPP scheduler for single replica)
+- NetworkPolicies (simplified demo)
 
 ## Testing
 
 ### Automated Cache Test
 
 ```bash
-# Run cache routing test from repository root
 ./scripts/test-cache-routing.sh
 ```
 
-**Expected results:**
+Expected results:
 - First request: ~215ms (TPU) or ~280ms (GPU) - cache miss
 - Subsequent requests: ~82ms (TPU) or ~110ms (GPU) - cache hits
-- **Average speedup: 60-75%** ✓
+- Average speedup: 60-75%
 
 ### Manual Testing
 
@@ -188,35 +165,31 @@ curl -k -X POST https://$GATEWAY_IP/rhaii-inference/qwen-3b-{tpu|gpu}-svc/v1/com
 
 ## Understanding Prefix Caching
 
-**What is prefix caching?**
+vLLM prefix caching stores the computed KV cache for common prompt prefixes. When a new request shares the same prefix, vLLM reuses the cached computation instead of recalculating from scratch.
 
-vLLM prefix caching stores the **computed KV cache** for common prompt prefixes. When a new request shares the same prefix, vLLM reuses the cached computation instead of recalculating from scratch.
-
-**Example:**
+Example:
 
 ```
 Request 1: "You are a helpful AI assistant. Please analyze X..."
            └─ Compute full prompt (slow)
 
 Request 2: "You are a helpful AI assistant. Please analyze Y..."
-           └─ Reuse cached prefix "You are a helpful AI..." (fast!)
+           └─ Reuse cached prefix "You are a helpful AI..." (fast)
               └─ Only compute new tokens "analyze Y..."
 ```
 
-**Why it matters:**
+Impact:
+- 60-75% latency reduction on repeated prompts
+- Higher throughput (more requests/second with same hardware)
+- Lower cost per request
 
-- **60-75% latency reduction** on repeated prompts
-- **Higher throughput** (more requests/second with same hardware)
-- **Cost savings** (same inference quality with fewer resources)
+Best practices:
+1. Use consistent system prompts across requests
+2. Design prompts with reusable prefixes
+3. Enable cache-aware routing for multi-replica (requires EPP scheduler fix)
+4. Monitor cache hit rates via vLLM metrics
 
-**Best practices:**
-
-1. Use **consistent system prompts** across requests
-2. Design prompts with **reusable prefixes**
-3. Enable **cache-aware routing** for multi-replica (requires EPP scheduler fix)
-4. Monitor **cache hit rates** via vLLM metrics
-
-**Cache metrics:**
+Cache metrics:
 ```bash
 POD_NAME=$(kubectl get pods -n rhaii-inference -o jsonpath='{.items[0].metadata.name}')
 kubectl exec $POD_NAME -n rhaii-inference -c main -- \
@@ -232,11 +205,8 @@ vllm:prefix_cache_misses_total 1.0
 
 ## Next Steps
 
-After successfully deploying this demo:
+### Explore OpenAI-Compatible API
 
-### 1. Explore OpenAI-Compatible API
-
-Try different API endpoints:
 ```bash
 # Chat completions
 curl -k -X POST https://$GATEWAY_IP/rhaii-inference/qwen-3b-{tpu|gpu}-svc/v1/chat/completions \
@@ -258,25 +228,24 @@ curl -k -X POST https://$GATEWAY_IP/rhaii-inference/qwen-3b-{tpu|gpu}-svc/v1/emb
   }'
 ```
 
-### 2. Test Different Models
+### Test Different Models
 
-Swap models by editing the manifest:
+Edit the manifest to use different models:
 ```yaml
 # In llmisvc-{tpu|gpu}-single-replica.yaml
 spec:
   model:
-    uri: hf://meta-llama/Llama-3.1-8B-Instruct  # Different model
+    uri: hf://meta-llama/Llama-3.1-8B-Instruct
     name: meta-llama/Llama-3.1-8B-Instruct
 ```
 
-**Recommended models:**
+Recommended models:
 - Small (2-3B): `google/gemma-2b-it`, `microsoft/Phi-3-mini-4k-instruct`
 - Medium (7-8B): `mistralai/Mistral-7B-Instruct-v0.3`, `meta-llama/Llama-3.1-8B-Instruct`
 - Code: `codellama/CodeLlama-7b-Instruct-hf`
 
-### 3. Monitor with Prometheus
+### Monitor with Prometheus
 
-Scrape vLLM `/metrics` endpoint for monitoring:
 ```bash
 # Port-forward to vLLM pod
 kubectl port-forward $POD_NAME -n rhaii-inference 8000:8000
@@ -285,13 +254,13 @@ kubectl port-forward $POD_NAME -n rhaii-inference 8000:8000
 curl -k https://localhost:8000/metrics
 ```
 
-**Key metrics:**
+Key metrics:
 - `vllm:prefix_cache_hits_total` - Cache hit count
 - `vllm:prefix_cache_misses_total` - Cache miss count
 - `vllm:num_requests_running` - Active requests
 - `vllm:gpu_cache_usage_perc` - GPU KV cache utilization
 
-### 4. Scale to Multi-Replica (When EPP Is Fixed)
+### Scale to Multi-Replica
 
 When the EPP scheduler ALPN bug is resolved:
 
@@ -306,19 +275,15 @@ When the EPP scheduler ALPN bug is resolved:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   Single-Replica Architecture                    │
-└─────────────────────────────────────────────────────────────────┘
-
 External Request
     ↓
-GCP Load Balancer (34.123.45.67)
+GCP Load Balancer
     ↓
 Istio Gateway (opendatahub namespace)
     ↓ mTLS
 HTTPRoute (rhaii-inference namespace)
     ↓
-InferencePool (load balancing - single backend)
+InferencePool (single backend)
     ↓
 vLLM Pod (qwen-3b-{tpu|gpu}-svc-0-0)
     ├─ Istio sidecar (mTLS termination)
@@ -326,14 +291,14 @@ vLLM Pod (qwen-3b-{tpu|gpu}-svc-0-0)
     └─ Prefix cache (in-memory KV cache)
     ↓
 First request: Cache MISS (~215-280ms)
-Subsequent requests: Cache HIT (~82-110ms) ✓ 60-75% faster!
+Subsequent requests: Cache HIT (~82-110ms)
 ```
 
 ## Technical Details
 
 ### vLLM Configuration
 
-**TPU deployment:**
+TPU deployment:
 - Model: `Qwen/Qwen2.5-3B-Instruct`
 - Precision: FP16 (`--dtype=half`)
 - Max context: 2048 tokens (`--max-model-len=2048`)
@@ -341,7 +306,7 @@ Subsequent requests: Cache HIT (~82-110ms) ✓ 60-75% faster!
 - Prefix caching: Enabled (`--enable-prefix-caching`)
 - Max sequences: 128 (`--max-num-seqs=128`)
 
-**GPU deployment:**
+GPU deployment:
 - Model: `Qwen/Qwen2.5-3B-Instruct`
 - Precision: FP16 (`--dtype=half`)
 - Max context: 4096 tokens (`--max-model-len=4096`)
@@ -351,31 +316,31 @@ Subsequent requests: Cache HIT (~82-110ms) ✓ 60-75% faster!
 
 ### KServe Integration
 
-- **Declarative management** via `LLMInferenceService` CRD
-- **Auto-created resources**: InferencePool, HTTPRoute, Service
-- **TLS certificates**: KServe-issued, auto-mounted at `/var/run/kserve/tls/`
-- **Health probes**: HTTPS-based liveness/readiness checks
+- Declarative management via `LLMInferenceService` CRD
+- Auto-created resources: InferencePool, HTTPRoute, Service
+- TLS certificates: KServe-issued, auto-mounted at `/var/run/kserve/tls/`
+- Health probes: HTTPS-based liveness/readiness checks
 
 ### Istio Service Mesh
 
-- **mTLS**: Automatic sidecar-to-sidecar encryption
-- **Sidecar injection**: Enabled via namespace label `istio-injection: enabled`
-- **Gateway**: Centralized ingress at `opendatahub` namespace
-- **HTTPRoute**: PathPrefix routing with URL rewriting
+- mTLS: Automatic sidecar-to-sidecar encryption
+- Sidecar injection: Enabled via namespace label `istio-injection: enabled`
+- Gateway: Centralized ingress at `opendatahub` namespace
+- HTTPRoute: PathPrefix routing with URL rewriting
 
 ## Troubleshooting
 
-**See comprehensive troubleshooting in deployment guides:**
+See comprehensive troubleshooting in deployment guides:
 - [TPU Troubleshooting](deployment-tpu.md#troubleshooting)
 - [GPU Troubleshooting](deployment-gpu.md#troubleshooting)
 
-**Common issues:**
-1. **Pod not starting:** Check pull secret, HuggingFace token, TPU/GPU availability
-2. **No external IP on Gateway:** Wait 2-3 minutes for load balancer provisioning
-3. **Inference requests failing:** Verify Gateway IP, HTTPRoute, pod readiness
-4. **Low cache speedup:** Check prefix caching enabled, use longer test prompts
+Common issues:
+1. Pod not starting: Check pull secret, HuggingFace token, TPU/GPU availability
+2. No external IP on Gateway: Wait 2-3 minutes for load balancer provisioning
+3. Inference requests failing: Verify Gateway IP, HTTPRoute, pod readiness
+4. Low cache speedup: Check prefix caching enabled, use longer test prompts
 
-**Quick diagnostics:**
+Quick diagnostics:
 ```bash
 # Check deployment health
 ./scripts/verify-deployment.sh
@@ -390,18 +355,18 @@ kubectl logs $POD_NAME -c main -n rhaii-inference
 
 ## References
 
-**Repository Documentation:**
+Repository documentation:
 - [Prerequisites Guide](../../../docs/prerequisites.md)
 - [Operator Installation](../../../docs/operator-installation.md)
 - [Verification and Testing](../../../docs/verification-testing.md)
 - [Troubleshooting Guide](../../../docs/troubleshooting.md)
 - [FAQ](../../../docs/faq.md)
 
-**Production Deployment Guides:**
+Production deployment guides:
 - [TPU Production Deployment](../../../docs/deployment-tpu.md) - 3-replica with cache-aware routing
 - [GPU Production Deployment](../../../docs/deployment-gpu.md) - 3-replica with cache-aware routing
 
-**External Resources:**
+External resources:
 - [EPP Scheduler ALPN Bug](../../../docs/BUG-EPP-Scheduler-ALPN.md) - Why multi-replica is blocked
 - [vLLM Prefix Caching Documentation](https://docs.vllm.ai/en/latest/features/prefix_caching.html)
 - [KServe Documentation](https://kserve.github.io/website/)
@@ -415,7 +380,3 @@ For issues or questions:
 2. Review troubleshooting sections
 3. Check [FAQ](../../../docs/faq.md)
 4. Open an issue in this repository
-
----
-
-**Ready to deploy?** Choose your accelerator above and follow the comprehensive deployment guide!
