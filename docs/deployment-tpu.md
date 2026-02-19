@@ -277,8 +277,8 @@ cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
 See [Prerequisites — Required Secrets](prerequisites.md#required-secrets) for details.
 
 ```bash
-# Create workload namespace
-kubectl create namespace rhaii-inference
+# Create workload namespace with Istio sidecar injection enabled
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/namespace-rhaii-inference.yaml
 
 # Set as default namespace for kubectl
 kubectl config set-context --current --namespace=rhaii-inference
@@ -289,14 +289,18 @@ kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
 # Apply HuggingFace token secret
 kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
 
-# Verify secrets created
+# Verify namespace has Istio injection enabled and secrets created
+kubectl get namespace rhaii-inference --show-labels
 kubectl get secret rhaiis-pull-secret
 kubectl get secret huggingface-token
 ```
 
 **Success criteria:**
+- ✅ Namespace created with `istio-injection: enabled` label
 - ✅ Both secrets exist in `rhaii-inference` namespace
 - ✅ No errors during kubectl apply
+
+**Note:** The `istio-injection: enabled` label automatically injects Istio sidecars into all pods deployed in this namespace, including the EPP scheduler and vLLM workloads. This enables end-to-end mTLS encryption and uniform observability.
 
 ---
 
@@ -407,34 +411,7 @@ kubectl logs <pod-name> -n rhaii-inference --tail=10
 
 ---
 
-## Step 6: Enable EPP Sidecar Injection (1 minute)
-
-Enable Istio sidecar on the EPP scheduler for mTLS communication:
-
-```bash
-# Patch EPP deployment to enable sidecar injection
-kubectl patch deployment qwen-3b-tpu-svc-kserve-router-scheduler -n rhaii-inference \
-  -p '{"spec":{"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}}}'
-
-# Wait for EPP pod to restart with sidecar (2/2 containers)
-kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
-  deployment/qwen-3b-tpu-svc-kserve-router-scheduler -n rhaii-inference --timeout=120s
-```
-
-**What this does:**
-- Injects Istio sidecar into EPP scheduler pod
-- Enables mTLS communication between Gateway and EPP
-- Required for ext_proc filter to work with Istio CNI
-
-**Verify sidecar injection:**
-```bash
-kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferenceservice-router-scheduler
-# Should show READY 2/2 (main + istio-proxy containers)
-```
-
----
-
-## Step 7: Apply EnvoyFilters for Cache-Aware Routing (2 minutes)
+## Step 6: Apply EnvoyFilters for Cache-Aware Routing (2 minutes)
 
 Apply EnvoyFilters to enable cache-aware routing:
 
@@ -461,18 +438,31 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 
 **Verify:**
 ```bash
+# Check EnvoyFilters applied
 kubectl get envoyfilter -n opendatahub
 # Should show 3 EnvoyFilters
+
+# Verify EPP scheduler has Istio sidecar (automatic from namespace label)
+kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferenceservice-router-scheduler
+# Should show READY 2/2 (main + istio-proxy containers)
+
+# Verify vLLM pods have Istio sidecars (automatic from namespace label)
+kubectl get pods -n rhaii-inference -l kserve.io/component=workload
+# Should show READY 2/2 for each pod (main + istio-proxy containers)
 ```
 
 **Success criteria:**
 - ✅ 3 EnvoyFilters applied (mTLS fix + ext_proc config + body forwarding)
+- ✅ EPP scheduler pod shows 2/2 containers (automatic sidecar injection)
+- ✅ All vLLM pods show 2/2 containers (automatic sidecar injection)
 - ✅ No errors during apply
 - ✅ Cache-aware routing ready to test
 
+**Note:** Istio sidecars are automatically injected because the `rhaii-inference` namespace has `istio-injection: enabled`. This enables end-to-end mTLS encryption between Gateway → EPP Scheduler → vLLM pods.
+
 ---
 
-## Step 8 (Optional): Apply NetworkPolicies for Security Isolation
+## Step 7 (Optional): Apply NetworkPolicies for Security Isolation
 
 **⚠️ Optional for PoC, recommended for production**
 
@@ -520,7 +510,7 @@ kubectl get networkpolicies
 
 ---
 
-## Step 9: Verify Deployment (5 minutes)
+## Step 8: Verify Deployment (5 minutes)
 
 Verify the deployment is working:
 
@@ -573,7 +563,7 @@ kubectl get pods -n rhaii-inference -l app.kubernetes.io/part-of=llminferenceser
 
 ---
 
-## Step 10: Performance Validation (5 minutes)
+## Step 9: Performance Validation (5 minutes)
 
 Validate health endpoints, cache-aware routing, and throughput:
 
@@ -598,7 +588,7 @@ The script tests three things:
 
 ---
 
-## Step 11: Verify Model Configuration and Cache Behavior
+## Step 10: Verify Model Configuration and Cache Behavior
 
 Confirm the correct model is loaded and prefix caching is functioning.
 
