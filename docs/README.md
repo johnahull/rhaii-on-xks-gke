@@ -8,13 +8,21 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 
 **Try this first to see prefix caching in action:**
 
-- **[Simple Caching Demo](../deployments/istio-kserve/simple-caching-demo/README.md)** - Single-replica deployment demonstrating 60-75% latency reduction with vLLM prefix caching
+- **[Simple Caching Demo](../deployments/istio-kserve/simple-caching-demo/README.md)** - Pattern overview
+  - [Deploy on TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md) - Comprehensive TPU deployment guide
+  - [Deploy on GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md) - Comprehensive GPU deployment guide
 
 **Perfect for:**
-- Evaluating vLLM prefix caching effectiveness
-- Quick proof-of-concept (~20 minute deployment)
+- Evaluating vLLM prefix caching effectiveness (~$15/day TPU, ~$12/day GPU)
+- Quick proof-of-concept (~45 minute deployment)
 - Understanding KServe + Istio integration
 - Testing before production deployment
+
+**What you'll get:**
+- Single-replica vLLM with prefix caching (60-75% latency reduction)
+- Complete cluster creation, operators, verification, testing
+- Lower cost than 3-replica production deployment (1 node vs 3 nodes)
+- Simple architecture (no EPP scheduler or EnvoyFilters needed)
 
 ### Prerequisites and Setup
 - **[Prerequisites](prerequisites.md)** - Everything you need before starting
