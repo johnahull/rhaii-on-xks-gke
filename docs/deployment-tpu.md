@@ -573,17 +573,14 @@ Verify the deployment is working:
 # Get Gateway IP
 export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
 
-# Test health endpoint (internal service - use port-forward or test pod)
-kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
-  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/health
+# Test health endpoint through Gateway
+curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-tpu-svc/health
 
 # Test models endpoint to verify service is ready
-kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
-  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
+curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-tpu-svc/v1/models
 
 # Test inference endpoint
-kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
-  --command -- curl -k -X POST https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/completions \
+curl -X POST http://$GATEWAY_IP/rhaii-inference/qwen-3b-tpu-svc/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "/mnt/models",
@@ -648,9 +645,11 @@ Confirm the correct model is loaded and prefix caching is functioning.
 **Query the models endpoint to see what model is actually loaded:**
 
 ```bash
-# Get internal service URL
-kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-inference --rm -it \
-  --command -- curl -k https://qwen-3b-tpu-svc-kserve-workload-svc.rhaii-inference.svc.cluster.local:8000/v1/models
+# Get Gateway IP
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
+
+# Query models endpoint through Gateway
+curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-tpu-svc/v1/models
 ```
 
 **Expected response:**
@@ -662,13 +661,16 @@ kubectl run test-curl --image=curlimages/curl:latest --restart=Never -n rhaii-in
       "id": "/mnt/models",
       "object": "model",
       "created": 1234567890,
-      "owned_by": "vllm"
+      "owned_by": "vllm",
+      "root": "/mnt/models",
+      "parent": null,
+      "max_model_len": 4096
     }
   ]
 }
 ```
 
-The `"id": "/mnt/models"` confirms vLLM is serving the model mounted from the HuggingFace storage initializer.
+The `"id": "/mnt/models"` confirms vLLM is serving the model mounted from the HuggingFace storage initializer. The `max_model_len: 4096` shows the configured context window size.
 
 **Check pod logs for model loading details:**
 
@@ -676,8 +678,8 @@ The `"id": "/mnt/models"` confirms vLLM is serving the model mounted from the Hu
 # Get one of the vLLM pods
 POD=$(kubectl get pods -n rhaii-inference -l kserve.io/component=workload -o jsonpath='{.items[0].metadata.name}')
 
-# View model loading logs
-kubectl logs $POD -n rhaii-inference | grep -A 5 "Loading weights"
+# View model loading logs (use -c main to specify the vLLM container)
+kubectl logs $POD -n rhaii-inference -c main | grep -A 5 "Loading weights"
 ```
 
 **Expected log output:**
