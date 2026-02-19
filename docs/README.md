@@ -13,8 +13,8 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 
 Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
 
-- **[Simple Demo - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
-- **[Simple Demo - GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
+- **[Single Replica - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
+- **[Single Replica - GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
 - **[Pattern Overview](../deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
 
 ## 📖 Deployment Guides
