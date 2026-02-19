@@ -1,54 +1,32 @@
 # RHAII Deployment on GKE
 
-Basic deployment guides for a simple scale-out cluster example for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
+Deployment guides for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
 
-## 🚀 Get Started
+## Get Started
 
-Choose your accelerator and follow the deployment guide:
+### Prerequisites and Setup
+- [Prerequisites](docs/prerequisites.md) - Requirements before deploying
+- [Environment Setup](docs/environment-setup.md) - Optional: Configure environment variables to streamline commands
+- [Operator Installation](docs/operator-installation.md) - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
-- **[RHAII Deployment Guide (TPU)](docs/deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
-- **[RHAII Deployment Guide (GPU)](docs/deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
+### Simple Prefix Caching Demo (Single-Replica)
 
-Both guides deploy a 3-replica vLLM inference service with prefix caching and intelligent routing.
+Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
 
----
+- **[Simple Demo - TPU](deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
+- **[Simple Demo - GPU](deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
+- **[Pattern Overview](deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
 
-## ⚡ Quick Demo: Prefix Caching in Action
+### Production Deployment (3-Replica with Cache-Aware Routing)
 
-**Want to see vLLM prefix caching working immediately?**
+3-replica deployment with cache-aware routing for higher throughput. Requires EPP scheduler fix for cache routing.
 
-Try our **[Simple Caching Demo](deployments/istio-kserve/simple-caching-demo/)** - a single-replica deployment that demonstrates 60-75% latency reduction on repeated prompts.
-
-```bash
-# Deploy single-replica demo (~20 minutes)
-cd deployments/istio-kserve/simple-caching-demo
-kubectl apply -f namespace-rhaii-inference.yaml
-kubectl apply -f llmisvc-tpu-single-replica.yaml  # or llmisvc-gpu-single-replica.yaml
-
-# Run cache test
-cd ../../..  # Return to repo root
-./scripts/test-cache-routing.sh
-```
-
-**Expected Result:**
-- First request: ~215ms (cache miss)
-- Subsequent requests: ~82ms (cache hit) → **62% faster!** ✓
-
-**What this demonstrates:**
-- ✅ vLLM prefix caching delivering 60-75% speedup
-- ✅ KServe declarative management
-- ✅ Istio service mesh integration
-- ✅ OpenAI-compatible API endpoints
-
-**Limitations:**
-- ❌ Single replica only (no multi-replica cache-aware routing)
-- ❌ EPP scheduler not included (blocked by upstream ALPN bug)
-
-See **[Simple Caching Demo README](deployments/istio-kserve/simple-caching-demo/README.md)** for complete instructions.
+- **[Production - TPU](docs/deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
+- **[Production - GPU](docs/deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
 
 ---
 
-### Architecture Overview
+## Architecture Overview
 
 ```mermaid
 graph LR
@@ -70,29 +48,20 @@ graph LR
 ```
 
 **Key Features:**
-- 🚀 **Cache-aware routing** - Identical prefixes route to same replica for cache hits
-- 📈 **60-75% latency reduction** - Cached prefix processing is dramatically faster
-- 🔒 **mTLS encryption** - Secure service-to-service communication
-- ⚖️ **Load balancing** - Smart routing balances cache affinity and replica load
+- Cache-aware routing - Identical prefixes route to same replica for cache hits
+- 60-75% latency reduction - Cached prefix processing is dramatically faster
+- mTLS encryption - Secure service-to-service communication
+- Load balancing - Smart routing balances cache affinity and replica load
 
 ---
 
 ## 📖 Documentation
 
-### Getting Started
-- **[Prerequisites](docs/prerequisites.md)** - Everything you need before deploying
-- **[Environment Setup](docs/environment-setup.md)** - Optional: Configure environment variables to streamline commands
-- **[Operator Installation](docs/operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
-
-### Deployment Guides
-- [RHAII Deployment Guide (TPU)](docs/deployment-tpu.md) - Production TPU v6e deployment
-- [RHAII Deployment Guide (GPU)](docs/deployment-gpu.md) - Production GPU T4 deployment
+**Complete Index:** [Customer Guides Hub](docs/README.md)
 
 ### Operations
 - [Verification & Testing](docs/verification-testing.md) - Validate your deployment
 - [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
-
-**Complete Index:** [Customer Guides Hub](docs/README.md)
 
 ---
 
@@ -156,6 +125,8 @@ rhaii-on-xks-gke/
 │   └── istio-kserve/
 │       ├── simple-caching-demo/           # Quick demo (single replica)
 │       │   ├── README.md
+│       │   ├── deployment-tpu.md
+│       │   ├── deployment-gpu.md
 │       │   ├── namespace-rhaii-inference.yaml
 │       │   ├── llmisvc-tpu-single-replica.yaml
 │       │   ├── llmisvc-gpu-single-replica.yaml
@@ -185,21 +156,6 @@ rhaii-on-xks-gke/
 
 ---
 
-## 🔧 Prerequisites
-
-Before deploying, ensure you have:
-
-- ✅ Google Cloud account with billing enabled
-- ✅ GCP project with appropriate quotas
-- ✅ `gcloud` CLI installed and authenticated
-- ✅ `kubectl` CLI installed
-- ✅ Red Hat registry credentials — create from `templates/redhat-pull.yaml.template`
-- ✅ HuggingFace token — create from `templates/huggingface-token.yaml.template`
-
-**Detailed setup:** [Prerequisites Guide](docs/prerequisites.md)
-
----
-
 ## 🚀 Deployment Overview
 
 ### Step-by-Step Process
@@ -218,23 +174,28 @@ Before deploying, ensure you have:
 
 4. **Deploy Workload** (~12 minutes)
    ```bash
+   # Simple demo (single replica)
+   kubectl apply -f deployments/istio-kserve/simple-caching-demo/llmisvc-tpu-single-replica.yaml
+
+   # Production (3 replicas)
    kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
    ```
 
 5. **Verify & Test** (~5 minutes)
    ```bash
    ./scripts/verify-deployment.sh
+   ./scripts/test-cache-routing.sh
    ```
 
-**Total time:** ~50 minutes for complete deployment
+**Total time:** ~45-50 minutes for complete deployment
 
 ---
 
 ## 🆘 Getting Help
 
-1. **Review [Troubleshooting](docs/troubleshooting.md)** - Solutions to common issues
-2. **Run verification:** `./scripts/verify-deployment.sh --operators-only`
-3. **Check logs:** `kubectl logs -l serving.kserve.io/inferenceservice`
+1. Review [Troubleshooting](docs/troubleshooting.md) - Solutions to common issues
+2. Run verification: `./scripts/verify-deployment.sh --operators-only`
+3. Check logs: `kubectl logs -l serving.kserve.io/inferenceservice`
 
 ---
 
@@ -254,9 +215,3 @@ This repository provides deployment configurations and documentation for Red Hat
 - [llm-d Documentation](https://llm-d.ai/docs/) - LLM framework architecture
 - [GKE AI Labs](https://gke-ai-labs.dev) - Google Cloud AI resources
 - [KServe Documentation](https://kserve.github.io/website/) - KServe reference
-
----
-
-**Ready to deploy?** Start with:
-- [Deploy on TPU](docs/deployment-tpu.md) for maximum performance
-- [Deploy on GPU](docs/deployment-gpu.md) for wider zone availability
