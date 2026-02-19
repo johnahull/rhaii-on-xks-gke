@@ -385,17 +385,14 @@ Run the comprehensive preflight check to verify all prerequisites:
 ```bash
 cd ~/workspace/rhaii-on-xks-gke
 
-# For TPU deployment
-./scripts/preflight-check.sh \
-  --accelerator tpu \
-  --zone europe-west4-a \
-  --customer
+# For TPU deployment (defaults to europe-west4-a)
+./scripts/preflight-check.sh --tpu --customer
 
-# For GPU deployment
-./scripts/preflight-check.sh \
-  --accelerator gpu \
-  --zone us-central1-a \
-  --customer
+# For GPU deployment (defaults to us-central1-a)
+./scripts/preflight-check.sh --gpu --customer
+
+# Or with explicit zone:
+# ./scripts/preflight-check.sh --tpu --zone us-south1-a --customer
 ```
 
 **What it checks:**

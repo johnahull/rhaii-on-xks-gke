@@ -21,12 +21,16 @@ show_usage() {
 GKE LLM Deployment Pre-Flight Check
 =========================================
 
-Usage: $0 [OPTIONS]
+Usage: $0 --accelerator <type> [OPTIONS]
+
+Required (choose one):
+  --accelerator <type>    Accelerator type: gpu or tpu
+  --gpu                   Shorthand for --accelerator gpu
+  --tpu                   Shorthand for --accelerator tpu
 
 Optional:
   --cluster <name>        Cluster name to validate (creates if not specified)
-  --zone <zone>           Zone for deployment (default: us-central1-a)
-  --accelerator <type>    Accelerator type: gpu or tpu (default: gpu)
+  --zone <zone>           Zone for deployment (default: europe-west4-a for TPU, us-central1-a for GPU)
   --project <project>     GCP project ID (default: from gcloud config)
   --customer              Customer-friendly simplified output (recommended for first-time users)
   --skip-tools            Skip tool installation checks
@@ -34,14 +38,17 @@ Optional:
   --detailed              Show detailed output for all checks
 
 Examples:
-  # TPU deployment check
-  $0 --accelerator tpu --zone europe-west4-a --customer
+  # TPU deployment check (shorthand)
+  $0 --tpu --customer
 
-  # GPU deployment check with existing cluster
+  # GPU deployment check with existing cluster (explicit)
   $0 --accelerator gpu --cluster my-cluster --zone us-central1-a
 
-  # Detailed output
-  $0 --accelerator tpu --detailed
+  # TPU with custom zone (shorthand)
+  $0 --tpu --zone us-south1-a
+
+  # Detailed output (shorthand)
+  $0 --gpu --detailed
 
 =========================================
 EOF
@@ -51,8 +58,8 @@ EOF
 # Command-line flags will override these values during argument parsing
 DEPLOYMENT_PATH="istio-kserve/caching-pattern"
 CLUSTER_NAME="${CLUSTER_NAME:-}"
-ZONE="${ZONE:-us-central1-a}"
-ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-gpu}"
+ZONE="${ZONE:-}"
+ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-}"
 PROJECT_ID="${PROJECT_ID:-}"
 CUSTOMER_MODE=false
 SKIP_TOOLS=false
@@ -72,6 +79,14 @@ while [[ $# -gt 0 ]]; do
         --accelerator)
             ACCELERATOR_TYPE="$2"
             shift 2
+            ;;
+        --gpu)
+            ACCELERATOR_TYPE="gpu"
+            shift
+            ;;
+        --tpu)
+            ACCELERATOR_TYPE="tpu"
+            shift
             ;;
         --project)
             PROJECT_ID="$2"
@@ -104,6 +119,31 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Validate required parameters
+if [[ -z "$ACCELERATOR_TYPE" ]]; then
+    echo -e "${RED}Error: --accelerator is required${NC}"
+    echo ""
+    show_usage
+    exit 1
+fi
+
+# Validate accelerator type
+if [[ "$ACCELERATOR_TYPE" != "gpu" && "$ACCELERATOR_TYPE" != "tpu" ]]; then
+    echo -e "${RED}Error: --accelerator must be 'gpu' or 'tpu', got: $ACCELERATOR_TYPE${NC}"
+    echo ""
+    show_usage
+    exit 1
+fi
+
+# Set default zone based on accelerator type if not specified
+if [[ -z "$ZONE" ]]; then
+    if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
+        ZONE="europe-west4-a"
+    else
+        ZONE="us-central1-a"
+    fi
+fi
 
 # Determine repository root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

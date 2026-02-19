@@ -185,8 +185,9 @@ source env.sh
 
 After setup, you can run commands without flags:
 ```bash
-./scripts/preflight-check.sh --accelerator gpu
-# Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone us-central1-a
+./scripts/preflight-check.sh --gpu
+# Shorthand for: ./scripts/preflight-check.sh --accelerator gpu
+# Zone defaults to us-central1-a for GPU deployments
 ```
 
 **See:** [Environment Setup Guide](environment-setup.md) for complete instructions.
@@ -201,11 +202,11 @@ Validate your environment before creating resources:
 # Navigate to repository
 cd /path/to/rhaii-on-xks-gke
 
-# Run preflight check with customer-friendly output
-./scripts/preflight-check.sh \
-  --accelerator gpu \
-  --zone us-central1-a \
-  --customer
+# Run preflight check with customer-friendly output (shorthand)
+./scripts/preflight-check.sh --gpu --customer
+
+# Or with explicit zone (if not using default us-central1-a)
+# ./scripts/preflight-check.sh --accelerator gpu --zone europe-west4-a --customer
 ```
 
 **Success criteria:**
@@ -526,9 +527,9 @@ kubectl logs <pod-name> -n rhaii-inference --tail=10
 
 ---
 
-## Step 7: Apply EnvoyFilters for Cache-Aware Routing (2 minutes)
+## Step 7: Apply Routing Configuration (2 minutes)
 
-Apply EnvoyFilters to enable cache-aware routing:
+Apply EnvoyFilters for cache-aware routing and HTTPRoute for health endpoints:
 
 ```bash
 # Apply EnvoyFilter for EPP mTLS fix (overrides KServe DestinationRule)
@@ -539,12 +540,16 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 
 # Apply EnvoyFilter for body forwarding (enables cache-aware routing)
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml
+
+# Apply HTTPRoute for /health and /v1/models endpoints
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/httproute-health-models.yaml
 ```
 
 **What these do:**
 1. **envoyfilter-epp-mtls-fix.yaml** - Configures proper Istio mTLS for EPP scheduler communication
 2. **envoyfilter-ext-proc-gpu.yaml** - Configures ext_proc filter to use Istio mTLS cluster for EPP
 3. **envoyfilter-route-extproc-body.yaml** - Enables request body forwarding to EPP scheduler
+4. **httproute-health-models.yaml** - Routes `/health` and `/v1/models` through Gateway (KServe only routes inference endpoints by default)
 
 **How cache-aware routing works:**
 - EPP scheduler receives request body from Istio Gateway via mTLS
@@ -557,6 +562,10 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 kubectl get envoyfilter -n opendatahub
 # Should show 3 EnvoyFilters
 
+# Check HTTPRoutes
+kubectl get httproute -n rhaii-inference
+# Should show 2 HTTPRoutes (kserve-route + health-models)
+
 # Verify EPP scheduler has Istio sidecar (automatic from namespace label)
 kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferenceservice-router-scheduler
 # Should show READY 2/2 (main + istio-proxy containers)
@@ -564,12 +573,20 @@ kubectl get pods -n rhaii-inference -l app.kubernetes.io/component=llminferences
 # Verify vLLM pods have Istio sidecars (automatic from namespace label)
 kubectl get pods -n rhaii-inference -l kserve.io/component=workload
 # Should show READY 2/2 for each pod (main + istio-proxy containers)
+
+# Test health endpoints through Gateway
+export GATEWAY_IP=$(kubectl get gateway inference-gateway -n opendatahub -o jsonpath='{.status.addresses[0].value}')
+curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-gpu-svc/health
+curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-gpu-svc/v1/models
 ```
 
 **Success criteria:**
 - ✅ 3 EnvoyFilters applied (mTLS fix + ext_proc config + body forwarding)
+- ✅ 1 HTTPRoute applied (health-models)
 - ✅ EPP scheduler pod shows 2/2 containers (automatic sidecar injection)
 - ✅ All vLLM pods show 2/2 containers (automatic sidecar injection)
+- ✅ `/health` returns 200 OK
+- ✅ `/v1/models` returns 200 OK with model information
 - ✅ No errors during apply
 - ✅ Cache-aware routing ready to test
 

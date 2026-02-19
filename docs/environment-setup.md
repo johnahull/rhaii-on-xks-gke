@@ -410,7 +410,11 @@ After setting up your environment:
 
 1. **Validate configuration:**
    ```bash
-   ./scripts/preflight-check.sh --customer --accelerator tpu
+   # For TPU (defaults to europe-west4-a)
+   ./scripts/preflight-check.sh --tpu --customer
+
+   # For GPU (defaults to us-central1-a)
+   ./scripts/preflight-check.sh --gpu --customer
    ```
 
 2. **Deploy RHAII:**

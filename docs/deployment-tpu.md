@@ -180,8 +180,9 @@ source env.sh
 
 After setup, you can run commands without flags:
 ```bash
-./scripts/preflight-check.sh --accelerator tpu
-# Instead of: ./scripts/preflight-check.sh ... --project YOUR_PROJECT --zone europe-west4-a
+./scripts/preflight-check.sh --tpu
+# Shorthand for: ./scripts/preflight-check.sh --accelerator tpu
+# Zone defaults to europe-west4-a for TPU deployments
 ```
 
 **See:** [Environment Setup Guide](environment-setup.md) for complete instructions.
@@ -196,11 +197,11 @@ Validate your environment before creating resources:
 # Navigate to repository
 cd /path/to/rhaii-on-xks-gke
 
-# Run preflight check with customer-friendly output
-./scripts/preflight-check.sh \
-  --accelerator tpu \
-  --zone europe-west4-a \
-  --customer
+# Run preflight check with customer-friendly output (shorthand)
+./scripts/preflight-check.sh --tpu --customer
+
+# Zone defaults to europe-west4-a (primary recommended zone for TPU v6e)
+# To use a different zone: ./scripts/preflight-check.sh --tpu --zone us-south1-a --customer
 ```
 
 **Success criteria:**
@@ -467,9 +468,9 @@ kubectl logs <pod-name> -n rhaii-inference --tail=10
 
 ---
 
-## Step 6: Apply EnvoyFilters for Cache-Aware Routing (2 minutes)
+## Step 6: Apply Routing Configuration (2 minutes)
 
-Apply EnvoyFilters to enable cache-aware routing:
+Apply EnvoyFilters for cache-aware routing and HTTPRoute for health endpoints:
 
 ```bash
 # Apply EnvoyFilter for EPP mTLS fix (overrides KServe DestinationRule)
@@ -480,12 +481,16 @@ kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-
 
 # Apply EnvoyFilter for body forwarding (enables cache-aware routing)
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml
+
+# Apply HTTPRoute for /health and /v1/models endpoints
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/httproute-health-models-tpu.yaml
 ```
 
 **What these do:**
 1. **envoyfilter-epp-mtls-fix-tpu.yaml** - Configures proper Istio mTLS for EPP scheduler communication
 2. **envoyfilter-ext-proc-tpu.yaml** - Configures ext_proc filter to use Istio mTLS cluster for EPP
 3. **envoyfilter-route-extproc-body.yaml** - Enables request body forwarding to EPP scheduler
+4. **httproute-health-models-tpu.yaml** - Routes `/health` and `/v1/models` through Gateway (KServe only routes inference endpoints by default)
 
 **How cache-aware routing works:**
 - EPP scheduler receives request body from Istio Gateway via mTLS
