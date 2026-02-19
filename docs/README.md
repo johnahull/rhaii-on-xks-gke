@@ -19,12 +19,12 @@ Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower
 
 ## 📖 Deployment Guides
 
-### Production Deployment (3-Replica with Cache-Aware Routing)
+### 3-Replica Deployment with Cache-Aware Routing
 
 3-replica deployment with cache-aware routing for higher throughput. Requires EPP scheduler fix for cache routing.
 
-- **[Production - TPU](deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
-- **[Production - GPU](deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
+- **[3-Replica - TPU](deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
+- **[3-Replica - GPU](deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
 
 ## 🛠️ Operations
 

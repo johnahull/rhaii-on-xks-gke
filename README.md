@@ -17,12 +17,12 @@ Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower
 - **[Simple Demo - GPU](deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
 - **[Pattern Overview](deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
 
-### Production Deployment (3-Replica with Cache-Aware Routing)
+### 3-Replica Deployment with Cache-Aware Routing
 
 3-replica deployment with cache-aware routing for higher throughput. Requires EPP scheduler fix for cache routing.
 
-- **[Production - TPU](docs/deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
-- **[Production - GPU](docs/deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
+- **[3-Replica - TPU](docs/deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
+- **[3-Replica - GPU](docs/deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
 
 ---
 
@@ -131,7 +131,7 @@ rhaii-on-xks-gke/
 │       │   ├── llmisvc-tpu-single-replica.yaml
 │       │   ├── llmisvc-gpu-single-replica.yaml
 │       │   └── httproute-health-models.yaml
-│       └── caching-pattern/               # Production (3 replicas)
+│       └── caching-pattern/               # 3-replica deployment
 │           └── manifests/
 │               ├── llmisvc-tpu-caching.yaml
 │               ├── llmisvc-gpu-caching.yaml
@@ -177,7 +177,7 @@ rhaii-on-xks-gke/
    # Simple demo (single replica)
    kubectl apply -f deployments/istio-kserve/simple-caching-demo/llmisvc-tpu-single-replica.yaml
 
-   # Production (3 replicas)
+   # 3-replica deployment
    kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
    ```
 

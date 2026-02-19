@@ -28,7 +28,7 @@ Single-replica deployment characteristics:
 - All requests naturally hit same cache (guaranteed cache hits)
 - Proves caching works while avoiding EPP scheduler bug
 
-To scale to multi-replica, see production deployment guides when EPP scheduler is fixed.
+To scale to multi-replica, see 3-replica deployment guides when EPP scheduler is fixed.
 
 ## Deployment Guides
 
@@ -70,7 +70,7 @@ Includes: cluster creation, GPU Operator installation, RHAII operators, deployme
 
 Cache effectiveness is identical across accelerators - the 60-75% speedup demonstrates vLLM prefix caching works regardless of hardware.
 
-**vs. 3-replica production deployment:**
+**vs. 3-replica deployment:**
 
 | Aspect | Single-replica | 3-replica |
 |--------|----------------|-----------|
@@ -124,7 +124,7 @@ See deployment guides above for complete step-by-step instructions.
 | `llmisvc-gpu-single-replica.yaml` | GPU single-replica deployment | GPU deployments |
 | `httproute-health-models.yaml` | HTTPRoute for health/models endpoints | Yes |
 
-Not included (vs production):
+Not included (vs 3-replica):
 - EnvoyFilters (no EPP scheduler for single replica)
 - NetworkPolicies (simplified demo)
 
@@ -264,9 +264,9 @@ Key metrics:
 
 When the EPP scheduler ALPN bug is resolved:
 
-1. Follow production deployment guides:
-   - [TPU Production Deployment](../../../docs/deployment-tpu.md)
-   - [GPU Production Deployment](../../../docs/deployment-gpu.md)
+1. Follow 3-replica deployment guides:
+   - [3-Replica TPU Deployment](../../../docs/deployment-tpu.md)
+   - [3-Replica GPU Deployment](../../../docs/deployment-gpu.md)
 
 2. Deploy EnvoyFilters for cache-aware routing
 3. Scale to 3 replicas for higher throughput
@@ -362,9 +362,9 @@ Repository documentation:
 - [Troubleshooting Guide](../../../docs/troubleshooting.md)
 - [FAQ](../../../docs/faq.md)
 
-Production deployment guides:
-- [TPU Production Deployment](../../../docs/deployment-tpu.md) - 3-replica with cache-aware routing
-- [GPU Production Deployment](../../../docs/deployment-gpu.md) - 3-replica with cache-aware routing
+3-replica deployment guides:
+- [3-Replica TPU Deployment](../../../docs/deployment-tpu.md) - 3-replica with cache-aware routing
+- [3-Replica GPU Deployment](../../../docs/deployment-gpu.md) - 3-replica with cache-aware routing
 
 External resources:
 - [EPP Scheduler ALPN Bug](../../../docs/BUG-EPP-Scheduler-ALPN.md) - Why multi-replica is blocked
