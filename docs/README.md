@@ -2,38 +2,29 @@
 
 Welcome to the customer-facing documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kubernetes Engine (GKE).
 
-## 📖 Deployment Guides
-
-### Quick Demo (Recommended Starting Point)
-
-**Try this first to see prefix caching in action:**
-
-- **[Simple Caching Demo](../deployments/istio-kserve/simple-caching-demo/README.md)** - Pattern overview
-  - [Deploy on TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md) - Comprehensive TPU deployment guide
-  - [Deploy on GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md) - Comprehensive GPU deployment guide
-
-**Perfect for:**
-- Evaluating vLLM prefix caching effectiveness (~$15/day TPU, ~$12/day GPU)
-- Quick proof-of-concept (~45 minute deployment)
-- Understanding KServe + Istio integration
-- Testing before production deployment
-
-**What you'll get:**
-- Single-replica vLLM with prefix caching (60-75% latency reduction)
-- Complete cluster creation, operators, verification, testing
-- Lower cost than 3-replica production deployment (1 node vs 3 nodes)
-- Simple architecture (no EPP scheduler or EnvoyFilters needed)
+## Get Started
 
 ### Prerequisites and Setup
 - **[Prerequisites](prerequisites.md)** - Everything you need before starting
 - **[Environment Setup](environment-setup.md)** - Optional: Configure environment variables to streamline commands
 - **[Operator Installation](operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
-### Deployment
-Deploy a 3-replica vLLM inference service with prefix caching and intelligent routing:
+### Simple Prefix Caching Demo (Single-Replica)
 
-- **[RHAII Deployment Guide (TPU)](deployment-tpu.md)** - Deploy on TPU v6e (~25 req/s)
-- **[RHAII Deployment Guide (GPU)](deployment-gpu.md)** - Deploy on GPU T4 (~18 req/s)
+Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
+
+- **[Simple Demo - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
+- **[Simple Demo - GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
+- **[Pattern Overview](../deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
+
+## 📖 Deployment Guides
+
+### Production Deployment (3-Replica with Cache-Aware Routing)
+
+3-replica deployment with cache-aware routing for higher throughput. Requires EPP scheduler fix for cache routing.
+
+- **[Production - TPU](deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
+- **[Production - GPU](deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
 
 ## 🛠️ Operations
 
@@ -63,8 +54,8 @@ All guides reference these automation scripts in `/scripts/`:
 ## 🆘 Getting Help
 
 1. **Review [Troubleshooting](troubleshooting.md)** - Solutions to common issues
-3. **Check operator logs:** `kubectl logs -n <namespace> <pod-name>`
-4. **Verify deployment:** `./scripts/verify-deployment.sh --operators-only`
+2. **Check operator logs:** `kubectl logs -n <namespace> <pod-name>`
+3. **Verify deployment:** `./scripts/verify-deployment.sh --operators-only`
 
 ## 📝 Feedback
 
@@ -72,9 +63,3 @@ Found an issue or have suggestions? Please:
 - Review our [GitHub Issues](https://github.com/opendatahub-io/rhaii-on-xks/issues)
 - Check deployment status with verification scripts
 - Consult the troubleshooting guide for known issues
-
----
-
-**Ready to get started?** Jump to:
-- [Deploy on TPU](deployment-tpu.md) for maximum performance
-- [Deploy on GPU](deployment-gpu.md) for wider zone availability
