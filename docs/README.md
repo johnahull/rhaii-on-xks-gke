@@ -9,7 +9,7 @@ Welcome to the customer-facing documentation for deploying Red Hat AI Inference 
 - **[Environment Setup](environment-setup.md)** - Optional: Configure environment variables to streamline commands
 - **[Operator Installation](operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
 
-### Simple Prefix Caching Demo (Single-Replica)
+### Single Replica with Prefix Caching
 
 Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
 
