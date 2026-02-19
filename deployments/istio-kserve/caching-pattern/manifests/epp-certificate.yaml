@@ -1,0 +1,39 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: qwen-3b-tpu-svc-epp-tls
+  namespace: rhaii-inference
+  annotations:
+    # Prevent KServe from regenerating this secret
+    serving.kserve.io/certificate-managed-by: cert-manager
+spec:
+  # Output secret name (matches EPP pod mount)
+  secretName: qwen-3b-tpu-svc-kserve-self-signed-certs
+
+  # Use existing ClusterIssuer trusted by Gateway
+  issuerRef:
+    name: opendatahub-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+  # DNS names for EPP service
+  dnsNames:
+  - qwen-3b-tpu-svc-epp-service.rhaii-inference.svc.cluster.local
+  - qwen-3b-tpu-svc-epp-service.rhaii-inference.svc
+  - qwen-3b-tpu-svc-epp-service
+
+  # Standard server certificate usage
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+
+  # Key size and algorithm
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always  # Allow cert-manager to regenerate key if needed
+
+  # Certificate validity (90 days, auto-renew at 60 days)
+  duration: 2160h  # 90 days
+  renewBefore: 1440h  # 60 days

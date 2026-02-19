@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 MODEL="/mnt/models"  # vLLM serves model mounted at /mnt/models (auto-detected)
 NUM_REQUESTS=10
 CONCURRENT=5
-PROMPT="Translate to French: Hello world"
+PROMPT="You are a helpful AI assistant. Please provide a comprehensive analysis of the following topic, including historical context, current trends, and future implications. The topic is: sustainable energy solutions for urban environments in developing countries. Consider economic, social, and environmental factors in your response."
 MAX_TOKENS=10
 GATEWAY_IP=""
 

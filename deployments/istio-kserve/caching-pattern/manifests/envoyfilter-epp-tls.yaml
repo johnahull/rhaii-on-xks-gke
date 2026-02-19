@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: epp-mtls-trust
+  namespace: opendatahub
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: inference-gateway
+  priority: 1
+  configPatches:
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+      cluster:
+        name: outbound|9002||qwen-3b-tpu-svc-epp-service.rhaii-inference.svc.cluster.local
+    patch:
+      operation: MERGE
+      value:
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            common_tls_context:
+              alpn_protocols:
+              - h2
+              validation_context:
+                # Temporarily skip validation to isolate TLS issue
+                trust_chain_verification: ACCEPT_UNTRUSTED
+            sni: qwen-3b-tpu-svc-epp-service.rhaii-inference.svc.cluster.local
