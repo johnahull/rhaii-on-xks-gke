@@ -267,76 +267,7 @@ Your deployment spans multiple namespaces:
 
 ---
 
-## Step 3: Create Secrets (2 minutes)
-
-Create secrets in the `rhaii-inference` namespace before deploying operators.
-
-**Important:** Secrets must exist before KServe deployment, even though the namespace is created in the next step.
-
-### Red Hat Registry Pull Secret
-
-```bash
-# Create pull secret from your credentials file
-kubectl create secret generic rhaiis-pull-secret \
-  --from-file=.dockerconfigjson=./redhat-pull-secret.yaml \
-  --type=kubernetes.io/dockerconfigjson \
-  -n rhaii-inference
-```
-
-**Verify:**
-```bash
-kubectl get secret rhaiis-pull-secret -n rhaii-inference
-```
-
-### HuggingFace Token Secret
-
-```bash
-# Create HuggingFace token secret
-kubectl create secret generic huggingface-token \
-  --from-literal=token=YOUR_HUGGINGFACE_TOKEN \
-  -n rhaii-inference
-```
-
-**Replace `YOUR_HUGGINGFACE_TOKEN`** with your actual token from https://huggingface.co/settings/tokens
-
-**Verify:**
-```bash
-kubectl get secret huggingface-token -n rhaii-inference
-```
-
-Expected output:
-```
-NAME                TYPE     DATA   AGE
-huggingface-token   Opaque   1      10s
-```
-
----
-
-## Step 4: Create Namespace (1 minute)
-
-Create the `rhaii-inference` namespace with Istio sidecar injection enabled:
-
-```bash
-# From repository root
-kubectl apply -f deployments/istio-kserve/simple-caching-demo/namespace-rhaii-inference.yaml
-```
-
-**Verify:**
-```bash
-kubectl get namespace rhaii-inference --show-labels
-```
-
-Expected output:
-```
-NAME              STATUS   AGE   LABELS
-rhaii-inference   Active   10s   istio-injection=enabled,kubernetes.io/metadata.name=rhaii-inference
-```
-
-**Key label:** `istio-injection=enabled` - Automatic Istio sidecar injection for mTLS
-
----
-
-## Step 5: Install NVIDIA GPU Operator (10 minutes)
+## Step 3: Install NVIDIA GPU Operator (10 minutes)
 
 **CRITICAL:** GKE v1.34+ has broken native CDI injection. NVIDIA GPU Operator v25.10+ is required for GPU workloads.
 
@@ -451,110 +382,135 @@ kubectl exec -n gpu-operator ds/nvidia-container-toolkit-daemonset -- ls /var/ru
 
 ---
 
-## Step 6: Install RHAII Operators (15 minutes)
+## Step 4: Create Namespace and Secrets (2 minutes)
 
-Install required operators using the RHAII on XKS repository.
+Create the workload namespace and deploy secrets.
 
-### Prerequisites
-
-Clone RHAII on XKS repository (if not already cloned):
+**Don't have the secret files yet?** Create them from the included templates:
+```bash
+cp templates/redhat-pull.yaml.template redhat-pull-secret.yaml
+cp templates/huggingface-token.yaml.template huggingface-token-secret.yaml
+# Edit each file and replace placeholders with your credentials
+```
+See [Prerequisites — Required Secrets](../../../docs/prerequisites.md#required-secrets) for details.
 
 ```bash
-# Check if repository exists
-ls -la /home/jhull/devel/rhaii-on-xks
+# Create workload namespace with Istio sidecar injection enabled
+kubectl apply -f deployments/istio-kserve/simple-caching-demo/namespace-rhaii-inference.yaml
 
-# If not present, clone it
-cd /home/jhull/devel
-git clone https://github.com/opendatahub-io/rhaii-on-xks.git
-cd rhaii-on-xks
+# Set as default namespace for kubectl
+kubectl config set-context --current --namespace=rhaii-inference
+
+# Apply Red Hat registry pull secret to workload namespace
+kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
+
+# Apply Red Hat registry pull secret to kube-system (needed for Istio CNI DaemonSet)
+kubectl apply -n kube-system -f redhat-pull-secret.yaml
+
+# Apply HuggingFace token secret
+kubectl apply -n rhaii-inference -f huggingface-token-secret.yaml
+
+# Verify namespace has Istio injection enabled and secrets created
+kubectl get namespace rhaii-inference --show-labels
+kubectl get secret rhaiis-pull-secret -n rhaii-inference
+kubectl get secret rhaiis-pull-secret -n kube-system
+kubectl get secret huggingface-token
 ```
 
-### Install All Operators
+**Success criteria:**
+- ✅ Namespace created with `istio-injection: enabled` label
+- ✅ `rhaiis-pull-secret` exists in `rhaii-inference` namespace
+- ✅ `rhaiis-pull-secret` exists in `kube-system` namespace (for Istio CNI)
+- ✅ `huggingface-token` secret exists in `rhaii-inference` namespace
+- ✅ No errors during kubectl apply
 
+**Note:** The `istio-injection: enabled` label automatically injects Istio sidecars into all pods deployed in this namespace. This enables end-to-end mTLS encryption. The pull secret in `kube-system` allows the Istio CNI DaemonSet to pull images from Red Hat registry.
+
+---
+
+## Step 5: Install Operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) (10 minutes)
+
+**Follow the installation instructions in the official repository:**
+
+🔗 **https://github.com/opendatahub-io/rhaii-on-xks**
+
+The repository provides automated installation for:
+- cert-manager (certificate management)
+- Red Hat OpenShift Service Mesh (Istio)
+- KServe v0.15 (inference serving)
+- LeaderWorkerSet (LWS) controller
+
+**After installation, verify from rhaii-on-xks-gke repository:**
 ```bash
-# From rhaii-on-xks repository root
-make deploy-all
-```
-
-**What this installs:**
-1. cert-manager (certificate management)
-2. Red Hat OpenShift Service Mesh (Istio via sail-operator)
-3. KServe v0.15 (inference serving)
-4. LeaderWorkerSet controller (workload management)
-
-**Monitor installation:**
-```bash
-# Check operator status
-make status
-
-# Watch operator pods
-kubectl get pods -n cert-manager
-kubectl get pods -n istio-system
-kubectl get pods -n opendatahub
-kubectl get pods -n openshift-lws-operator
+cd /path/to/rhaii-on-xks-gke
+./scripts/verify-deployment.sh --operators-only
 ```
 
 **Success criteria:**
 - ✅ All operator pods Running
-- ✅ Inference Gateway created in `opendatahub` namespace
+- ✅ cert-manager webhook ready
 - ✅ Istio control plane ready
+- ✅ KServe controller ready
 
-**Time:** ~15 minutes for all operators to be ready
+**Time:** ~10 minutes
 
-**Troubleshooting:** See [Operator Installation Guide](../../../docs/operator-installation.md) for detailed instructions and troubleshooting.
+**Troubleshooting:** See [Operator Installation Guide](../../../docs/operator-installation.md)
 
 ---
 
-## Step 6.1: Configure Istio CNI (Required)
+## Step 5.1: Configure Istio CNI (3 minutes)
 
-**CRITICAL:** Istio CNI must be configured before deploying workloads to avoid pod initialization failures.
+**Why needed:** GKE containers don't include iptables binaries. Istio CNI bypasses this requirement by handling traffic redirection at the CNI plugin level instead of using init containers.
 
-### Why This Is Required
-
-Istio CNI (Container Network Interface) handles network configuration for sidecar injection. Without proper configuration, pods may fail to initialize with errors like:
-
-```
-Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox
-```
-
-### Configuration Steps
+**Configure Istio to use CNI:**
 
 ```bash
-# Patch Istio CNI configuration
-kubectl patch configmap istio-cni-config -n istio-system --type=merge -p '{
-  "data": {
-    "cni_network_config": "{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"istio-cni\",\n  \"type\": \"istio-cni\",\n  \"log_level\": \"info\",\n  \"kubernetes\": {\n    \"kubeconfig\": \"/etc/cni/net.d/ZZZ-istio-cni-kubeconfig\",\n    \"cni_bin_dir\": \"/home/kubernetes/bin\",\n    \"exclude_namespaces\": [\"kube-system\", \"cert-manager\", \"istio-system\"]\n  }\n}"
+# 1. Deploy Istio CNI plugin
+kubectl apply -f deployments/istio-kserve/simple-caching-demo/istio-cni.yaml
+
+# 2. Wait for CNI daemonset pods to be ready
+kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
+
+# 3. Configure Istio control plane to use CNI
+kubectl patch istio default -n istio-system --type=merge -p '
+{
+  "spec": {
+    "values": {
+      "pilot": {
+        "cni": {
+          "enabled": true
+        }
+      }
+    }
   }
 }'
+
+# 4. Restart istiod to apply CNI configuration
+kubectl rollout restart deployment/istiod -n istio-system
+kubectl rollout status deployment/istiod -n istio-system --timeout=120s
+
+# 5. Verify CNI is enabled
+kubectl get configmap istio-sidecar-injector -n istio-system -o jsonpath='{.data.values}' | jq '.pilot.cni'
+# Should show: { "enabled": true, "provider": "default" }
 ```
 
-**Key changes:**
-- `cni_bin_dir`: Set to `/home/kubernetes/bin` (GKE's CNI binary location)
-- `exclude_namespaces`: Prevent Istio injection in system namespaces
-
-### Verify Configuration
-
-```bash
-# Check CNI configuration
-kubectl get configmap istio-cni-config -n istio-system -o yaml
-
-# Restart Istio CNI pods to apply changes
-kubectl rollout restart daemonset istio-cni-node -n istio-system
-
-# Wait for CNI pods ready
-kubectl rollout status daemonset istio-cni-node -n istio-system
-```
+**What this does:**
+- Deploys istio-cni-node daemonset to all nodes (handles iptables setup)
+- Configures Istio sidecar injector to skip istio-init container
+- Eliminates iptables dependency in application pods
+- Enables CNI-based traffic redirection (more secure, no privileged init containers)
 
 **Success criteria:**
-- ✅ ConfigMap updated
-- ✅ CNI pods restarted successfully
-- ✅ CNI pods all Running
+- ✅ istio-cni-node pods Running on all nodes (2/2 in kube-system)
+- ✅ Istio CR shows `pilot.cni.enabled: true`
+- ✅ istiod restarted successfully
+- ✅ No iptables errors in new pods
 
-**See:** [Istio CNI Configuration](../../../docs/operator-installation.md#istio-cni-configuration) for troubleshooting.
+**Time:** ~3 minutes
 
 ---
 
-## Step 7: Deploy LLMInferenceService (5 minutes)
+## Step 6: Deploy Inference Service (10 minutes)
 
 Deploy the single-replica vLLM inference service with prefix caching:
 
@@ -612,7 +568,7 @@ qwen-3b-gpu-svc-0-0   3/3     Running   0          5m
 
 ---
 
-## Step 8: Apply HTTPRoute for Health/Models Endpoints (1 minute)
+## Step 7: Apply Routing Configuration (1 minute)
 
 Deploy HTTPRoute to expose health check and model listing endpoints:
 
@@ -645,6 +601,10 @@ kubectl describe httproute qwen-3b-gpu-svc -n rhaii-inference | grep -A5 "Parent
 ```
 
 Expected output shows binding to `inference-gateway` in `opendatahub` namespace.
+
+---
+
+**Note:** Step 8 (NetworkPolicies for Security Isolation) is optional and not included in this demo. For production deployments with NetworkPolicies, see the [3-Replica GPU Deployment Guide](../../../docs/deployment-gpu.md#step-8-optional-apply-networkpolicies-for-security-isolation).
 
 ---
 
