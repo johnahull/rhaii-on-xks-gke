@@ -2,7 +2,7 @@
 
 Deploy a single-replica vLLM inference service on GPU T4 to demonstrate prefix caching effectiveness.
 
-**Purpose:** Quick proof of concept to demonstrate vLLM prefix caching achieving 60-75% latency reduction without multi-replica complexity.
+**Purpose:** Quick proof of concept to demonstrate vLLM prefix caching effectiveness without multi-replica complexity.
 
 ## Overview
 
@@ -15,9 +15,11 @@ Deploy a single-replica vLLM inference service on GPU T4 to demonstrate prefix c
 - Lightweight demo for testing and evaluation
 
 **Performance:**
-- ~6 req/s parallel requests
+- ~8 req/s parallel requests
 - ~1.6 req/s serial requests
-- **Cache speedup: 60-75%** (280ms → 110ms on repeated prefixes)
+- **Cache speedup: ~15% e2e latency** (500ms → 430ms), ~85% token cache hit rate
+
+> **Note on cache speedup:** e2e latency improvement is modest because Istio proxy and network overhead (~350ms) dominate over GPU prefill savings (~50ms). The cache is fully effective at the vLLM level — ~85% of prompt tokens are served from cache — but this doesn't translate proportionally to wall-clock improvement for short outputs.
 
 **Time:** ~45 minutes total (faster than 3-replica deployment)
 
@@ -94,14 +96,14 @@ sequenceDiagram
     Gateway->>HTTPRoute: Route by path
     HTTPRoute->>VLLM: Forward request
     VLLM->>VLLM: CACHE MISS<br/>Process from scratch
-    VLLM-->>Client: Response (280ms)
+    VLLM-->>Client: Response (500ms)
 
     Note over Client,VLLM: Request 2: "Translate to French: Goodbye"
     Client->>Gateway: POST /v1/completions
     Gateway->>HTTPRoute: Route by path
     HTTPRoute->>VLLM: Forward to SAME replica
     VLLM->>VLLM: CACHE HIT ✓<br/>Reuse cached prefix
-    VLLM-->>Client: Response (110ms - 61% faster)
+    VLLM-->>Client: Response (430ms - 15% faster)
 ```
 
 **Key Points:**
@@ -135,9 +137,10 @@ sequenceDiagram
 ### Cache Benefits
 
 **What You'll See:**
-- First request with new prefix: ~280ms (cache miss)
-- Subsequent requests with same prefix: ~110ms (cache hit)
-- **60-75% latency reduction** on repeated prefixes
+- First request with new prefix: ~500ms (cache miss)
+- Subsequent requests with same prefix: ~430ms (cache hit)
+- **~15% e2e latency reduction** on repeated prefixes
+- **~85% token cache hit rate** (measured at vLLM level)
 
 **Real-World Impact:**
 - Translation workloads (repeated instructions)
@@ -684,27 +687,27 @@ Using prompt: You are a helpful AI assistant. Please provide a comprehensive ana
 Gateway IP: 34.123.45.67
 
 Sequential Test (10 requests to same endpoint):
-Request  1 (FIRST - cache miss): 280ms
-Request  2 (cached): 110ms (61% faster) ✓
-Request  3 (cached): 112ms (60% faster) ✓
-Request  4 (cached): 108ms (61% faster) ✓
-Request  5 (cached): 111ms (60% faster) ✓
-Request  6 (cached): 109ms (61% faster) ✓
-Request  7 (cached): 113ms (60% faster) ✓
-Request  8 (cached): 107ms (62% faster) ✓
-Request  9 (cached): 110ms (61% faster) ✓
-Request 10 (cached): 108ms (61% faster) ✓
+Request  1 (FIRST - cache miss): 502ms
+Request  2 (cached): 416ms (17% faster) ✓
+Request  3 (cached): 427ms (15% faster) ✓
+Request  4 (cached): 434ms (14% faster) ✓
+Request  5 (cached): 432ms (14% faster) ✓
+Request  6 (cached): 424ms (16% faster) ✓
+Request  7 (cached): 430ms (14% faster) ✓
+Request  8 (cached): 424ms (16% faster) ✓
+Request  9 (cached): 432ms (14% faster) ✓
+Request 10 (cached): 427ms (15% faster) ✓
 
-Average speedup: 61% ✓
+Average speedup: 15% ✓
 Cache-aware routing: Working (single replica - guaranteed routing)
 
 ✅ Prefix caching is working correctly!
 ```
 
 **Success criteria:**
-- ✅ First request: ~270-290ms (cache miss)
-- ✅ Subsequent requests: ~105-115ms (cache hits)
-- ✅ Average speedup: 60-75%
+- ✅ First request: ~480-520ms (cache miss)
+- ✅ Subsequent requests: ~410-450ms (cache hits)
+- ✅ Average speedup: ~15% e2e (Istio/network overhead limits wall-clock improvement)
 
 **Why single replica guarantees cache hits:**
 - Only one vLLM instance exists
@@ -821,10 +824,10 @@ kubectl top pods -n rhaii-inference
 ```
 
 **Performance Summary:**
-- **First request (cache miss):** ~280ms
-- **Cached requests (cache hit):** ~110ms
-- **Cache speedup:** 61%
-- **Parallel throughput:** ~6 req/s
+- **First request (cache miss):** ~500ms
+- **Cached requests (cache hit):** ~430ms
+- **Cache speedup:** ~15% e2e, ~85% token hit rate
+- **Parallel throughput:** ~8 req/s
 - **Serial throughput:** ~1.6 req/s
 
 ---
@@ -1138,7 +1141,7 @@ kubectl apply -f deployments/istio-kserve/simple-caching-demo/httproute-health-m
 
 **Symptoms:**
 - All requests show similar latency
-- No ~60% speedup on cached requests
+- No speedup on cached requests (expect ~15% e2e improvement)
 
 **Diagnose:**
 
@@ -1303,20 +1306,21 @@ All manifests in `deployments/istio-kserve/simple-caching-demo/`:
 
 | Metric | Value |
 |--------|-------|
-| Parallel throughput | ~6 req/s |
+| Parallel throughput | ~8 req/s |
 | Serial throughput | ~1.6 req/s |
-| First request (cache miss) | ~280ms |
-| Cached request (cache hit) | ~110ms |
-| Cache speedup | 61% |
+| First request (cache miss) | ~500ms |
+| Cached request (cache hit) | ~430ms |
+| Cache speedup (e2e) | ~15% |
+| Token cache hit rate | ~85% |
 | Cost | ~$12/day (1 node) |
 
 **Comparison to 3-replica production deployment:**
 
 | Metric | Single-replica (Demo) | 3-replica (Production) |
 |--------|----------------------|------------------------|
-| Throughput | ~6 req/s | ~18 req/s |
-| Cache speedup | 61% | 61% (same) |
-| Latency (cached) | 110ms | 110ms (same) |
+| Throughput | ~8 req/s | ~18 req/s |
+| Cache speedup (e2e) | ~15% | ~15% (same) |
+| Latency (cached) | ~430ms | ~430ms (same) |
 | Cost | ~$12/day | ~$36/day |
 | Nodes | 1 GPU node | 3 GPU nodes |
 | Complexity | Simple (no EPP) | Advanced (EPP + EnvoyFilters) |

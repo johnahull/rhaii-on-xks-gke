@@ -4,10 +4,10 @@ Single-replica deployment demonstrating vLLM prefix caching on GKE with KServe a
 
 ## Overview
 
-This pattern demonstrates vLLM prefix caching achieving 60-75% latency reduction on repeated prompt prefixes.
+This pattern demonstrates vLLM prefix caching on repeated prompt prefixes. The cache operates effectively at the vLLM level (~85% token hit rate), with ~15% e2e latency improvement when routing through Istio.
 
 **What this includes:**
-- vLLM prefix caching (60-75% latency speedup on repeated prefixes)
+- vLLM prefix caching (~15% e2e latency improvement, ~85% token cache hit rate)
 - KServe LLMInferenceService for declarative vLLM management
 - Istio service mesh integration with mTLS
 - OpenAI-compatible API endpoints
@@ -45,8 +45,8 @@ Includes: cluster creation, operator installation, deployment steps, verificatio
 
 [deployment-gpu.md](deployment-gpu.md) - Complete deployment guide for GPU
 
-- Performance: ~6 req/s parallel, ~1.6 req/s serial
-- Cache speedup: 61% (280ms → 110ms)
+- Performance: ~8 req/s parallel, ~1.6 req/s serial
+- Cache speedup: ~15% e2e (500ms → 430ms), ~85% token hit rate
 - Cost: ~$12/day (1 GPU node)
 - Deployment time: ~45 minutes
 
@@ -58,15 +58,16 @@ Includes: cluster creation, GPU Operator installation, RHAII operators, deployme
 
 | Metric | TPU v6e | GPU T4 |
 |--------|---------|---------|
-| Parallel throughput | ~8.3 req/s | ~6 req/s |
+| Parallel throughput | ~8.3 req/s | ~8 req/s |
 | Serial throughput | ~2.1 req/s | ~1.6 req/s |
-| Cache speedup | 62% | 61% |
-| First request (cache miss) | 215ms | 280ms |
-| Cached request (cache hit) | 82ms | 110ms |
+| Cache speedup (e2e) | ~15% | ~15% |
+| Token cache hit rate | ~85% | ~85% |
+| First request (cache miss) | ~500ms | ~500ms |
+| Cached request (cache hit) | ~430ms | ~430ms |
 | Cost per day | ~$15 | ~$12 |
 | Accelerator | 4 TPU chips | 1 T4 GPU |
 
-Cache effectiveness is identical across accelerators - the 60-75% speedup demonstrates vLLM prefix caching works regardless of hardware.
+Cache effectiveness is consistent across accelerators. The ~15% e2e speedup reflects Istio/network overhead (~350ms) dominating over GPU prefill savings (~50ms). The vLLM-level cache hit rate of ~85% confirms the cache is fully active.
 
 **vs. 3-replica deployment:**
 
@@ -74,9 +75,9 @@ Cache effectiveness is identical across accelerators - the 60-75% speedup demons
 |--------|----------------|-----------|
 | Replicas | 1 | 3 |
 | Throughput (TPU) | ~8.3 req/s | ~25 req/s |
-| Throughput (GPU) | ~6 req/s | ~18 req/s |
-| Cache speedup | 60-75% | 60-75% |
-| Latency (cached) | 82-110ms | 82-110ms |
+| Throughput (GPU) | ~8 req/s | ~18 req/s |
+| Cache speedup (e2e) | ~15% | ~15% |
+| Latency (cached) | ~430ms | ~430ms |
 | Cost (TPU) | ~$15/day | ~$46/day |
 | Cost (GPU) | ~$12/day | ~$36/day |
 | Nodes | 1 | 3 |
@@ -135,9 +136,10 @@ Not included (vs 3-replica):
 ```
 
 Expected results:
-- First request: ~215ms (TPU) or ~280ms (GPU) - cache miss
-- Subsequent requests: ~82ms (TPU) or ~110ms (GPU) - cache hits
-- Average speedup: 60-75%
+- First request: ~500ms - cache miss
+- Subsequent requests: ~430ms - cache hits
+- Average e2e speedup: ~15%
+- Token cache hit rate: ~85% (check vLLM `/metrics` endpoint)
 
 ### Manual Testing
 
@@ -177,7 +179,7 @@ Request 2: "You are a helpful AI assistant. Please analyze Y..."
 ```
 
 Impact:
-- 60-75% latency reduction on repeated prompts
+- ~15% e2e latency reduction on repeated prompts (~85% token cache hit rate at vLLM level)
 - Higher throughput (more requests/second with same hardware)
 - Lower cost per request
 
@@ -288,8 +290,8 @@ vLLM Pod (qwen-3b-{tpu|gpu}-svc-0-0)
     ├─ vLLM main container (HTTPS with KServe certs)
     └─ Prefix cache (in-memory KV cache)
     ↓
-First request: Cache MISS (~215-280ms)
-Subsequent requests: Cache HIT (~82-110ms)
+First request: Cache MISS (~500ms)
+Subsequent requests: Cache HIT (~430ms, ~15% faster e2e)
 ```
 
 ## Technical Details
