@@ -350,7 +350,7 @@ kubectl config set-context --current --namespace=rhaii-inference
 # Apply Red Hat registry pull secret to workload namespace
 kubectl apply -n rhaii-inference -f redhat-pull-secret.yaml
 
-# Apply Red Hat registry pull secret to kube-system (needed for Istio CNI DaemonSet)
+# Apply Red Hat registry pull secret to kube-system (prerequisite for Istio CNI DaemonSet - Step 5.1 also patches the service account to reference this secret)
 kubectl apply -n kube-system -f redhat-pull-secret.yaml
 
 # Apply HuggingFace token secret
