@@ -2,7 +2,7 @@
 
 Deploy a single-replica vLLM inference service on TPU v6e to demonstrate prefix caching effectiveness.
 
-**Purpose:** Quick proof of concept to demonstrate vLLM prefix caching achieving 60-75% latency reduction without multi-replica complexity.
+**Purpose:** Quick proof of concept to demonstrate vLLM prefix caching effectiveness without multi-replica complexity.
 
 ## Overview
 
@@ -16,7 +16,10 @@ Deploy a single-replica vLLM inference service on TPU v6e to demonstrate prefix 
 **Performance:**
 - ~8.3 req/s parallel requests
 - ~2.1 req/s serial requests
-- **Cache speedup: 60-75%** (215ms → 82ms on repeated prefixes)
+- **Cache speedup: ~15% e2e** (unverified on TPU — see GPU guide for measured analysis)
+- **vLLM-level token cache hit rate: ~85%**
+
+> **Note on cache speedup:** e2e latency improvement is limited by Istio/network overhead and generation time — not the accelerator. See the [GPU guide](deployment-gpu.md#cache-benefits) for a detailed breakdown. TPU figures have not been measured against the current deployment stack.
 
 **Time:** ~45 minutes total (faster than 3-replica deployment)
 
@@ -127,9 +130,12 @@ sequenceDiagram
 ### Cache Benefits
 
 **What You'll See:**
-- First request with new prefix: ~215ms (cache miss)
-- Subsequent requests with same prefix: ~82ms (cache hit)
-- **60-75% latency reduction** on repeated prefixes
+- First request with new prefix: ~500ms (cache miss — unverified on TPU)
+- Subsequent requests with same prefix: ~430ms (cache hit — unverified on TPU)
+- **~15% e2e latency reduction** (Istio/network overhead limits wall-clock improvement)
+- **~85% token cache hit rate** at the vLLM level
+
+> TPU performance figures have not been measured against the current deployment stack. See the [GPU guide](deployment-gpu.md#cache-benefits) for a detailed explanation of why e2e speedup is ~15% despite high token hit rates.
 
 **Real-World Impact:**
 - Translation workloads (repeated instructions)
@@ -406,9 +412,11 @@ kubectl apply -f deployments/istio-kserve/simple-caching-demo/llmisvc-tpu-single
 
 **What this creates:**
 - LLMInferenceService custom resource (declares intent)
-- InferencePool (backend routing - auto-created by KServe)
 - Service (Kubernetes service - auto-created by KServe)
+- HTTPRoute (auto-created by KServe, routes directly to Service)
 - Pod with vLLM container (workload)
+
+> **Note:** Single-replica deployments do not create an InferencePool. InferencePool is only used in multi-replica deployments where the EPP scheduler routes across backends. Here, all requests go to the same pod via a plain Service.
 
 **Monitor deployment:**
 ```bash
@@ -421,8 +429,8 @@ kubectl get pods -n rhaii-inference -l serving.kserve.io/inferenceservice=qwen-3
 
 **Success criteria:**
 - ✅ LLMInferenceService shows READY=True
-- ✅ Pod status: Running with 3/3 containers ready
-- ✅ InferencePool created automatically
+- ✅ Pod status: Running with 2/2 containers ready
+- ✅ HTTPRoute created automatically (routes directly to Service — no InferencePool needed for single replica)
 
 **Time:** ~5 minutes (TPU initialization + model download + XLA compilation)
 
@@ -512,8 +520,7 @@ Run automated verification to confirm deployment health:
 - ✅ Inference Gateway has external IP
 - ✅ LLMInferenceService ready
 - ✅ Pods running with correct container count
-- ✅ InferencePool configured
-- ✅ HTTPRoute created
+- ✅ HTTPRoute created (routes directly to Service)
 
 **Success criteria:**
 All checks pass with green checkmarks.
@@ -583,27 +590,22 @@ Using prompt: You are a helpful AI assistant. Please provide a comprehensive ana
 Gateway IP: 34.123.45.67
 
 Sequential Test (10 requests to same endpoint):
-Request  1 (FIRST - cache miss): 215ms
-Request  2 (cached): 82ms (62% faster) ✓
-Request  3 (cached): 84ms (61% faster) ✓
-Request  4 (cached): 80ms (63% faster) ✓
-Request  5 (cached): 83ms (61% faster) ✓
-Request  6 (cached): 81ms (62% faster) ✓
-Request  7 (cached): 85ms (60% faster) ✓
-Request  8 (cached): 79ms (63% faster) ✓
-Request  9 (cached): 82ms (62% faster) ✓
-Request 10 (cached): 80ms (63% faster) ✓
+Request  1 (FIRST - cache miss): ~500ms
+Request  2 (cached): ~430ms (~15% faster) ✓
+...
+Request 10 (cached): ~430ms (~15% faster) ✓
 
-Average speedup: 62% ✓
+Average speedup: ~15% ✓  (e2e; Istio/network overhead limits wall-clock improvement)
 Cache-aware routing: Working (single replica - guaranteed routing)
 
 ✅ Prefix caching is working correctly!
 ```
 
 **Success criteria:**
-- ✅ First request: ~200-230ms (cache miss - XLA compilation)
-- ✅ Subsequent requests: ~80-90ms (cache hits)
-- ✅ Average speedup: 60-75%
+- ✅ First request: higher latency than subsequent requests (cache miss)
+- ✅ Subsequent requests: consistently lower latency (cache hits)
+- ✅ Average speedup: ~15% e2e (Istio/network overhead limits wall-clock improvement)
+- ✅ vLLM token cache hit rate: ~85% (verify via `/metrics` endpoint)
 
 **Why single replica guarantees cache hits:**
 - Only one vLLM instance exists
