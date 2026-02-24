@@ -14,12 +14,12 @@ Deploy a single-replica vLLM inference service on TPU v6e to demonstrate prefix 
 - Lightweight demo for testing and evaluation
 
 **Performance:**
-- ~8.3 req/s parallel requests
+- ~11.9 req/s parallel requests
 - ~2.1 req/s serial requests
-- **Cache speedup: ~15% e2e** (unverified on TPU — see GPU guide for measured analysis)
+- **Cache speedup: ~10% e2e** (440ms → 396ms on repeated prefixes)
 - **vLLM-level token cache hit rate: ~85%**
 
-> **Note on cache speedup:** e2e latency improvement is limited by Istio/network overhead and generation time — not the accelerator. See the [GPU guide](deployment-gpu.md#cache-benefits) for a detailed breakdown. TPU figures have not been measured against the current deployment stack.
+> **Note on cache speedup:** e2e latency improvement is limited by Istio/network overhead and generation time — not the accelerator. See the [GPU guide](deployment-gpu.md#cache-benefits) for a detailed breakdown. TPU has lower latency (~440ms) and higher throughput (~11.9 req/s) than GPU (~500ms, ~8.2 req/s).
 
 **Time:** ~45 minutes total (faster than 3-replica deployment)
 
@@ -130,12 +130,10 @@ sequenceDiagram
 ### Cache Benefits
 
 **What You'll See:**
-- First request with new prefix: ~500ms (cache miss — unverified on TPU)
-- Subsequent requests with same prefix: ~430ms (cache hit — unverified on TPU)
-- **~15% e2e latency reduction** (Istio/network overhead limits wall-clock improvement)
+- First request with new prefix: ~440ms (cache miss)
+- Subsequent requests with same prefix: ~396ms (cache hit)
+- **~10% e2e latency reduction** on repeated prefixes
 - **~85% token cache hit rate** at the vLLM level
-
-> TPU performance figures have not been measured against the current deployment stack. See the [GPU guide](deployment-gpu.md#cache-benefits) for a detailed explanation of why e2e speedup is ~15% despite high token hit rates.
 
 **Real-World Impact:**
 - Translation workloads (repeated instructions)
@@ -460,6 +458,53 @@ qwen-3b-tpu-svc-0-0   2/2     Running   0          5m
 
 ---
 
+## Step 5.2: Mount KServe CA Certificate on Gateway (1 minute)
+
+**Why needed:** KServe creates a self-signed TLS certificate for the vLLM service and configures a DestinationRule telling Istio to verify it using a CA cert at `/var/run/secrets/opendatahub/ca.crt`. The inference gateway pod must have this file mounted or all requests will fail with a TLS SDS error.
+
+```bash
+# Copy KServe self-signed CA cert to the opendatahub namespace
+kubectl get secret qwen-3b-tpu-svc-kserve-self-signed-certs -n rhaii-inference \
+  -o jsonpath='{.data.ca\.crt}' | base64 -d | \
+  kubectl create secret generic kserve-tls-ca -n opendatahub \
+  --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
+
+# Mount the CA cert on the inference gateway deployment
+kubectl patch deployment inference-gateway-istio -n opendatahub --type=json -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/volumes/-",
+    "value": {
+      "name": "kserve-tls-ca",
+      "secret": {"secretName": "kserve-tls-ca"}
+    }
+  },
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/volumeMounts/-",
+    "value": {
+      "name": "kserve-tls-ca",
+      "mountPath": "/var/run/secrets/opendatahub",
+      "readOnly": true
+    }
+  }
+]'
+
+# Wait for gateway to roll out
+kubectl rollout status deployment/inference-gateway-istio -n opendatahub --timeout=60s
+```
+
+**Why this works:** KServe's DestinationRule uses TLS mode SIMPLE and references the CA cert by file path. Mounting the cert at the expected path allows Istio to verify the backend's self-signed certificate.
+
+**Success criteria:**
+- ✅ `kserve-tls-ca` secret created in `opendatahub` namespace
+- ✅ `inference-gateway-istio` deployment rolled out successfully
+- ✅ Inference requests succeed: `curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-tpu-svc/health`
+
+**Time:** ~1 minute
+
+---
+
 ## Step 6: Apply Routing Configuration (2 minutes)
 
 Configure HTTP routing for the inference service.
@@ -589,21 +634,21 @@ Using prompt: You are a helpful AI assistant. Please provide a comprehensive ana
 Gateway IP: 34.123.45.67
 
 Sequential Test (10 requests to same endpoint):
-Request  1 (FIRST - cache miss): ~500ms
-Request  2 (cached): ~430ms (~15% faster) ✓
+Request  1 (FIRST - cache miss): ~440ms
+Request  2 (cached): ~396ms (~10% faster) ✓
 ...
-Request 10 (cached): ~430ms (~15% faster) ✓
+Request 10 (cached): ~396ms (~10% faster) ✓
 
-Average speedup: ~15% ✓  (e2e; Istio/network overhead limits wall-clock improvement)
+Average speedup: ~10% ✓
 Cache-aware routing: Working (single replica - guaranteed routing)
 
 ✅ Prefix caching is working correctly!
 ```
 
 **Success criteria:**
-- ✅ First request: higher latency than subsequent requests (cache miss)
-- ✅ Subsequent requests: consistently lower latency (cache hits)
-- ✅ Average speedup: ~15% e2e (Istio/network overhead limits wall-clock improvement)
+- ✅ First request: ~420-460ms (cache miss)
+- ✅ Subsequent requests: ~375-415ms (cache hits)
+- ✅ Average speedup: ~10% e2e
 - ✅ vLLM token cache hit rate: ~85% (verify via `/metrics` endpoint)
 
 **Why single replica guarantees cache hits:**
@@ -727,10 +772,10 @@ kubectl top pods -n rhaii-inference
 ```
 
 **Performance Summary:**
-- **First request (cache miss):** ~500ms (unverified on TPU)
-- **Cached requests (cache hit):** ~430ms (unverified on TPU)
-- **Cache speedup:** ~15% e2e, ~85% token hit rate
-- **Parallel throughput:** ~8.3 req/s
+- **First request (cache miss):** ~440ms
+- **Cached requests (cache hit):** ~396ms
+- **Cache speedup:** ~10% e2e, ~85% token hit rate
+- **Parallel throughput:** ~11.9 req/s
 - **Serial throughput:** ~2.1 req/s
 
 ---
@@ -1213,11 +1258,11 @@ All manifests in `deployments/istio-kserve/simple-caching-demo/`:
 
 | Metric | Value |
 |--------|-------|
-| Parallel throughput | ~8.3 req/s |
+| Parallel throughput | ~11.9 req/s |
 | Serial throughput | ~2.1 req/s |
-| First request (cache miss) | ~500ms (unverified) |
-| Cached request (cache hit) | ~430ms (unverified) |
-| Cache speedup (e2e) | ~15% |
+| First request (cache miss) | ~440ms |
+| Cached request (cache hit) | ~396ms |
+| Cache speedup (e2e) | ~10% |
 | Token cache hit rate | ~85% |
 | Cost | ~$15/day (1 node) |
 
@@ -1225,9 +1270,9 @@ All manifests in `deployments/istio-kserve/simple-caching-demo/`:
 
 | Metric | Single-replica (Demo) | 3-replica (Production) |
 |--------|----------------------|------------------------|
-| Throughput | ~8.3 req/s | ~25 req/s |
-| Cache speedup (e2e) | ~15% | ~15% (same) |
-| Latency (cached) | ~430ms | ~430ms (same) |
+| Throughput | ~11.9 req/s | ~25 req/s |
+| Cache speedup (e2e) | ~10% | ~10% (same) |
+| Latency (cached) | ~396ms | ~396ms (same) |
 | Cost | ~$15/day | ~$46/day |
 | Nodes | 1 TPU node | 3 TPU nodes |
 | Complexity | Simple (no EPP) | Advanced (EPP + EnvoyFilters) |

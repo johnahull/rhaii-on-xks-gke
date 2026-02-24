@@ -581,6 +581,53 @@ qwen-3b-gpu-svc-0-0   2/2     Running   0          5m
 
 ---
 
+## Step 6.1: Mount KServe CA Certificate on Gateway (1 minute)
+
+**Why needed:** KServe creates a self-signed TLS certificate for the vLLM service and configures a DestinationRule telling Istio to verify it using a CA cert at `/var/run/secrets/opendatahub/ca.crt`. The inference gateway pod must have this file mounted or all requests will fail with a TLS SDS error.
+
+```bash
+# Copy KServe self-signed CA cert to the opendatahub namespace
+kubectl get secret qwen-3b-gpu-svc-kserve-self-signed-certs -n rhaii-inference \
+  -o jsonpath='{.data.ca\.crt}' | base64 -d | \
+  kubectl create secret generic kserve-tls-ca -n opendatahub \
+  --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
+
+# Mount the CA cert on the inference gateway deployment
+kubectl patch deployment inference-gateway-istio -n opendatahub --type=json -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/volumes/-",
+    "value": {
+      "name": "kserve-tls-ca",
+      "secret": {"secretName": "kserve-tls-ca"}
+    }
+  },
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/volumeMounts/-",
+    "value": {
+      "name": "kserve-tls-ca",
+      "mountPath": "/var/run/secrets/opendatahub",
+      "readOnly": true
+    }
+  }
+]'
+
+# Wait for gateway to roll out
+kubectl rollout status deployment/inference-gateway-istio -n opendatahub --timeout=60s
+```
+
+**Why this works:** KServe's DestinationRule uses TLS mode SIMPLE and references the CA cert by file path. Mounting the cert at the expected path allows Istio to verify the backend's self-signed certificate.
+
+**Success criteria:**
+- ✅ `kserve-tls-ca` secret created in `opendatahub` namespace
+- ✅ `inference-gateway-istio` deployment rolled out successfully
+- ✅ Inference requests succeed: `curl http://$GATEWAY_IP/rhaii-inference/qwen-3b-gpu-svc/health`
+
+**Time:** ~1 minute
+
+---
+
 ## Step 7: Apply Routing Configuration (1 minute)
 
 Deploy HTTPRoute to expose health check and model listing endpoints:

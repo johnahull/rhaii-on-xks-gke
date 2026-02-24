@@ -13,7 +13,7 @@ Documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kube
 
 Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
 
-- **[Single Replica - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
+- **[Single Replica - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~11.9 req/s, ~$15/day
 - **[Single Replica - GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~8 req/s, ~$12/day
 - **[Pattern Overview](../deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
 

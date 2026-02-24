@@ -58,20 +58,20 @@ Includes: cluster creation, GPU Operator installation, RHAII operators, deployme
 
 | Metric | TPU v6e | GPU T4 |
 |--------|---------|---------|
-| Parallel throughput | ~8.3 req/s | ~8 req/s |
+| Parallel throughput | ~11.9 req/s | ~8 req/s |
 | Serial throughput | ~2.1 req/s | ~1.6 req/s |
-| Cache speedup (e2e) | ~15% | ~15% |
+| Cache speedup (e2e) | ~10% | ~15% |
 | Token cache hit rate | ~85% | ~85% |
-| First request (cache miss) | ~500ms | ~500ms |
-| Cached request (cache hit) | ~430ms | ~430ms |
+| First request (cache miss) | ~440ms | ~500ms |
+| Cached request (cache hit) | ~396ms | ~430ms |
 | Cost per day | ~$15 | ~$12 |
 | Accelerator | 4 TPU chips | 1 T4 GPU |
 
-**Why e2e speedup is ~15% despite ~85% token cache hit rate:**
+**Why e2e speedup is ~10-15% despite ~85% token cache hit rate:**
 
-Each request has three cost components: GPU prefill (~50ms), GPU generation (~270ms for 10 tokens), and Istio/network overhead (~200ms). Prefix caching eliminates prefill on cache hits, saving ~50ms. Because generation and network overhead are unchanged, the total savings are ~50ms out of ~500ms — roughly 15%.
+Each request has three cost components: prefill (~50ms), generation (~270ms for 10 tokens), and Istio/network overhead (~200ms). Prefix caching eliminates prefill on cache hits, saving ~50ms. Because generation and network overhead are unchanged, the savings are ~50ms out of the total — roughly 10-15%.
 
-The cache benefit is most visible in **time-to-first-token (TTFT)**: cache hits reduce TTFT from ~46ms to ~5ms (~90% faster). For streaming use cases where first-token latency matters, this is the meaningful metric.
+TPU is faster overall (lower latency, higher throughput) but the same cache speedup pattern applies. The cache benefit is most visible in **time-to-first-token (TTFT)**: cache hits reduce TTFT by ~90%. For streaming use cases where first-token latency matters, this is the meaningful metric.
 
 **vs. 3-replica deployment:**
 
@@ -79,9 +79,11 @@ The cache benefit is most visible in **time-to-first-token (TTFT)**: cache hits 
 |--------|----------------|-----------|
 | Replicas | 1 | 3 |
 | Throughput (TPU) | ~8.3 req/s | ~25 req/s |
+| Throughput (TPU) | ~11.9 req/s | ~25 req/s |
 | Throughput (GPU) | ~8 req/s | ~18 req/s |
-| Cache speedup (e2e) | ~15% | ~15% |
-| Latency (cached) | ~430ms | ~430ms |
+| Cache speedup (e2e) | ~10-15% | ~10-15% |
+| Latency cached (TPU) | ~396ms | ~396ms |
+| Latency cached (GPU) | ~430ms | ~430ms |
 | Cost (TPU) | ~$15/day | ~$46/day |
 | Cost (GPU) | ~$12/day | ~$36/day |
 | Nodes | 1 | 3 |
@@ -140,9 +142,9 @@ Not included (vs 3-replica):
 ```
 
 Expected results:
-- First request: ~500ms - cache miss
-- Subsequent requests: ~430ms - cache hits
-- Average e2e speedup: ~15%
+- First request: ~440ms (TPU) or ~500ms (GPU) — cache miss
+- Subsequent requests: ~396ms (TPU) or ~430ms (GPU) — cache hits
+- Average e2e speedup: ~10% (TPU) or ~15% (GPU)
 - Token cache hit rate: ~85% (check vLLM `/metrics` endpoint)
 
 ### Manual Testing
