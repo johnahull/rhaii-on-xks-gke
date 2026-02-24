@@ -355,10 +355,17 @@ cd /path/to/rhaii-on-xks-gke
 # 1. Deploy Istio CNI plugin
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
 
-# 2. Wait for CNI daemonset pods to be ready
+# 2. Patch istio-cni service account with pull secret (required to pull Red Hat registry image)
+kubectl patch serviceaccount istio-cni -n kube-system \
+  -p '{"imagePullSecrets": [{"name": "rhaiis-pull-secret"}]}'
+
+# 3. Restart CNI daemonset to pick up pull secret
+kubectl rollout restart daemonset istio-cni-node -n kube-system
+
+# 4. Wait for CNI daemonset pods to be ready
 kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
 
-# 3. Configure Istio control plane to use CNI
+# 5. Configure Istio control plane to use CNI
 kubectl patch istio default -n istio-system --type=merge -p '
 {
   "spec": {
@@ -372,11 +379,11 @@ kubectl patch istio default -n istio-system --type=merge -p '
   }
 }'
 
-# 4. Restart istiod to apply CNI configuration
+# 6. Restart istiod to apply CNI configuration
 kubectl rollout restart deployment/istiod -n istio-system
 kubectl rollout status deployment/istiod -n istio-system --timeout=120s
 
-# 5. Verify CNI is enabled
+# 7. Verify CNI is enabled
 kubectl get configmap istio-sidecar-injector -n istio-system -o jsonpath='{.data.values}' | jq '.pilot.cni'
 # Should show: { "enabled": true, "provider": "default" }
 ```
