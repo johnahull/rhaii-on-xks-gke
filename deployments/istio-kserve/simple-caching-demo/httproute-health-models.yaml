@@ -11,15 +11,15 @@ spec:
     namespace: opendatahub
 
   rules:
-  # Route /health through InferencePool (with mTLS)
+  # Route /health directly to Service (single replica - no InferencePool)
   - matches:
     - path:
         type: PathPrefix
         value: /rhaii-inference/qwen-3b-tpu-svc/health
     backendRefs:
-    - group: inference.networking.k8s.io
-      kind: InferencePool
-      name: qwen-3b-tpu-svc-inference-pool
+    - group: ""
+      kind: Service
+      name: qwen-3b-tpu-svc-kserve-workload-svc
       port: 8000
       weight: 1
     filters:
@@ -29,15 +29,15 @@ spec:
           type: ReplacePrefixMatch
           replacePrefixMatch: /health
 
-  # Route /v1/models through InferencePool (with mTLS)
+  # Route /v1/models directly to Service (single replica - no InferencePool)
   - matches:
     - path:
         type: PathPrefix
         value: /rhaii-inference/qwen-3b-tpu-svc/v1/models
     backendRefs:
-    - group: inference.networking.k8s.io
-      kind: InferencePool
-      name: qwen-3b-tpu-svc-inference-pool
+    - group: ""
+      kind: Service
+      name: qwen-3b-tpu-svc-kserve-workload-svc
       port: 8000
       weight: 1
     filters:
