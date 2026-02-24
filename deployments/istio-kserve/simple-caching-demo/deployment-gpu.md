@@ -466,7 +466,7 @@ cd /path/to/rhaii-on-xks-gke
 
 ```bash
 # 1. Deploy Istio CNI plugin
-kubectl apply -f deployments/istio-kserve/simple-caching-demo/istio-cni.yaml
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
 
 # 2. Wait for CNI daemonset pods to be ready
 kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
