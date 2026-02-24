@@ -67,7 +67,11 @@ Includes: cluster creation, GPU Operator installation, RHAII operators, deployme
 | Cost per day | ~$15 | ~$12 |
 | Accelerator | 4 TPU chips | 1 T4 GPU |
 
-Cache effectiveness is consistent across accelerators. The ~15% e2e speedup reflects Istio/network overhead (~350ms) dominating over GPU prefill savings (~50ms). The vLLM-level cache hit rate of ~85% confirms the cache is fully active.
+**Why e2e speedup is ~15% despite ~85% token cache hit rate:**
+
+Each request has three cost components: GPU prefill (~50ms), GPU generation (~270ms for 10 tokens), and Istio/network overhead (~200ms). Prefix caching eliminates prefill on cache hits, saving ~50ms. Because generation and network overhead are unchanged, the total savings are ~50ms out of ~500ms — roughly 15%.
+
+The cache benefit is most visible in **time-to-first-token (TTFT)**: cache hits reduce TTFT from ~46ms to ~5ms (~90% faster). For streaming use cases where first-token latency matters, this is the meaningful metric.
 
 **vs. 3-replica deployment:**
 

@@ -17,9 +17,12 @@ Deploy a single-replica vLLM inference service on GPU T4 to demonstrate prefix c
 **Performance:**
 - ~8 req/s parallel requests
 - ~1.6 req/s serial requests
-- **Cache speedup: ~15% e2e latency** (500ms → 430ms), ~85% token cache hit rate
+- **e2e cache speedup: ~15%** (500ms → 430ms)
+- **vLLM-level token cache hit rate: ~85%**
 
-> **Note on cache speedup:** e2e latency improvement is modest because Istio proxy and network overhead (~350ms) dominate over GPU prefill savings (~50ms). The cache is fully effective at the vLLM level — ~85% of prompt tokens are served from cache — but this doesn't translate proportionally to wall-clock improvement for short outputs.
+> **Why the speedup looks modest:** A request through this stack has three components: GPU prefill (~50ms), GPU generation (~270ms for 10 tokens), and Istio/network overhead (~200ms). Prefix caching eliminates the GPU prefill. But because generation and network overhead don't change, the total savings are ~50ms out of ~500ms — roughly 10-15%.
+>
+> The cache is fully working. To see a larger percentage improvement, measure **time-to-first-token (TTFT)** directly at the vLLM level — cache hits are ~85% faster there (~46ms → ~5ms). The e2e wall-clock number is the right thing to quote for production SLAs, but it understates how much GPU work the cache is saving.
 
 **Time:** ~45 minutes total (faster than 3-replica deployment)
 
@@ -140,12 +143,27 @@ sequenceDiagram
 - First request with new prefix: ~500ms (cache miss)
 - Subsequent requests with same prefix: ~430ms (cache hit)
 - **~15% e2e latency reduction** on repeated prefixes
-- **~85% token cache hit rate** (measured at vLLM level)
+- **~85% token cache hit rate** at the vLLM level
+
+**Why e2e improvement is modest:**
+
+Each request spends time in three places:
+
+| Component | Duration | Cached? |
+|-----------|----------|---------|
+| Istio proxy + network | ~200ms | No — fixed overhead |
+| GPU generation (10 tokens) | ~270ms | No — new tokens every request |
+| GPU prefill (prompt tokens) | ~50ms | **Yes — eliminated on cache hit** |
+
+The cache eliminates prefill (~50ms), but the other ~450ms are unchanged. That's where the ~10-15% ceiling comes from.
+
+**Where the cache benefit is largest:** time-to-first-token (TTFT). On a cache hit, the GPU skips prefill entirely and starts generating immediately — TTFT drops from ~46ms to ~5ms (~90% faster). For streaming applications where first-token latency matters most, the benefit is substantial.
 
 **Real-World Impact:**
 - Translation workloads (repeated instructions)
 - Q&A systems (common system prompts)
 - Summarization tasks (standard templates)
+- High-concurrency workloads: cache hits free GPU memory bandwidth, increasing sustainable throughput
 
 ---
 
@@ -767,10 +785,12 @@ vllm:prefix_cache_misses_total 1.0  # First request was cache miss
 ```
 
 **Key metrics:**
-- `prefix_cache_queries_total`: Total requests processed
-- `prefix_cache_hits_total`: Requests served from cache
-- `prefix_cache_misses_total`: Requests requiring full computation
-- **Cache hit rate**: `hits / queries` (should be ~90% after test)
+- `prefix_cache_queries_total`: Total prompt tokens processed
+- `prefix_cache_hits_total`: Prompt tokens served from cache (skip GPU prefill)
+- `prefix_cache_misses_total`: Prompt tokens requiring full GPU prefill
+- **Token cache hit rate**: `hits / queries` (should be ~85% after test)
+
+> **Note:** These metrics count tokens, not requests. A ~85% token hit rate means the GPU skipped prefill for 85% of prompt tokens. This shows up as faster TTFT on cached requests (~5ms vs ~46ms), but only ~15% improvement in total e2e latency because Istio overhead and generation time are unchanged.
 
 ### Verify GPU Allocation
 
