@@ -299,23 +299,7 @@ kubectl label nodes -l cloud.google.com/gke-accelerator \
 kubectl create namespace gpu-operator
 
 # Apply ResourceQuota BEFORE installing operator (prevents quota errors)
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: gcp-critical-pods
-  namespace: gpu-operator
-spec:
-  hard:
-    pods: "1000"
-  scopeSelector:
-    matchExpressions:
-    - operator: In
-      scopeName: PriorityClass
-      values:
-      - system-node-critical
-      - system-cluster-critical
-EOF
+kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
 ```
 
 **Why ResourceQuota is required:** GPU Operator daemonsets use `system-node-critical` priority class. Without this quota, GKE rejects pod creation.
@@ -964,23 +948,7 @@ Error: admission webhook denied: exceeded quota: pods
 
 **Solution:** Apply ResourceQuota BEFORE installing GPU Operator:
 ```bash
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: gcp-critical-pods
-  namespace: gpu-operator
-spec:
-  hard:
-    pods: "1000"
-  scopeSelector:
-    matchExpressions:
-    - operator: In
-      scopeName: PriorityClass
-      values:
-      - system-node-critical
-      - system-cluster-critical
-EOF
+kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
 
 # Retry Helm install
 helm install gpu-operator nvidia/gpu-operator \
