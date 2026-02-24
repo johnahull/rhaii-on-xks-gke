@@ -113,7 +113,7 @@ sequenceDiagram
 - 🔵 **Blue boxes** - Your workload namespace (you manage this)
 - 🟡 **Yellow boxes** - Operator namespaces (automatically managed)
 - Single replica guarantees all requests hit the same cache
-- No EPP scheduler needed (blocked by ALPN bug)
+- No EPP scheduler needed (single replica — all requests naturally hit the same cache)
 - No EnvoyFilters needed (single replica = no routing decisions)
 
 ### Components
@@ -572,13 +572,12 @@ kubectl get pods -n rhaii-inference
 
 ```
 NAME                  READY   STATUS    RESTARTS   AGE
-qwen-3b-gpu-svc-0-0   3/3     Running   0          5m
+qwen-3b-gpu-svc-0-0   2/2     Running   0          5m
 ```
 
 **Container breakdown:**
 - `istio-proxy` - Istio sidecar for mTLS
 - `main` - vLLM inference container
-- `queue-proxy` - KServe request queue manager
 
 ---
 
@@ -857,7 +856,7 @@ kubectl top pods -n rhaii-inference
 
 ### Scale Replicas (Upgrade to Multi-Replica)
 
-**Note:** Multi-replica deployment requires fixing the EPP scheduler ALPN bug first. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+**Note:** Multi-replica deployment requires the EPP scheduler and EnvoyFilters. See the [3-Replica GPU Deployment Guide](../../../docs/deployment-gpu.md) for complete setup.
 
 **To scale from 1 to 3 replicas (when EPP is fixed):**
 
