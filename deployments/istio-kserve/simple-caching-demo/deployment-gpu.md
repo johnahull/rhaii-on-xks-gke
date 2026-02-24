@@ -533,9 +533,11 @@ kubectl apply -f deployments/istio-kserve/simple-caching-demo/llmisvc-gpu-single
 
 **What this creates:**
 - LLMInferenceService custom resource (declares intent)
-- InferencePool (backend routing - auto-created by KServe)
 - Service (Kubernetes service - auto-created by KServe)
+- HTTPRoute (auto-created by KServe, routes directly to Service)
 - Pod with vLLM container (workload)
+
+> **Note:** Single-replica deployments do not create an InferencePool. InferencePool is only used in multi-replica deployments where the EPP scheduler routes across backends. Here, all requests go to the same pod via a plain Service.
 
 **Monitor deployment:**
 ```bash
@@ -548,8 +550,8 @@ kubectl get pods -n rhaii-inference -l serving.kserve.io/inferenceservice=qwen-3
 
 **Success criteria:**
 - ✅ LLMInferenceService shows READY=True
-- ✅ Pod status: Running with 3/3 containers ready
-- ✅ InferencePool created automatically
+- ✅ Pod status: Running with 2/2 containers ready
+- ✅ HTTPRoute created automatically (routes directly to Service — no InferencePool needed for single replica)
 
 **Time:** ~5 minutes (GPU initialization + model download)
 
@@ -634,8 +636,7 @@ Run automated verification to confirm deployment health:
 - ✅ Inference Gateway has external IP
 - ✅ LLMInferenceService ready
 - ✅ Pods running with correct container count
-- ✅ InferencePool configured
-- ✅ HTTPRoute created
+- ✅ HTTPRoute created (routes directly to Service)
 
 **Success criteria:**
 All checks pass with green checkmarks.
