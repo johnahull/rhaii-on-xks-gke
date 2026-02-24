@@ -94,21 +94,21 @@ sequenceDiagram
     Gateway->>HTTPRoute: Route by path
     HTTPRoute->>VLLM: Forward request
     VLLM->>VLLM: CACHE MISS<br/>Process from scratch<br/>XLA compilation
-    VLLM-->>Client: Response (215ms)
+    VLLM-->>Client: Response (~500ms)
 
     Note over Client,VLLM: Request 2: "Translate to French: Goodbye"
     Client->>Gateway: POST /v1/completions
     Gateway->>HTTPRoute: Route by path
     HTTPRoute->>VLLM: Forward to SAME replica
     VLLM->>VLLM: CACHE HIT ✓<br/>Reuse cached prefix
-    VLLM-->>Client: Response (82ms - 62% faster)
+    VLLM-->>Client: Response (~430ms - ~15% faster)
 ```
 
 **Key Points:**
 - 🔵 **Blue boxes** - Your workload namespace (you manage this)
 - 🟡 **Yellow boxes** - Operator namespaces (automatically managed)
 - Single replica guarantees all requests hit the same cache
-- No EPP scheduler needed (blocked by ALPN bug)
+- No EPP scheduler needed (single replica — all requests naturally hit the same cache)
 - No EnvoyFilters needed (single replica = no routing decisions)
 
 ### Components
@@ -451,13 +451,12 @@ kubectl get pods -n rhaii-inference
 
 ```
 NAME                  READY   STATUS    RESTARTS   AGE
-qwen-3b-tpu-svc-0-0   3/3     Running   0          5m
+qwen-3b-tpu-svc-0-0   2/2     Running   0          5m
 ```
 
 **Container breakdown:**
 - `istio-proxy` - Istio sidecar for mTLS
 - `main` - vLLM inference container
-- `queue-proxy` - KServe request queue manager
 
 ---
 
@@ -728,9 +727,9 @@ kubectl top pods -n rhaii-inference
 ```
 
 **Performance Summary:**
-- **First request (cache miss):** ~215ms
-- **Cached requests (cache hit):** ~82ms
-- **Cache speedup:** 62%
+- **First request (cache miss):** ~500ms (unverified on TPU)
+- **Cached requests (cache hit):** ~430ms (unverified on TPU)
+- **Cache speedup:** ~15% e2e, ~85% token hit rate
 - **Parallel throughput:** ~8.3 req/s
 - **Serial throughput:** ~2.1 req/s
 
@@ -991,7 +990,7 @@ kubectl apply -f deployments/istio-kserve/simple-caching-demo/httproute-health-m
 
 **Symptoms:**
 - All requests show similar latency
-- No ~60% speedup on cached requests
+- No speedup on cached requests (expect ~15% e2e improvement)
 
 **Diagnose:**
 
@@ -1025,8 +1024,8 @@ kubectl logs $POD_NAME -n rhaii-inference -c main | grep enable-prefix-caching
 
 #### Test Prompt Too Short
 ```bash
-# EPP scheduler uses 64-token block size
-# Use test script with default 100+ token prompt
+# vLLM caches in 16-token blocks — prompt must be long enough to fill at least one block
+# Use test script with default prompt
 ./scripts/test-cache-routing.sh
 
 # Or use longer custom prompt:
@@ -1216,9 +1215,10 @@ All manifests in `deployments/istio-kserve/simple-caching-demo/`:
 |--------|-------|
 | Parallel throughput | ~8.3 req/s |
 | Serial throughput | ~2.1 req/s |
-| First request (cache miss) | ~215ms |
-| Cached request (cache hit) | ~82ms |
-| Cache speedup | 62% |
+| First request (cache miss) | ~500ms (unverified) |
+| Cached request (cache hit) | ~430ms (unverified) |
+| Cache speedup (e2e) | ~15% |
+| Token cache hit rate | ~85% |
 | Cost | ~$15/day (1 node) |
 
 **Comparison to 3-replica production deployment:**
@@ -1226,8 +1226,8 @@ All manifests in `deployments/istio-kserve/simple-caching-demo/`:
 | Metric | Single-replica (Demo) | 3-replica (Production) |
 |--------|----------------------|------------------------|
 | Throughput | ~8.3 req/s | ~25 req/s |
-| Cache speedup | 62% | 62% (same) |
-| Latency (cached) | 82ms | 82ms (same) |
+| Cache speedup (e2e) | ~15% | ~15% (same) |
+| Latency (cached) | ~430ms | ~430ms (same) |
 | Cost | ~$15/day | ~$46/day |
 | Nodes | 1 TPU node | 3 TPU nodes |
 | Complexity | Simple (no EPP) | Advanced (EPP + EnvoyFilters) |
