@@ -120,17 +120,23 @@ cluster-create: check
 	@echo "✓ Cluster creation complete"
 
 deploy-gpu-operator:
+	@echo "Checking for GPU nodes..."
+	@kubectl get nodes -l cloud.google.com/gke-accelerator --no-headers 2>/dev/null | grep -q . || \
+		{ echo "Error: No GPU nodes found. Create GPU node pool first with 'make cluster-nodepool-gpu'" ; exit 1; }
 	@echo "Labeling GPU nodes to disable GKE default plugin..."
 	@kubectl label nodes -l cloud.google.com/gke-accelerator \
-		gke-no-default-nvidia-gpu-device-plugin=true --overwrite
+		gke-no-default-nvidia-gpu-device-plugin=true --overwrite || \
+		{ echo "Error: Failed to label GPU nodes" ; exit 1; }
 	@echo "Creating gpu-operator namespace..."
-	@kubectl create namespace gpu-operator --dry-run=client -o yaml | kubectl apply -f -
+	@kubectl create namespace gpu-operator --dry-run=client -o yaml | kubectl apply -f - || \
+		{ echo "Error: Failed to create namespace" ; exit 1; }
 	@echo "Applying ResourceQuota..."
-	@kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
+	@kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml || \
+		{ echo "Error: Failed to apply ResourceQuota" ; exit 1; }
 	@echo "Installing NVIDIA GPU Operator..."
 	@helm repo add nvidia https://helm.ngc.nvidia.com/nvidia 2>/dev/null || true
-	@helm repo update nvidia
-	@helm install --wait -n gpu-operator \
+	@helm repo update nvidia || { echo "Error: Failed to update Helm repo" ; exit 1; }
+	@helm install --wait --timeout=10m -n gpu-operator \
 		gpu-operator nvidia/gpu-operator \
 		--version $(GPU_OPERATOR_VERSION) \
 		--set driver.enabled=false \
@@ -139,9 +145,15 @@ deploy-gpu-operator:
 		--set cdi.enabled=true \
 		--set toolkit.env[0].name=RUNTIME_CONFIG_SOURCE \
 		--set toolkit.env[0].value=file \
-		--set dcgmExporter.enabled=false
+		--set dcgmExporter.enabled=false || \
+		{ echo "Error: Failed to install GPU Operator" ; exit 1; }
 	@echo "Verifying GPU Operator deployment..."
 	@kubectl wait --for=condition=Ready pods \
 		-l app.kubernetes.io/name=gpu-operator \
-		-n gpu-operator --timeout=300s
+		-n gpu-operator --timeout=300s || \
+		{ echo "Error: GPU Operator pods failed to become ready" ; exit 1; }
+	@kubectl wait --for=condition=Ready pods \
+		-l app=nvidia-container-toolkit-daemonset \
+		-n gpu-operator --timeout=300s || \
+		{ echo "Error: NVIDIA container toolkit daemonset failed to become ready" ; exit 1; }
 	@echo "✓ GPU Operator deployed successfully"
