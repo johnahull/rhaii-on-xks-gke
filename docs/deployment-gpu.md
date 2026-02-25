@@ -404,62 +404,39 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 5.1: Configure Istio CNI (3 minutes)
+## Step 5.1: Skip — Do NOT Configure Istio CNI
 
-**Why needed:** GKE containers don't include iptables binaries. Istio CNI bypasses this requirement by handling traffic redirection at the CNI plugin level instead of using init containers.
+**⚠️ Do not apply Istio CNI for the 3-replica deployment.**
 
-**Configure Istio to use CNI:**
+Istio CNI injects sidecars into EPP and vLLM pods. These sidecars conflict with app-level TLS:
+- **vLLM:** KServe configures vLLM with HTTPS. Sidecar terminates mTLS and forwards plaintext to vLLM's HTTPS port → TLS mismatch causing significant latency overhead
+- **EPP:** Sidecar terminates mTLS and forwards plaintext to EPP's `--secure-serving` port → EPP receives no ext_proc calls → cache routing breaks
+
+The 3-replica deployment uses **direct TLS connections**: the Istio gateway pod connects directly to EPP (h2 TLS via SPIFFE credentials) and vLLM (SIMPLE TLS via KServe CA cert). No sidecars needed.
+
+**Continue directly to Step 5.2.**
+
+---
+
+## Step 5.2: Apply EPP Scheduler Image Override (1 minute)
+
+The default KServe EPP scheduler image does not advertise ALPN h2 for gRPC over TLS, causing Envoy's ext_proc to fail silently. Apply a namespace-local override with the fixed image.
 
 ```bash
-# 1. Deploy Istio CNI plugin
-kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
-
-# 2. Patch istio-cni service account with pull secret (required to pull Red Hat registry image)
-kubectl patch serviceaccount istio-cni -n kube-system \
-  -p '{"imagePullSecrets": [{"name": "rhaiis-pull-secret"}]}'
-
-# 3. Restart CNI daemonset to pick up pull secret
-kubectl rollout restart daemonset istio-cni-node -n kube-system
-
-# 4. Wait for CNI daemonset pods to be ready
-kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
-
-# 5. Configure Istio control plane to use CNI
-kubectl patch istio default -n istio-system --type=merge -p '
-{
-  "spec": {
-    "values": {
-      "pilot": {
-        "cni": {
-          "enabled": true
-        }
-      }
-    }
-  }
-}'
-
-# 6. Restart istiod to apply CNI configuration
-kubectl rollout restart deployment/istiod -n istio-system
-kubectl rollout status deployment/istiod -n istio-system --timeout=120s
-
-# 7. Verify CNI is enabled
-kubectl get configmap istio-sidecar-injector -n istio-system -o jsonpath='{.data.values}' | jq '.pilot.cni'
-# Should show: { "enabled": true, "provider": "default" }
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-config-scheduler-override.yaml
 ```
 
 **What this does:**
-- Deploys istio-cni-node daemonset to all nodes (handles iptables setup)
-- Configures Istio sidecar injector to skip istio-init container
-- Eliminates iptables dependency in application pods
-- Enables CNI-based traffic redirection (more secure, no privileged init containers)
+- Creates a namespace-scoped `LLMInferenceServiceConfig` in `rhaii-inference`
+- Overrides the EPP scheduler image to `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix`
+- The `alpn-fix` image adds h2 ALPN support to EPP's gRPC TLS server
+
+**Note:** GPU KV cache block size is **16 tokens** (vs TPU's 128 tokens). Test prompts of ~20+ tokens will produce cache hits on GPU. The default test prompt in `test-cache-routing.sh` (132 tokens) exceeds both GPU and TPU block sizes.
 
 **Success criteria:**
-- ✅ istio-cni-node pods Running on all nodes (4/4 in kube-system)
-- ✅ Istio CR shows `pilot.cni.enabled: true`
-- ✅ istiod restarted successfully
-- ✅ No iptables errors in new pods
+- ✅ `kubectl get llminferenceserviceconfig -n rhaii-inference` shows the config
 
-**Time:** ~3 minutes
+**Time:** ~1 minute
 
 ---
 
@@ -472,7 +449,9 @@ Deploy the 3-replica vLLM inference service with prefix caching:
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-gpu-caching.yaml
 ```
 
-> **EPP Scheduler Image:** The manifest uses `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix` — a custom build with ALPN h2 support added to the gRPC server. The default KServe EPP image is missing this, causing Envoy's ext_proc gRPC connection to fail silently. Once the upstream fix is merged into `gateway-api-inference-extension` and released in the default KServe image, the `scheduler.image` override can be removed. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+> **EPP Scheduler Image:** The namespace-local `LLMInferenceServiceConfig` (Step 5.2) configures the EPP scheduler to use `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix`. This image adds h2 ALPN support required for Envoy's ext_proc gRPC connection. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+>
+> **GPU Cache Block Size:** GPU T4 uses a **16-token KV cache block size**, so test prompts as short as 20 tokens will produce cache hits. This is much smaller than TPU's 128-token block size.
 
 ### Track Deployment Progress
 

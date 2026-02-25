@@ -13,9 +13,12 @@ Deploy a vLLM inference service on TPU v6e with prefix caching and intelligent r
 - Cache-aware routing via EnvoyFilter and EPP scheduler
 - Security isolation via NetworkPolicies (optional)
 
-**Performance:**
-- ~25 req/s parallel requests
-- ~6.3 req/s serial requests
+**Performance (measured):**
+- ~10.7 req/s parallel requests
+- Cache miss: ~442ms, cache hit: ~405ms (~8% e2e speedup)
+- All cache-hit requests route to same replica (cache-affinity routing verified)
+
+> **Note:** Speedup appears modest because TPU's KV cache block size is 128 tokens. The prompt must exceed 128 tokens for cache blocks to register. With longer prompts the cache affinity routing is clearly demonstrated — all subsequent requests route to the same replica with verified hits.
 
 **Time:** ~50 minutes total
 
@@ -345,62 +348,38 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 4.1: Configure Istio CNI (3 minutes)
+## Step 4.1: Skip — Do NOT Configure Istio CNI
 
-**Why needed:** GKE containers don't include iptables binaries. Istio CNI bypasses this requirement by handling traffic redirection at the CNI plugin level instead of using init containers.
+**⚠️ Do not apply Istio CNI for the 3-replica deployment.**
 
-**Configure Istio to use CNI:**
+Istio CNI injects sidecars into EPP and vLLM pods. These sidecars conflict with app-level TLS:
+- **vLLM:** KServe configures vLLM with HTTPS. Sidecar terminates mTLS and forwards plaintext to vLLM's HTTPS port → TLS mismatch → 1450ms latency overhead
+- **EPP:** Sidecar terminates mTLS and forwards plaintext to EPP's `--secure-serving` port → EPP receives no ext_proc calls → cache routing breaks
+
+The 3-replica deployment uses **direct TLS connections**: the Istio gateway pod connects directly to EPP (h2 TLS via SPIFFE credentials) and vLLM (SIMPLE TLS via KServe CA cert). No sidecars needed.
+
+**Continue directly to Step 4.2.**
+
+---
+
+## Step 4.2: Apply EPP Scheduler Image Override (1 minute)
+
+The default KServe EPP scheduler image does not advertise ALPN h2 for gRPC over TLS, causing Envoy's ext_proc to fail silently. Apply a namespace-local override with the fixed image.
 
 ```bash
-# 1. Deploy Istio CNI plugin
-kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/istio-cni.yaml
-
-# 2. Patch istio-cni service account with pull secret (required to pull Red Hat registry image)
-kubectl patch serviceaccount istio-cni -n kube-system \
-  -p '{"imagePullSecrets": [{"name": "rhaiis-pull-secret"}]}'
-
-# 3. Restart CNI daemonset to pick up pull secret
-kubectl rollout restart daemonset istio-cni-node -n kube-system
-
-# 4. Wait for CNI daemonset pods to be ready
-kubectl wait --for=condition=Ready pods -l k8s-app=istio-cni-node -n kube-system --timeout=120s
-
-# 5. Configure Istio control plane to use CNI
-kubectl patch istio default -n istio-system --type=merge -p '
-{
-  "spec": {
-    "values": {
-      "pilot": {
-        "cni": {
-          "enabled": true
-        }
-      }
-    }
-  }
-}'
-
-# 6. Restart istiod to apply CNI configuration
-kubectl rollout restart deployment/istiod -n istio-system
-kubectl rollout status deployment/istiod -n istio-system --timeout=120s
-
-# 7. Verify CNI is enabled
-kubectl get configmap istio-sidecar-injector -n istio-system -o jsonpath='{.data.values}' | jq '.pilot.cni'
-# Should show: { "enabled": true, "provider": "default" }
+kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-config-scheduler-override.yaml
 ```
 
 **What this does:**
-- Deploys istio-cni-node daemonset to all nodes (handles iptables setup)
-- Configures Istio sidecar injector to skip istio-init container
-- Eliminates iptables dependency in application pods
-- Enables CNI-based traffic redirection (more secure, no privileged init containers)
+- Creates a namespace-scoped `LLMInferenceServiceConfig` in `rhaii-inference`
+- Overrides the EPP scheduler image to `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix`
+- The `alpn-fix` image adds h2 ALPN support to EPP's gRPC TLS server
+- Namespace scope means the well-known config in `opendatahub` is not modified
 
 **Success criteria:**
-- ✅ istio-cni-node pods Running on all nodes (in kube-system)
-- ✅ Istio CR shows `pilot.cni.enabled: true`
-- ✅ istiod restarted successfully
-- ✅ No iptables errors in new pods
+- ✅ `kubectl get llminferenceserviceconfig -n rhaii-inference` shows the config
 
-**Time:** ~3 minutes
+**Time:** ~1 minute
 
 ---
 
@@ -413,7 +392,9 @@ Deploy the 3-replica vLLM inference service with prefix caching:
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
 ```
 
-> **EPP Scheduler Image:** The manifest uses `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix` — a custom build with ALPN h2 support added to the gRPC server. The default KServe EPP image is missing this, causing Envoy's ext_proc gRPC connection to fail silently. Once the upstream fix is merged into `gateway-api-inference-extension` and released in the default KServe image, the `scheduler.image` override can be removed. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+> **EPP Scheduler Image:** The namespace-local `LLMInferenceServiceConfig` (Step 4.2) configures the EPP scheduler to use `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix`. This image adds h2 ALPN support required for Envoy's ext_proc gRPC connection. Without it, ext_proc fails silently and cache-aware routing is broken. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+>
+> **TPU Cache Block Size:** TPU vLLM uses a **128-token KV cache block size** (vs 16 tokens on GPU). Test prompts must exceed 128 tokens for cache hits to register. The default test prompt in `test-cache-routing.sh` is 132 tokens to satisfy this requirement.
 
 ### Track Deployment Progress
 
@@ -638,10 +619,12 @@ The script tests three things:
 3. **Throughput** — fires parallel requests and reports req/s and latency percentiles
 
 **Expected behavior (TPU):**
-- First request: ~200ms (cache miss, XLA compilation)
-- Subsequent requests: <100ms (cache hit on same replica)
-- Throughput: ~25 req/s (parallel)
-- P50 latency: <200ms
+- First request: ~442ms (cache miss — cold prefix)
+- Subsequent requests with same prefix: ~405ms (cache hit — ~8% e2e speedup)
+- Throughput: ~10.7 req/s (parallel)
+- **All cache-hit requests route to the same replica** — verify with per-pod metrics
+
+> **Why the speedup is modest:** TPU block size is 128 tokens. Cache hits save ~50ms of prefill per block. With ~400ms total e2e latency (network + generation), this is ~12% savings per cached block. Larger prompts with more shared tokens show proportionally more speedup.
 
 ---
 
@@ -731,29 +714,30 @@ done
 ```
 Request 1:
 {...generated text...}
-Latency: 0.215s   ← CACHE MISS (first request, cold prefix)
+Latency: 0.442s   ← CACHE MISS (first request, cold prefix)
 
 Request 2:
 {...generated text...}
-Latency: 0.082s   ← CACHE HIT ✓ (62% faster)
+Latency: 0.398s   ← CACHE HIT ✓ (10% faster)
 
 Request 3:
 {...generated text...}
-Latency: 0.078s   ← CACHE HIT ✓ (64% faster)
+Latency: 0.379s   ← CACHE HIT ✓ (14% faster)
 
 Request 4:
 {...generated text...}
-Latency: 0.081s   ← CACHE HIT ✓ (62% faster)
+Latency: 0.391s   ← CACHE HIT ✓ (12% faster)
 
 Request 5:
 {...generated text...}
-Latency: 0.079s   ← CACHE HIT ✓ (63% faster)
+Latency: 0.396s   ← CACHE HIT ✓ (11% faster)
 ```
 
 **Key verification points:**
-- ✅ First request has higher latency (~215ms)
-- ✅ Subsequent requests **MUST be 60-75% faster** (cache hits)
-- ⚠️ **If requests 2+ are NOT faster, cache-aware routing is broken!**
+- ✅ First request has higher latency (cache miss, ~442ms)
+- ✅ Subsequent requests are faster (~8-14% e2e speedup with 132-token prompt)
+- ✅ **All subsequent requests route to the same replica** (EPP prefix-hash routing)
+- ⚠️ **If requests 2+ are NOT faster, check prompt token count** — must exceed 128 tokens (TPU block size) for cache hits to register
 
 **If cache hits are NOT faster, check:**
 ```bash
@@ -1076,7 +1060,7 @@ gcloud container clusters resize rhaii-tpu-scaleout-cluster \
 - `deployments/istio-kserve/caching-pattern/manifests/envoyfilter-route-extproc-body.yaml`
 - `deployments/istio-kserve/caching-pattern/manifests/networkpolicies/`
 
-**Performance:** ~25 req/s parallel, ~6.3 req/s serial, <200ms P50 latency
+**Performance (measured):** ~10.7 req/s parallel, ~405ms cache-hit P50 latency, ~8% e2e speedup with 132-token prompt
 
 **Recommended zones:**
 - `europe-west4-a` (primary - most reliable TPU availability)
