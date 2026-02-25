@@ -11,9 +11,18 @@ spec:
 
   # Router configuration
   router:
-    route: {}      # Auto-create HTTPRoute
-    gateway: {}    # Bind to Gateway
-    scheduler: {}  # Enable EPP scheduler with cache-aware routing
+    route: {}    # Auto-create HTTPRoute
+    gateway: {}  # Bind to Gateway
+    # EPP scheduler with ALPN fix image
+    # TODO: switch to upstream image once https://github.com/kubernetes-sigs/gateway-api-inference-extension
+    #       ALPN h2 fix is merged and released in the default KServe EPP image
+    scheduler:
+      image: gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix
+      args:
+        - --grpc-port=9002
+        - --grpc-health-port=9003
+        - --secure-serving
+        - --cert-path=/var/run/kserve/tls
 
   # vLLM container template
   template:
