@@ -183,3 +183,23 @@ cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deplo
 	@echo "Next steps:"
 	@echo "  1. Install operators: make -C /path/to/rhaii-on-xks deploy-all"
 	@echo "  2. Deploy LLMInferenceService: kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-gpu-caching.yaml"
+
+cluster-scale-down:
+	@echo "Scaling $(ACCELERATOR) node pool to 0..."
+	@gcloud container clusters resize $(CLUSTER_NAME) \
+		--node-pool $(ACCELERATOR)-pool \
+		--num-nodes 0 \
+		--zone $(ZONE) \
+		--project $(PROJECT_ID) \
+		--quiet
+	@echo "✓ Node pool scaled to 0 (cost savings mode)"
+
+cluster-scale-up:
+	@echo "Scaling $(ACCELERATOR) node pool to $(NUM_NODES)..."
+	@gcloud container clusters resize $(CLUSTER_NAME) \
+		--node-pool $(ACCELERATOR)-pool \
+		--num-nodes $(NUM_NODES) \
+		--zone $(ZONE) \
+		--project $(PROJECT_ID) \
+		--quiet
+	@echo "✓ Node pool scaled to $(NUM_NODES)"
