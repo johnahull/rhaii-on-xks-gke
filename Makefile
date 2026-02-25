@@ -157,3 +157,27 @@ deploy-gpu-operator:
 		-n gpu-operator --timeout=300s || \
 		{ echo "Error: NVIDIA container toolkit daemonset failed to become ready" ; exit 1; }
 	@echo "✓ GPU Operator deployed successfully"
+
+cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
+	@echo "========================================="
+	@echo "✓ TPU cluster ready!"
+	@echo "========================================="
+	@echo "Cluster: $(CLUSTER_NAME)"
+	@echo "Zone: $(ZONE)"
+	@echo "Nodes: $(NUM_NODES)"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Install operators: See docs/customer-guides/operator-installation.md"
+	@echo "  2. Deploy workload: See docs/customer-guides/deployment-tpu.md"
+
+cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
+	@echo "========================================="
+	@echo "✓ GPU cluster ready!"
+	@echo "========================================="
+	@echo "Cluster: $(CLUSTER_NAME)"
+	@echo "Zone: $(ZONE)"
+	@echo "Nodes: $(NUM_NODES)"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Install operators: See docs/customer-guides/operator-installation.md"
+	@echo "  2. Deploy workload: See docs/customer-guides/deployment-gpu.md"
