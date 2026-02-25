@@ -232,3 +232,7 @@ cluster-clean:
 	@echo "✓ Cleanup complete"
 
 clean: cluster-clean
+
+.PHONY: help check-deps check cluster-create cluster-nodepool-tpu cluster-nodepool-gpu
+.PHONY: cluster-credentials deploy-gpu-operator cluster-tpu cluster-gpu
+.PHONY: cluster-scale-down cluster-scale-up cluster-clean clean
