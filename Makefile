@@ -22,6 +22,14 @@ GPU_OPERATOR_VERSION ?= v25.10.0
 # Namespace
 WORKLOAD_NAMESPACE ?= rhaii-inference
 
+# Phony targets (not actual files)
+.PHONY: help check-deps check
+.PHONY: cluster-create cluster-nodepool-tpu cluster-nodepool-gpu cluster-credentials
+.PHONY: deploy-gpu-operator
+.PHONY: cluster-tpu cluster-gpu
+.PHONY: cluster-scale-down cluster-scale-up
+.PHONY: cluster-clean clean
+
 .DEFAULT_GOAL := help
 
 help:
@@ -232,7 +240,3 @@ cluster-clean:
 	@echo "✓ Cleanup complete"
 
 clean: cluster-clean
-
-.PHONY: help check-deps check cluster-create cluster-nodepool-tpu cluster-nodepool-gpu
-.PHONY: cluster-credentials deploy-gpu-operator cluster-tpu cluster-gpu
-.PHONY: cluster-scale-down cluster-scale-up cluster-clean clean
