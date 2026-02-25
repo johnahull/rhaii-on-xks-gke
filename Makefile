@@ -69,3 +69,10 @@ check-deps:
 
 check: check-deps
 	@./scripts/preflight-check.sh --zone $(ZONE) --accelerator $(ACCELERATOR) --customer
+
+cluster-credentials:
+	@echo "Getting cluster credentials..."
+	@gcloud container clusters get-credentials $(CLUSTER_NAME) \
+		--zone $(ZONE) \
+		--project $(PROJECT_ID)
+	@echo "✓ kubectl configured for cluster $(CLUSTER_NAME)"
