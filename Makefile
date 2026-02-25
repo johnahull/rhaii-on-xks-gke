@@ -118,3 +118,30 @@ cluster-create: check
 		--non-interactive \
 		--skip-validation
 	@echo "✓ Cluster creation complete"
+
+deploy-gpu-operator:
+	@echo "Labeling GPU nodes to disable GKE default plugin..."
+	@kubectl label nodes -l cloud.google.com/gke-accelerator \
+		gke-no-default-nvidia-gpu-device-plugin=true --overwrite
+	@echo "Creating gpu-operator namespace..."
+	@kubectl create namespace gpu-operator --dry-run=client -o yaml | kubectl apply -f -
+	@echo "Applying ResourceQuota..."
+	@kubectl apply -f deployments/gpu-operator/resourcequota-gcp-critical-pods.yaml
+	@echo "Installing NVIDIA GPU Operator..."
+	@helm repo add nvidia https://helm.ngc.nvidia.com/nvidia 2>/dev/null || true
+	@helm repo update nvidia
+	@helm install --wait -n gpu-operator \
+		gpu-operator nvidia/gpu-operator \
+		--version $(GPU_OPERATOR_VERSION) \
+		--set driver.enabled=false \
+		--set hostPaths.driverInstallDir=/home/kubernetes/bin/nvidia \
+		--set toolkit.installDir=/home/kubernetes/bin/nvidia \
+		--set cdi.enabled=true \
+		--set toolkit.env[0].name=RUNTIME_CONFIG_SOURCE \
+		--set toolkit.env[0].value=file \
+		--set dcgmExporter.enabled=false
+	@echo "Verifying GPU Operator deployment..."
+	@kubectl wait --for=condition=Ready pods \
+		-l app.kubernetes.io/name=gpu-operator \
+		-n gpu-operator --timeout=300s
+	@echo "✓ GPU Operator deployed successfully"
