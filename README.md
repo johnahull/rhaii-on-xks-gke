@@ -26,6 +26,31 @@ Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower
 
 ---
 
+## Makefile Quick Start
+
+For users familiar with Make-based workflows, this repository includes a Makefile for cluster lifecycle management:
+
+```bash
+# Create TPU cluster
+make cluster-tpu
+
+# Create GPU cluster with operator
+make cluster-gpu
+
+# Scale down for cost savings
+make cluster-scale-down ACCELERATOR=tpu
+
+# Delete cluster
+make cluster-clean
+
+# See all options
+make help
+```
+
+**Alternative:** Use bash scripts directly (see `scripts/` directory)
+
+---
+
 ## Architecture Overview
 
 ```mermaid

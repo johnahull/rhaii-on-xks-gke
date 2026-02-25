@@ -26,7 +26,7 @@ spec:
               processing_mode:
                 request_header_mode: SEND
                 response_header_mode: SEND
-                request_body_mode: BUFFERED
+                request_body_mode: FULL_DUPLEX_STREAMED
                 response_body_mode: NONE
   # Patch per-route ext_proc configuration for GPU deployment - completions endpoint
   - applyTo: HTTP_ROUTE
@@ -46,7 +46,7 @@ spec:
               processing_mode:
                 request_header_mode: SEND
                 response_header_mode: SEND
-                request_body_mode: BUFFERED
+                request_body_mode: FULL_DUPLEX_STREAMED
                 response_body_mode: NONE
   # Patch per-route ext_proc configuration for GPU deployment - third replica route
   - applyTo: HTTP_ROUTE
@@ -66,7 +66,7 @@ spec:
               processing_mode:
                 request_header_mode: SEND
                 response_header_mode: SEND
-                request_body_mode: BUFFERED
+                request_body_mode: FULL_DUPLEX_STREAMED
                 response_body_mode: NONE
   # Patch per-route ext_proc configuration for TPU deployment - chat/completions endpoint
   - applyTo: HTTP_ROUTE
@@ -86,7 +86,7 @@ spec:
               processing_mode:
                 request_header_mode: SEND
                 response_header_mode: SEND
-                request_body_mode: BUFFERED
+                request_body_mode: FULL_DUPLEX_STREAMED
                 response_body_mode: NONE
   # Patch per-route ext_proc configuration for TPU deployment - completions endpoint
   - applyTo: HTTP_ROUTE
@@ -106,5 +106,5 @@ spec:
               processing_mode:
                 request_header_mode: SEND
                 response_header_mode: SEND
-                request_body_mode: BUFFERED
+                request_body_mode: FULL_DUPLEX_STREAMED
                 response_body_mode: NONE
