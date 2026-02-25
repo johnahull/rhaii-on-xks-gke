@@ -413,6 +413,8 @@ Deploy the 3-replica vLLM inference service with prefix caching:
 kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
 ```
 
+> **EPP Scheduler Image:** The manifest uses `gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix` — a custom build with ALPN h2 support added to the gRPC server. The default KServe EPP image is missing this, causing Envoy's ext_proc gRPC connection to fail silently. Once the upstream fix is merged into `gateway-api-inference-extension` and released in the default KServe image, the `scheduler.image` override can be removed. See `docs/BUG-EPP-Scheduler-ALPN.md` for details.
+
 ### Track Deployment Progress
 
 Each pod goes through several stages before it's ready to serve. Use these commands to track progress:
