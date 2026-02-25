@@ -158,6 +158,7 @@ deploy-gpu-operator:
 		{ echo "Error: NVIDIA container toolkit daemonset failed to become ready" ; exit 1; }
 	@echo "✓ GPU Operator deployed successfully"
 
+cluster-tpu: ACCELERATOR=tpu
 cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo "========================================="
 	@echo "✓ TPU cluster ready!"
@@ -167,9 +168,10 @@ cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo "Nodes: $(NUM_NODES)"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Install operators: See docs/customer-guides/operator-installation.md"
-	@echo "  2. Deploy workload: See docs/customer-guides/deployment-tpu.md"
+	@echo "  1. Install operators: make -C /path/to/rhaii-on-xks deploy-all"
+	@echo "  2. Deploy LLMInferenceService: kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml"
 
+cluster-gpu: ACCELERATOR=gpu
 cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
 	@echo "========================================="
 	@echo "✓ GPU cluster ready!"
@@ -179,5 +181,5 @@ cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deplo
 	@echo "Nodes: $(NUM_NODES)"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Install operators: See docs/customer-guides/operator-installation.md"
-	@echo "  2. Deploy workload: See docs/customer-guides/deployment-gpu.md"
+	@echo "  1. Install operators: make -C /path/to/rhaii-on-xks deploy-all"
+	@echo "  2. Deploy LLMInferenceService: kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-gpu-caching.yaml"
