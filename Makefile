@@ -80,21 +80,29 @@ cluster-credentials:
 
 cluster-nodepool-tpu:
 	@echo "Creating TPU node pool $(TPU_NODEPOOL_NAME)..."
+	@echo "This will take ~10-15 minutes..."
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }
+	@test -n "$(CLUSTER_NAME)" || { echo "Error: CLUSTER_NAME not set" ; exit 1; }
 	@gcloud container node-pools create $(TPU_NODEPOOL_NAME) \
 		--cluster $(CLUSTER_NAME) \
 		--zone $(ZONE) \
 		--machine-type $(TPU_MACHINE_TYPE) \
 		--num-nodes $(NUM_NODES) \
-		--project $(PROJECT_ID)
+		--project $(PROJECT_ID) || \
+		{ echo "Error: Failed to create TPU node pool. Check zone capacity and quota." ; exit 1; }
 	@echo "✓ TPU node pool created"
 
 cluster-nodepool-gpu:
 	@echo "Creating GPU node pool $(GPU_NODEPOOL_NAME)..."
+	@echo "This will take ~5-10 minutes..."
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }
+	@test -n "$(CLUSTER_NAME)" || { echo "Error: CLUSTER_NAME not set" ; exit 1; }
 	@gcloud container node-pools create $(GPU_NODEPOOL_NAME) \
 		--cluster $(CLUSTER_NAME) \
 		--zone $(ZONE) \
 		--machine-type $(GPU_MACHINE_TYPE) \
 		--accelerator type=$(GPU_ACCELERATOR),count=1 \
 		--num-nodes $(NUM_NODES) \
-		--project $(PROJECT_ID)
+		--project $(PROJECT_ID) || \
+		{ echo "Error: Failed to create GPU node pool. Check zone capacity and quota." ; exit 1; }
 	@echo "✓ GPU node pool created"
