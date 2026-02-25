@@ -404,20 +404,6 @@ cd /path/to/rhaii-on-xks-gke
 
 ---
 
-## Step 5.1: Skip — Do NOT Configure Istio CNI
-
-**⚠️ Do not apply Istio CNI for the 3-replica deployment.**
-
-Istio CNI injects sidecars into EPP and vLLM pods. These sidecars conflict with app-level TLS:
-- **vLLM:** KServe configures vLLM with HTTPS. Sidecar terminates mTLS and forwards plaintext to vLLM's HTTPS port → TLS mismatch causing significant latency overhead
-- **EPP:** Sidecar terminates mTLS and forwards plaintext to EPP's `--secure-serving` port → EPP receives no ext_proc calls → cache routing breaks
-
-The 3-replica deployment uses **direct TLS connections**: the Istio gateway pod connects directly to EPP (h2 TLS via SPIFFE credentials) and vLLM (SIMPLE TLS via KServe CA cert). No sidecars needed.
-
-**Continue directly to Step 5.2.**
-
----
-
 ## Step 5.2: Apply EPP Scheduler Image Override (1 minute)
 
 The default KServe EPP scheduler image does not advertise ALPN h2 for gRPC over TLS, causing Envoy's ext_proc to fail silently. Apply a namespace-local override with the fixed image.
