@@ -185,21 +185,26 @@ cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deplo
 	@echo "  2. Deploy LLMInferenceService: kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-gpu-caching.yaml"
 
 cluster-scale-down:
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }
+	@test "$(ACCELERATOR)" = "tpu" -o "$(ACCELERATOR)" = "gpu" || { echo "Error: ACCELERATOR must be 'tpu' or 'gpu'" ; exit 1; }
 	@echo "Scaling $(ACCELERATOR) node pool to 0..."
 	@gcloud container clusters resize $(CLUSTER_NAME) \
 		--node-pool $(ACCELERATOR)-pool \
 		--num-nodes 0 \
 		--zone $(ZONE) \
 		--project $(PROJECT_ID) \
-		--quiet
+		--quiet || { echo "Error: Failed to scale down node pool" ; exit 1; }
 	@echo "✓ Node pool scaled to 0 (cost savings mode)"
 
 cluster-scale-up:
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }
+	@test "$(ACCELERATOR)" = "tpu" -o "$(ACCELERATOR)" = "gpu" || { echo "Error: ACCELERATOR must be 'tpu' or 'gpu'" ; exit 1; }
+	@echo "WARNING: Scaling up will incur costs (~$$1.28/hour per TPU node, ~$$0.35/hour per GPU node)"
 	@echo "Scaling $(ACCELERATOR) node pool to $(NUM_NODES)..."
 	@gcloud container clusters resize $(CLUSTER_NAME) \
 		--node-pool $(ACCELERATOR)-pool \
 		--num-nodes $(NUM_NODES) \
 		--zone $(ZONE) \
 		--project $(PROJECT_ID) \
-		--quiet
+		--quiet || { echo "Error: Failed to scale up node pool" ; exit 1; }
 	@echo "✓ Node pool scaled to $(NUM_NODES)"
