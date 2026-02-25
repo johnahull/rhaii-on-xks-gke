@@ -72,7 +72,8 @@ check: check-deps
 
 cluster-credentials:
 	@echo "Getting cluster credentials..."
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set. Run: gcloud config set project YOUR_PROJECT_ID" ; exit 1; }
 	@gcloud container clusters get-credentials $(CLUSTER_NAME) \
 		--zone $(ZONE) \
-		--project $(PROJECT_ID)
+		--project $(PROJECT_ID) || { echo "Error: Failed to get credentials for cluster $(CLUSTER_NAME)" ; exit 1; }
 	@echo "✓ kubectl configured for cluster $(CLUSTER_NAME)"
