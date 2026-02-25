@@ -208,3 +208,18 @@ cluster-scale-up:
 		--project $(PROJECT_ID) \
 		--quiet || { echo "Error: Failed to scale up node pool" ; exit 1; }
 	@echo "✓ Node pool scaled to $(NUM_NODES)"
+
+cluster-clean:
+	@echo "Deleting GKE cluster $(CLUSTER_NAME)..."
+	@gcloud container clusters delete $(CLUSTER_NAME) \
+		--zone $(ZONE) \
+		--project $(PROJECT_ID) \
+		--quiet
+	@echo "Cleaning up local kubeconfig..."
+	@kubectl config delete-cluster gke_$(PROJECT_ID)_$(ZONE)_$(CLUSTER_NAME) 2>/dev/null || true
+	@kubectl config delete-context gke_$(PROJECT_ID)_$(ZONE)_$(CLUSTER_NAME) 2>/dev/null || true
+	@echo "Cleaning up Helm repositories..."
+	@helm repo remove nvidia 2>/dev/null || true
+	@echo "✓ Cleanup complete"
+
+clean: cluster-clean
