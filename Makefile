@@ -106,3 +106,15 @@ cluster-nodepool-gpu:
 		--project $(PROJECT_ID) || \
 		{ echo "Error: Failed to create GPU node pool. Check zone capacity and quota." ; exit 1; }
 	@echo "✓ GPU node pool created"
+
+cluster-create: check
+	@echo "Creating GKE cluster $(CLUSTER_NAME)..."
+	@./scripts/create-gke-cluster.sh \
+		--$(ACCELERATOR) \
+		--project $(PROJECT_ID) \
+		--zone $(ZONE) \
+		--cluster-name $(CLUSTER_NAME) \
+		--num-nodes $(NUM_NODES) \
+		--non-interactive \
+		--skip-validation
+	@echo "✓ Cluster creation complete"
