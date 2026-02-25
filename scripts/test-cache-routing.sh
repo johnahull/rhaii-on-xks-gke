@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 MODEL="/mnt/models"  # vLLM serves model mounted at /mnt/models (auto-detected)
 NUM_REQUESTS=10
 CONCURRENT=5
-PROMPT="You are a helpful AI assistant. Please provide a comprehensive analysis of the following topic, including historical context, current trends, and future implications. The topic is: sustainable energy solutions for urban environments in developing countries. Consider economic, social, and environmental factors in your response."
+PROMPT="You are a highly skilled professional translator with decades of experience in French, Spanish, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, and Arabic. Your expertise spans legal, medical, technical, literary, and business translation. You meticulously preserve tone, style, cultural nuances, idiomatic expressions, and regional variations. You understand the importance of context and always adapt your translations to the intended audience, ensuring they read naturally and authentically to native speakers. Your translations are trusted by international organizations, publishing houses, law firms, and technology companies worldwide. You take pride in delivering accurate and culturally sensitive translations. Please translate the following text into French:"
 MAX_TOKENS=10
 GATEWAY_IP=""
 
