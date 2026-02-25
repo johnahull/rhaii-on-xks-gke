@@ -66,3 +66,6 @@ check-deps:
 	@echo "Checking gcloud authentication..."
 	@gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>&1 | grep -q @ || { echo "Error: Not authenticated with gcloud. Run: gcloud auth login" ; exit 1; }
 	@echo "✓ Authenticated with gcloud"
+
+check: check-deps
+	@./scripts/preflight-check.sh --zone $(ZONE) --accelerator $(ACCELERATOR) --customer
