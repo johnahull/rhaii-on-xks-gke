@@ -56,3 +56,13 @@ help:
 	@echo "   make cluster-tpu ZONE=us-east5-a NUM_NODES=1"
 	@echo "   make cluster-gpu PROJECT_ID=my-project"
 	@echo "   make cluster-scale-down ACCELERATOR=tpu"
+
+check-deps:
+	@echo "Checking required tools..."
+	@which gcloud > /dev/null || (echo "Error: gcloud not found. Install from: https://cloud.google.com/sdk/docs/install" && exit 1)
+	@which kubectl > /dev/null || (echo "Error: kubectl not found. Install from: https://kubernetes.io/docs/tasks/tools/" && exit 1)
+	@which helm > /dev/null || (echo "Error: helm not found. Install from: https://helm.sh/docs/intro/install/" && exit 1)
+	@echo "✓ All required tools present"
+	@echo "Checking gcloud authentication..."
+	@gcloud auth list --filter=status:ACTIVE --format="value(account)" > /dev/null || (echo "Error: Not authenticated with gcloud. Run: gcloud auth login" && exit 1)
+	@echo "✓ Authenticated with gcloud"
