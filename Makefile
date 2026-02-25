@@ -77,3 +77,24 @@ cluster-credentials:
 		--zone $(ZONE) \
 		--project $(PROJECT_ID) || { echo "Error: Failed to get credentials for cluster $(CLUSTER_NAME)" ; exit 1; }
 	@echo "✓ kubectl configured for cluster $(CLUSTER_NAME)"
+
+cluster-nodepool-tpu:
+	@echo "Creating TPU node pool $(TPU_NODEPOOL_NAME)..."
+	@gcloud container node-pools create $(TPU_NODEPOOL_NAME) \
+		--cluster $(CLUSTER_NAME) \
+		--zone $(ZONE) \
+		--machine-type $(TPU_MACHINE_TYPE) \
+		--num-nodes $(NUM_NODES) \
+		--project $(PROJECT_ID)
+	@echo "✓ TPU node pool created"
+
+cluster-nodepool-gpu:
+	@echo "Creating GPU node pool $(GPU_NODEPOOL_NAME)..."
+	@gcloud container node-pools create $(GPU_NODEPOOL_NAME) \
+		--cluster $(CLUSTER_NAME) \
+		--zone $(ZONE) \
+		--machine-type $(GPU_MACHINE_TYPE) \
+		--accelerator type=$(GPU_ACCELERATOR),count=1 \
+		--num-nodes $(NUM_NODES) \
+		--project $(PROJECT_ID)
+	@echo "✓ GPU node pool created"
