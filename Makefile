@@ -210,11 +210,20 @@ cluster-scale-up:
 	@echo "✓ Node pool scaled to $(NUM_NODES)"
 
 cluster-clean:
+	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }
+	@echo "========================================="
+	@echo "WARNING: DESTRUCTIVE OPERATION"
+	@echo "========================================="
+	@echo "This will permanently delete:"
+	@echo "  - Cluster: $(CLUSTER_NAME)"
+	@echo "  - Project: $(PROJECT_ID)"
+	@echo "  - Zone: $(ZONE)"
+	@echo ""
 	@echo "Deleting GKE cluster $(CLUSTER_NAME)..."
 	@gcloud container clusters delete $(CLUSTER_NAME) \
 		--zone $(ZONE) \
 		--project $(PROJECT_ID) \
-		--quiet
+		--quiet || { echo "Warning: Cluster deletion failed (may not exist)" ; }
 	@echo "Cleaning up local kubeconfig..."
 	@kubectl config delete-cluster gke_$(PROJECT_ID)_$(ZONE)_$(CLUSTER_NAME) 2>/dev/null || true
 	@kubectl config delete-context gke_$(PROJECT_ID)_$(ZONE)_$(CLUSTER_NAME) 2>/dev/null || true
