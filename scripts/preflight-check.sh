@@ -190,13 +190,15 @@ if [ "$SKIP_TOOLS" = false ]; then
     # Add stack-specific tools
     if [[ "$TECH_STACK" == "gateway-api" ]]; then
         REQUIRED_TOOLS+=("helm" "helmfile")
-    elif [[ "$TECH_STACK" == "istio-kserve" ]]; then
-        REQUIRED_TOOLS+=("kubectl")
     fi
 
     for tool in "${REQUIRED_TOOLS[@]}"; do
         if command -v "$tool" &> /dev/null; then
-            VERSION=$($tool version --short 2>/dev/null || $tool --version 2>/dev/null | head -1 || echo "installed")
+            if [[ "$tool" == "kubectl" ]]; then
+                VERSION=$(kubectl version --client --output=yaml 2>/dev/null | grep gitVersion | awk '{print $2}' || echo "installed")
+            else
+                VERSION=$($tool version --short 2>/dev/null || $tool --version 2>/dev/null | head -1 || echo "installed")
+            fi
             echo -e "${GREEN}✅ $tool${NC} - $VERSION"
         else
             echo -e "${RED}❌ $tool - NOT FOUND${NC}"
@@ -452,34 +454,6 @@ if [ "$ALL_CHECKS_PASSED" = true ]; then
         echo "You can proceed with deployment, but review warnings above."
     fi
 
-    # Show next steps
-    echo ""
-    echo "========================================="
-    echo "Next Steps"
-    echo "========================================="
-    echo ""
-
-    if [[ "$TECH_STACK" == "gateway-api" ]]; then
-        echo "1. Review deployment guide:"
-        echo "   cat $DEPLOYMENT_DIR/README.md"
-        echo ""
-        echo "2. Deploy via helmfile:"
-        echo "   cd /home/jhull/devel/llm-d"
-        echo "   helmfile -f helmfile.yaml.gotmpl apply"
-        echo ""
-        echo "3. Apply HTTPRoute:"
-        echo "   kubectl apply -f $DEPLOYMENT_DIR/manifests/httproute.yaml"
-    elif [[ "$TECH_STACK" == "istio-kserve" ]]; then
-        echo "1. Review deployment guide:"
-        echo "   cat $DEPLOYMENT_DIR/docs/cluster-deployment-guide.md"
-        echo ""
-        echo "2. Deploy LLMInferenceService:"
-        echo "   kubectl apply -f $DEPLOYMENT_DIR/manifests/llmisvc-*.yaml"
-    fi
-
-    echo ""
-    echo "For detailed setup instructions, see:"
-    echo "  $DEPLOYMENT_DIR/docs/"
 
 else
     echo -e "${RED}❌ SOME CHECKS FAILED!${NC}"

@@ -42,7 +42,7 @@ Container Registry: gcr.io/ecoeng-llmd/
 │ Step 2: Cluster Setup (Operators Only)                          │
 └─────────────────────────────────────────────────────────────────┘
 
-User runs: cd /home/jhull/devel/rhaii-on-xks && make deploy-all
+User runs: cd /path/to/rhaii-on-xks && make deploy-all
 
 Installs these operators:
 1. cert-manager          (TLS certificate management)
@@ -143,7 +143,7 @@ Envoy Gateway → ext_proc filter → gRPC/TLS (ALPN h2) → EPP Scheduler
 
 ```bash
 # 1. Build custom image with ALPN fix
-cd /home/jhull/devel/llm-d-inference-scheduler
+cd /path/to/llm-d-inference-scheduler
 podman build -f Dockerfile.epp -t gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix .
 podman push gcr.io/ecoeng-llmd/llm-d-inference-scheduler:alpn-fix
 
