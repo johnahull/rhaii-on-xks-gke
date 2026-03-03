@@ -369,92 +369,11 @@ fi
 echo ""
 
 # ============================================================================
-# Check 6: Deployment Configuration Files
-# ============================================================================
-echo "========================================="
-echo "Check 6: Deployment Files"
-echo "========================================="
-
-CONFIG_FILES_FOUND=true
-
-# Check for stack-specific files
-if [[ "$TECH_STACK" == "gateway-api" ]]; then
-    # Check for Helm values file (try both pattern naming conventions)
-    VALUES_FILE=$(find "$DEPLOYMENT_DIR" -maxdepth 1 -name "llm-d-pattern*.yaml" -o -name "*values.yaml" 2>/dev/null | head -1)
-    if [[ -n "$VALUES_FILE" ]]; then
-        echo -e "${GREEN}✅ Helm values file found: $(basename $VALUES_FILE)${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Helm values file not found (expected llm-d-pattern*-values.yaml)${NC}"
-        CONFIG_FILES_FOUND=false
-    fi
-
-    # Check for HTTPRoute manifest
-    if [[ -f "$DEPLOYMENT_DIR/manifests/httproute.yaml" ]]; then
-        echo -e "${GREEN}✅ HTTPRoute manifest found${NC}"
-    else
-        echo -e "${YELLOW}⚠️  HTTPRoute manifest not found${NC}"
-        CONFIG_FILES_FOUND=false
-    fi
-
-elif [[ "$TECH_STACK" == "istio-kserve" ]]; then
-    # Check for LLMInferenceService manifest
-    if find "$DEPLOYMENT_DIR/manifests" -name "*llmisvc*.yaml" 2>/dev/null | grep -q .; then
-        echo -e "${GREEN}✅ LLMInferenceService manifest found${NC}"
-    else
-        echo -e "${YELLOW}⚠️  LLMInferenceService manifest not found${NC}"
-        CONFIG_FILES_FOUND=false
-    fi
-fi
-
-# Check README
-if [[ -f "$DEPLOYMENT_DIR/README.md" ]]; then
-    echo -e "${GREEN}✅ README.md found${NC}"
-else
-    echo -e "${YELLOW}⚠️  README.md not found${NC}"
-fi
-
-if [ "$CONFIG_FILES_FOUND" = false ]; then
-    ((WARNINGS_COUNT++))
-fi
-
-echo ""
-
-# ============================================================================
-# Check 7: Secrets and Credentials
-# ============================================================================
-echo "========================================="
-echo "Check 7: Required Secrets"
-echo "========================================="
-
-# Check for pull secret (in repo root)
-PULL_SECRET_PATH="$REPO_ROOT/redhat-pull-secret.yaml"
-if [[ -f "$PULL_SECRET_PATH" ]]; then
-    echo -e "${GREEN}✅ Red Hat pull secret found${NC}"
-else
-    echo -e "${YELLOW}⚠️  Red Hat pull secret not found: $PULL_SECRET_PATH${NC}"
-    echo "   Required for RHAIIS container images"
-    ((WARNINGS_COUNT++))
-fi
-
-# Check HuggingFace token
-if [[ -n "$HUGGINGFACE_TOKEN" ]]; then
-    echo -e "${GREEN}✅ HuggingFace token set in environment${NC}"
-elif [[ -f "$REPO_ROOT/huggingface-token-secret.yaml" ]]; then
-    echo -e "${GREEN}✅ HuggingFace token secret file found${NC}"
-else
-    echo -e "${YELLOW}⚠️  HuggingFace token not found${NC}"
-    echo "   Set HUGGINGFACE_TOKEN environment variable or create huggingface-token-secret.yaml"
-    ((WARNINGS_COUNT++))
-fi
-
-echo ""
-
-# ============================================================================
-# Check 8: Cluster Validation (if cluster specified)
+# Check 6: Cluster Validation (if cluster specified)
 # ============================================================================
 if [[ -n "$CLUSTER_NAME" && "$SKIP_CLUSTER" = false ]]; then
     echo "========================================="
-    echo "Check 8: Cluster Validation"
+    echo "Check 6: Cluster Validation"
     echo "========================================="
 
     # Check if cluster exists
