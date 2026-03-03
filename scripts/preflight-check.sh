@@ -57,7 +57,7 @@ EOF
 # Load from environment variables if set, otherwise use defaults
 # Command-line flags will override these values during argument parsing
 DEPLOYMENT_PATH="istio-kserve/caching-pattern"
-CLUSTER_NAME="${CLUSTER_NAME:-}"
+CLUSTER_NAME=""
 ZONE="${ZONE:-}"
 ACCELERATOR_TYPE="${ACCELERATOR_TYPE:-}"
 PROJECT_ID="${PROJECT_ID:-}"
