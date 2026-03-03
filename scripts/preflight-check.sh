@@ -434,35 +434,6 @@ if [[ -n "$CLUSTER_NAME" && "$SKIP_CLUSTER" = false ]]; then
 fi
 
 # ============================================================================
-# Check 9: External Dependencies
-# ============================================================================
-echo "========================================="
-echo "Check 9: External Dependencies"
-echo "========================================="
-
-# Check for llm-d repository (for gateway-api deployments)
-if [[ "$TECH_STACK" == "gateway-api" ]]; then
-    LLM_D_PATH="/home/jhull/devel/llm-d"
-    if [[ -d "$LLM_D_PATH" ]]; then
-        echo -e "${GREEN}✅ llm-d repository found: $LLM_D_PATH${NC}"
-
-        # Check for helmfile
-        if [[ -f "$LLM_D_PATH/helmfile.yaml.gotmpl" ]]; then
-            echo -e "${GREEN}✅ llm-d helmfile found${NC}"
-        else
-            echo -e "${YELLOW}⚠️  llm-d helmfile not found${NC}"
-            ((WARNINGS_COUNT++))
-        fi
-    else
-        echo -e "${YELLOW}⚠️  llm-d repository not found: $LLM_D_PATH${NC}"
-        echo "   Clone from: https://github.com/llm-d/llm-d.git"
-        ((WARNINGS_COUNT++))
-    fi
-fi
-
-echo ""
-
-# ============================================================================
 # Final Summary
 # ============================================================================
 echo "========================================="
