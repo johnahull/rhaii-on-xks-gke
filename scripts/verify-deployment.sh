@@ -306,9 +306,7 @@ if [[ "$ALL_CHECKS_PASSED" == "true" ]]; then
         echo "  -H 'Content-Type: application/json' \\"
         echo "  -d '{\"model\": \"${MODEL_NAME:-/mnt/models}\", \"prompt\": \"Hello\", \"max_tokens\": 50}'"
     fi
-    echo ""
-    echo "Next steps:"
-    echo "  • Troubleshooting: docs/troubleshooting.md"
+
 else
     echo -e "${RED}❌ SOME CHECKS FAILED${NC}"
     echo ""
