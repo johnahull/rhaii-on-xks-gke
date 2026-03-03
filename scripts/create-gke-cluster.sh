@@ -410,18 +410,4 @@ echo "  Zone:       $ZONE"
 echo "  Project:    $PROJECT_ID"
 echo "  Accelerator: $ACCELERATOR_TYPE"
 echo ""
-echo "📋 Next Steps:"
-echo ""
-echo "1. Install RHAII operators (~10 minutes)"
-echo "   See: docs/operator-installation.md"
-echo ""
-echo "2. Deploy your workload (~10 minutes)"
-if [[ "$ACCELERATOR_TYPE" == "tpu" ]]; then
-    echo "   Follow: docs/deployment-tpu.md"
-else
-    echo "   Follow: docs/deployment-gpu.md"
-fi
-echo ""
-echo "📚 Documentation: docs/"
-echo ""
 echo "========================================="
