@@ -94,6 +94,13 @@ All scripts in `scripts/` support `--help`:
 - **TPU v6e:** `europe-west4-a` (primary), `us-south1-a`, `us-east5-a`, `us-central1-b`
 - **GPU T4:** `europe-west4-a`, `us-central1-a`, wide availability across europe-*/us-* zones
 
+To find all available zones for your accelerator type:
+
+```bash
+./scripts/check-accelerator-availability.sh --type tpu
+./scripts/check-accelerator-availability.sh --type gpu
+```
+
 ---
 
 ## After Cluster Creation
