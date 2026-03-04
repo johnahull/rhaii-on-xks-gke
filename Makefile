@@ -177,7 +177,7 @@ cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Install operators: make -C /path/to/rhaii-on-xks deploy-all"
-	@echo "  2. Deploy workloads from rhaii-on-xks-gke-private repo"
+	@echo "  2. Deploy RHAII workloads"
 
 cluster-gpu: ACCELERATOR=gpu
 cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
@@ -190,7 +190,7 @@ cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deplo
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Install operators: make -C /path/to/rhaii-on-xks deploy-all"
-	@echo "  2. Deploy workloads from rhaii-on-xks-gke-private repo"
+	@echo "  2. Deploy RHAII workloads"
 
 cluster-scale-down:
 	@test -n "$(PROJECT_ID)" || { echo "Error: PROJECT_ID not set" ; exit 1; }

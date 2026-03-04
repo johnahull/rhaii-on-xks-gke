@@ -20,7 +20,7 @@ Documentation for creating GKE clusters for Red Hat AI Inference Services (RHAII
 
 ## After Cluster Creation
 
-Operator installation and workload deployment are in [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
+Operator installation and workload deployment are handled separately after cluster creation.
 
 ## Troubleshooting
 

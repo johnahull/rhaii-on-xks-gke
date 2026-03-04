@@ -2,7 +2,7 @@
 
 Create GKE clusters with TPU v6e or GPU T4 accelerators for **Red Hat AI Inference Services (RHAII)** vLLM workloads.
 
-> **After cluster creation:** Deploy RHAII workloads using [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
+> **After cluster creation:** Install operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks), then deploy RHAII workloads.
 
 ---
 
@@ -35,7 +35,7 @@ make help
 3. **Adds accelerator node pool** — TPU v6e (`ct6e-standard-4t`) or GPU T4 (`n1-standard-4`)
 4. **Installs GPU Operator** (GPU path only) — NVIDIA GPU Operator v25.10+ with GKE-specific CDI configuration
 
-What it does **not** do: operator installation, workload deployment, verification. Those are in [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
+What it does **not** do: operator installation, workload deployment, verification.
 
 ---
 
@@ -101,7 +101,7 @@ All scripts in `scripts/` support `--help`:
 Once `make cluster-tpu` or `make cluster-gpu` completes:
 
 1. Install operators (cert-manager, Istio, KServe, LWS) from [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
-2. Deploy RHAII workloads from [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private)
+2. Deploy RHAII workloads
 
 ---
 
