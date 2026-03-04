@@ -1,242 +1,116 @@
-# RHAII Deployment on GKE
+# RHAII on GKE — Cluster Creation
 
-Deployment guides for **Red Hat AI Inference Services (RHAII)** vLLM workloads on Google Kubernetes Engine (GKE).
+Create GKE clusters with TPU v6e or GPU T4 accelerators for **Red Hat AI Inference Services (RHAII)** vLLM workloads.
 
-## Get Started
-
-### Prerequisites and Setup
-- [Prerequisites](docs/prerequisites.md) - Requirements before deploying
-- [Environment Setup](docs/environment-setup.md) - Optional: Configure environment variables to streamline commands
-- [Operator Installation](docs/operator-installation.md) - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
-
-### Single Replica with Prefix Caching
-
-Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
-
-- **[Single Replica - TPU](deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~8.3 req/s, ~$15/day
-- **[Single Replica - GPU](deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~6 req/s, ~$12/day
-- **[Pattern Overview](deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
-
-### 3-Replica Deployment with Cache-Aware Routing
-
-3-replica deployment with cache-aware routing for higher throughput.
-
-- **[3-Replica - TPU](docs/deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
-- **[3-Replica - GPU](docs/deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
+> **After cluster creation:** Deploy RHAII workloads using [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
 
 ---
 
-## Makefile Quick Start
-
-For users familiar with Make-based workflows, this repository includes a Makefile for cluster lifecycle management:
+## Quick Start
 
 ```bash
-# Create TPU cluster
-make cluster-tpu
+# Create TPU cluster (europe-west4-a recommended)
+make cluster-tpu ZONE=europe-west4-a
 
-# Create GPU cluster with operator
-make cluster-gpu
-
-# Scale down for cost savings
-make cluster-scale-down ACCELERATOR=tpu
-
-# Delete cluster
-make cluster-clean
+# Create GPU cluster with NVIDIA Operator
+make cluster-gpu ZONE=europe-west4-a
 
 # See all options
 make help
 ```
 
-**Alternative:** Use bash scripts directly (see `scripts/` directory)
+**Or use scripts directly:**
 
----
-
-## Architecture Overview
-
-```mermaid
-graph LR
-    Client[Client] -->|HTTP/HTTPS| Gateway[Istio Gateway<br/>LoadBalancer]
-    Gateway -->|mTLS| EnvoyFilter[EnvoyFilter<br/>ext_proc]
-    EnvoyFilter -->|Request body| EPP[EPP Scheduler<br/>Cache-aware routing]
-    EPP -->|Route by prefix hash| VLLM1[vLLM Replica 1<br/>GPU/TPU]
-    EPP -->|Route by prefix hash| VLLM2[vLLM Replica 2<br/>GPU/TPU]
-    EPP -->|Route by prefix hash| VLLM3[vLLM Replica 3<br/>GPU/TPU]
-
-    VLLM1 -.->|Cache hit: 60-75% faster| Client
-    VLLM2 -.->|Cache hit: 60-75% faster| Client
-    VLLM3 -.->|Cache hit: 60-75% faster| Client
-
-    style EPP fill:#ffe6cc
-    style VLLM1 fill:#e1f5ff
-    style VLLM2 fill:#e1f5ff
-    style VLLM3 fill:#e1f5ff
-```
-
-**Key Features:**
-- Cache-aware routing - Identical prefixes route to same replica for cache hits
-- 60-75% latency reduction - Cached prefix processing is dramatically faster
-- mTLS encryption - Secure service-to-service communication
-- Load balancing - Smart routing balances cache affinity and replica load
-
----
-
-## 📖 Documentation
-
-**Complete Index:** [Deployment Guides](docs/README.md)
-
-### Operations
-- [Verification & Testing](docs/verification-testing.md) - Validate your deployment
-- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
-
----
-
-## 🛠️ Automation Scripts
-
-All deployment guides use these automation scripts in `scripts/`:
-
-### Validation Scripts
-- `preflight-check.sh` - Comprehensive prerequisite validation
-- `check-accelerator-availability.sh` - Zone and accelerator validation
-- `check-nodepool-prerequisites.sh` - Node pool compatibility and quota checks
-
-### Deployment Scripts
-- `create-gke-cluster.sh` - Automated cluster creation with integrated validation
-- `delete-gke-cluster.sh` - Safe cluster deletion or scale-to-zero
-- `verify-deployment.sh` - Post-deployment health checks
-
-**Example:**
 ```bash
-# Run validation
-./scripts/preflight-check.sh --accelerator tpu
-
-# Create cluster
-./scripts/create-gke-cluster.sh --tpu
-
-# Verify deployment
-./scripts/verify-deployment.sh
+./scripts/create-gke-cluster.sh --tpu --zone europe-west4-a
+./scripts/create-gke-cluster.sh --gpu --zone europe-west4-a
 ```
 
 ---
 
-## 📂 Repository Structure
+## What This Repo Does
 
-```
-rhaii-on-xks-gke/
-├── README.md                              # This file
-│
-├── docs/                                  # Deployment guides
-│   ├── README.md                          # Guide index
-│   ├── deployment-tpu.md                  # TPU deployment guide
-│   ├── deployment-gpu.md                  # GPU deployment guide
-│   ├── prerequisites.md                   # Setup requirements
-│   ├── environment-setup.md               # Environment variable configuration
-│   ├── operator-installation.md           # RHAII operator installation
-│   ├── verification-testing.md            # Validation procedures
-│   ├── prefix-caching-verification.md     # Prefix caching configuration verification
-│   └── troubleshooting.md                 # Common issues
-│
-├── scripts/                               # Automation scripts
-│   ├── create-gke-cluster.sh              # Cluster creation
-│   ├── delete-gke-cluster.sh              # Cluster deletion / scale-to-zero
-│   ├── verify-deployment.sh               # Post-deployment validation
-│   ├── test-cache-routing.sh              # Cache routing and throughput test
-│   ├── preflight-check.sh                 # Prerequisite validation
-│   ├── check-accelerator-availability.sh  # Zone validation
-│   └── check-nodepool-prerequisites.sh    # Node pool validation
-│
-├── deployments/                           # Kubernetes manifests
-│   ├── gpu-operator/
-│   │   └── resourcequota-gcp-critical-pods.yaml
-│   └── istio-kserve/
-│       ├── simple-caching-demo/           # Quick demo (single replica)
-│       │   ├── README.md
-│       │   ├── deployment-tpu.md
-│       │   ├── deployment-gpu.md
-│       │   ├── namespace-rhaii-inference.yaml
-│       │   ├── llmisvc-tpu-single-replica.yaml
-│       │   ├── llmisvc-gpu-single-replica.yaml
-│       │   └── httproute-health-models.yaml
-│       └── caching-pattern/               # 3-replica deployment
-│           └── manifests/
-│               ├── llmisvc-tpu-caching.yaml
-│               ├── llmisvc-gpu-caching.yaml
-│               ├── envoyfilter-epp-mtls-fix.yaml
-│               ├── envoyfilter-epp-mtls-fix-tpu.yaml
-│               ├── envoyfilter-ext-proc-gpu.yaml
-│               ├── envoyfilter-ext-proc-tpu.yaml
-│               ├── envoyfilter-route-extproc-body.yaml
-│               ├── istio-cni.yaml
-│               └── networkpolicies/
-│                   ├── allow-gateway-to-vllm.yaml
-│                   ├── allow-epp-scheduler.yaml
-│                   ├── allow-istio.yaml
-│                   └── allow-vllm-egress.yaml
-│
-├── templates/                             # Secret templates
-│   ├── redhat-pull.yaml.template          # Red Hat registry credentials template
-│   └── huggingface-token.yaml.template    # HuggingFace token template
-│
-└── env.sh.example                         # Environment variable example
+1. **Validates prerequisites** — tools, authentication, quota, zone availability
+2. **Creates GKE control plane** — with Workload Identity, logging, monitoring
+3. **Adds accelerator node pool** — TPU v6e (`ct6e-standard-4t`) or GPU T4 (`n1-standard-4`)
+4. **Installs GPU Operator** (GPU path only) — NVIDIA GPU Operator v25.10+ with GKE-specific CDI configuration
+
+What it does **not** do: operator installation, workload deployment, verification. Those are in [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
+
+---
+
+## Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make cluster-tpu` | Full TPU cluster: control plane + TPU node pool |
+| `make cluster-gpu` | Full GPU cluster: control plane + GPU node pool + GPU Operator |
+| `make cluster-create` | Create GKE control plane only |
+| `make cluster-nodepool-tpu` | Add TPU node pool to existing cluster |
+| `make cluster-nodepool-gpu` | Add GPU node pool to existing cluster |
+| `make cluster-credentials` | Configure kubectl for the cluster |
+| `make cluster-scale-down` | Scale accelerator pool to 0 (cost savings) |
+| `make cluster-scale-up` | Scale accelerator pool back up |
+| `make cluster-clean` | Delete cluster |
+| `make check` | Run preflight validation only |
+
+**Key variables:**
+
+```bash
+make cluster-tpu ZONE=europe-west4-a NUM_NODES=3 CLUSTER_NAME=my-cluster
+make cluster-gpu PROJECT_ID=my-gcp-project
 ```
 
 ---
 
-## 🚀 Deployment Overview
+## Prerequisites
 
-### Step-by-Step Process
+See [docs/prerequisites.md](docs/prerequisites.md) for full requirements. Summary:
 
-1. **Prerequisites** (15-30 minutes, one-time)
-   - Install tools, configure accounts, request quotas
+- `gcloud` CLI installed and authenticated
+- `kubectl` and `helm` installed
+- GCP project with TPU v6e or GPU T4 quota
 
-2. **Cluster Creation** (~20 minutes)
-   ```bash
-   ./scripts/create-gke-cluster.sh --tpu  # or --gpu
-   ```
-
-3. **Operator Installation** (~10 minutes)
-   - Clone [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) repository
-   - Deploy operators (cert-manager, Istio, KServe, LWS)
-
-4. **Deploy Workload** (~12 minutes)
-   ```bash
-   # Simple demo (single replica)
-   kubectl apply -f deployments/istio-kserve/simple-caching-demo/llmisvc-tpu-single-replica.yaml
-
-   # 3-replica deployment
-   kubectl apply -f deployments/istio-kserve/caching-pattern/manifests/llmisvc-tpu-caching.yaml
-   ```
-
-5. **Verify & Test** (~5 minutes)
-   ```bash
-   ./scripts/verify-deployment.sh
-   ./scripts/test-cache-routing.sh
-   ```
-
-**Total time:** ~45-50 minutes for complete deployment
+Optional: configure environment variables — see [docs/environment-setup.md](docs/environment-setup.md).
 
 ---
 
-## 🆘 Getting Help
+## Scripts
 
-1. Review [Troubleshooting](docs/troubleshooting.md) - Solutions to common issues
-2. Run verification: `./scripts/verify-deployment.sh --operators-only`
-3. Check logs: `kubectl logs -l serving.kserve.io/inferenceservice`
+All scripts in `scripts/` support `--help`:
 
----
-
-## 📝 License
-
-This repository provides deployment configurations and documentation for Red Hat AI Inference Services (RHAII) on Google Cloud Platform.
-
-**External Dependencies:**
-- [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) - Operator installation (required)
-- Red Hat AI Inference Services - Commercial product (requires license)
+| Script | Purpose |
+|--------|---------|
+| `create-gke-cluster.sh` | Automated cluster creation with validation |
+| `delete-gke-cluster.sh` | Safe cluster deletion or scale-to-zero |
+| `preflight-check.sh` | Prerequisite validation |
+| `check-accelerator-availability.sh` | Zone and quota check |
+| `check-nodepool-prerequisites.sh` | Node pool compatibility check |
 
 ---
 
-## 🔗 Related Resources
+## Recommended Zones
 
-- [RHAII on XKS GitHub](https://github.com/opendatahub-io/rhaii-on-xks) - Official operator repository
-- [llm-d Documentation](https://llm-d.ai/docs/) - LLM framework architecture
-- [GKE AI Labs](https://gke-ai-labs.dev) - Google Cloud AI resources
-- [KServe Documentation](https://kserve.github.io/website/) - KServe reference
+- **TPU v6e:** `europe-west4-a` (primary), `us-south1-a`, `us-east5-a`, `us-central1-b`
+- **GPU T4:** `europe-west4-a`, `us-central1-a`, wide availability across europe-*/us-* zones
+
+---
+
+## After Cluster Creation
+
+Once `make cluster-tpu` or `make cluster-gpu` completes:
+
+1. Install operators (cert-manager, Istio, KServe, LWS) from [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
+2. Deploy RHAII workloads from [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private)
+
+---
+
+## Cost Management
+
+| Action | Command |
+|--------|---------|
+| Scale down (no cost) | `make cluster-scale-down ACCELERATOR=tpu` |
+| Scale back up | `make cluster-scale-up ACCELERATOR=tpu NUM_NODES=3` |
+| Delete cluster | `make cluster-clean` |
+
+TPU v6e-1 costs ~$1.28/hour per node. Scale to zero when not in use.

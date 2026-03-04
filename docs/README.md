@@ -1,65 +1,32 @@
-# RHAII on GKE - Deployment Guides
+# RHAII on GKE — Documentation
 
-Documentation for deploying Red Hat AI Inference Services (RHAII) on Google Kubernetes Engine (GKE).
+Documentation for creating GKE clusters for Red Hat AI Inference Services (RHAII) workloads.
 
-## Get Started
+## Setup
 
-### Prerequisites and Setup
-- **[Prerequisites](prerequisites.md)** - Everything you need before starting
-- **[Environment Setup](environment-setup.md)** - Optional: Configure environment variables to streamline commands
-- **[Operator Installation](operator-installation.md)** - Install RHAII operators via [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks)
+- [Prerequisites](prerequisites.md) — Tools, accounts, and quota requirements
+- [Environment Setup](environment-setup.md) — Optional environment variable configuration
+- [Makefile Usage](makefile-usage.md) — Makefile targets and variables reference
 
-### Single Replica with Prefix Caching
+## Scripts
 
-Single-replica deployment demonstrating vLLM prefix caching effectiveness. Lower cost, simpler configuration.
+| Script | Purpose |
+|--------|---------|
+| `create-gke-cluster.sh` | Automated cluster creation with integrated validation |
+| `delete-gke-cluster.sh` | Safe cluster deletion or scale-to-zero |
+| `preflight-check.sh` | Prerequisite validation |
+| `check-accelerator-availability.sh` | Zone and quota validation |
+| `check-nodepool-prerequisites.sh` | Node pool compatibility check |
 
-- **[Single Replica - TPU](../deployments/istio-kserve/simple-caching-demo/deployment-tpu.md)** - 1 TPU node, ~11.9 req/s, ~$15/day
-- **[Single Replica - GPU](../deployments/istio-kserve/simple-caching-demo/deployment-gpu.md)** - 1 GPU node, ~8 req/s, ~$12/day
-- **[Pattern Overview](../deployments/istio-kserve/simple-caching-demo/README.md)** - Architecture and technical details
+## After Cluster Creation
 
-## 📖 Deployment Guides
+Operator installation and workload deployment are in [rhaii-on-xks-gke-private](https://github.com/johnahull/rhaii-on-xks-gke-private).
 
-### 3-Replica Deployment with Cache-Aware Routing
+## Troubleshooting
 
-3-replica deployment with cache-aware routing for higher throughput.
+- [Troubleshooting](troubleshooting.md) — Common cluster creation issues and solutions
 
-- **[3-Replica - TPU](deployment-tpu.md)** - 3 TPU nodes, ~25 req/s, ~$46/day
-- **[3-Replica - GPU](deployment-gpu.md)** - 3 GPU nodes, ~18 req/s, ~$36/day
+## External Resources
 
-## 🛠️ Operations
-
-- **[Verification & Testing](verification-testing.md)** - Validate your deployment
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-
-## 🔧 Automation Scripts
-
-All guides reference these automation scripts in `/scripts/`:
-
-- `create-gke-cluster.sh` - Automated cluster creation with validation
-- `verify-deployment.sh` - Post-deployment health checks
-- `preflight-check.sh` - Comprehensive prerequisite validation
-- `check-accelerator-availability.sh` - Zone and accelerator validation
-- `check-nodepool-prerequisites.sh` - Node pool compatibility validation
-
-## 📚 Additional Resources
-
-### Official Documentation
-- [RHAII on XKS GitHub](https://github.com/opendatahub-io/rhaii-on-xks) - Operator installation
-- [llm-d Documentation](https://llm-d.ai/docs/) - LLM framework architecture
-- [GKE AI Labs](https://gke-ai-labs.dev) - Google Cloud AI on GKE resources
-
-### Repository Documentation
-- [Main README](../README.md) - Repository overview
-
-## 🆘 Getting Help
-
-1. **Review [Troubleshooting](troubleshooting.md)** - Solutions to common issues
-2. **Check operator logs:** `kubectl logs -n <namespace> <pod-name>`
-3. **Verify deployment:** `./scripts/verify-deployment.sh --operators-only`
-
-## 📝 Feedback
-
-Found an issue or have suggestions? Please:
-- Review our [GitHub Issues](https://github.com/opendatahub-io/rhaii-on-xks/issues)
-- Check deployment status with verification scripts
-- Consult the troubleshooting guide for known issues
+- [RHAII on XKS](https://github.com/opendatahub-io/rhaii-on-xks) — Operator installation
+- [GKE AI Labs](https://gke-ai-labs.dev) — Google Cloud AI on GKE resources
