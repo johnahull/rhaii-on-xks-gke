@@ -618,7 +618,7 @@ echo "Project: $PROJECT_ID"
 if [[ "$USE_API" == "true" ]]; then
     echo "Data source: Live Google Cloud API"
 else
-    echo "Data source: Hardcoded (as of Feb 2026)"
+    echo "Data source: Hardcoded (as of Feb 2026) — run with --api for latest"
 fi
 if [[ -n "$REGION_FILTER" ]]; then
     echo "Filter: type=$TYPE_FILTER, region=$REGION_FILTER"
