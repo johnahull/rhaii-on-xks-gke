@@ -321,6 +321,8 @@ GKE Accelerator Availability Checker
 Usage: $0 [OPTIONS] [ZONE]
 
 Options:
+  --tpu                   Show TPU zones (shortcut for --type tpu)
+  --gpu                   Show GPU zones (shortcut for --type gpu)
   --type <tpu|gpu|all>    Filter by accelerator type (default: all)
   --region <pattern>      Filter by region pattern (e.g., "us-central1", "us-*")
   --zone <zone>           Validate specific zone
@@ -520,6 +522,14 @@ ZONE_VALIDATE="${ZONE:-}"
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --tpu)
+            TYPE_FILTER="tpu"
+            shift
+            ;;
+        --gpu)
+            TYPE_FILTER="gpu"
+            shift
+            ;;
         --type)
             TYPE_FILTER="$2"
             shift 2

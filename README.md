@@ -97,8 +97,8 @@ All scripts in `scripts/` support `--help`:
 To find all available zones for your accelerator type:
 
 ```bash
-./scripts/check-accelerator-availability.sh --type tpu
-./scripts/check-accelerator-availability.sh --type gpu
+./scripts/check-accelerator-availability.sh --tpu
+./scripts/check-accelerator-availability.sh --gpu
 ```
 
 ---
