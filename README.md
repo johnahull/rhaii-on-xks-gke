@@ -84,8 +84,9 @@ All scripts in `scripts/` support `--help`:
 | `create-gke-cluster.sh` | Automated cluster creation with validation |
 | `delete-gke-cluster.sh` | Safe cluster deletion or scale-to-zero |
 | `preflight-check.sh` | Prerequisite validation |
-| `check-accelerator-availability.sh` | Zone and quota check |
+| `check-accelerator-availability.sh` | Zone support check; `--probe` for real-time capacity |
 | `check-nodepool-prerequisites.sh` | Node pool compatibility check |
+| `probe-capacity.py` | Real-time parallel capacity probe across all supported zones |
 
 ---
 
@@ -97,8 +98,13 @@ All scripts in `scripts/` support `--help`:
 To find all available zones for your accelerator type:
 
 ```bash
+# Check which zones support your accelerator type:
 ./scripts/check-accelerator-availability.sh --tpu
 ./scripts/check-accelerator-availability.sh --gpu
+
+# Probe real-time capacity (discovers zones dynamically):
+./scripts/check-accelerator-availability.sh --probe --tpu
+./scripts/check-accelerator-availability.sh --probe --gpu --accelerator a100
 ```
 
 ---

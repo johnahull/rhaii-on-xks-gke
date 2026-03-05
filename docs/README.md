@@ -15,8 +15,9 @@ Documentation for creating GKE clusters for Red Hat AI Inference Services (RHAII
 | `create-gke-cluster.sh` | Automated cluster creation with integrated validation |
 | `delete-gke-cluster.sh` | Safe cluster deletion or scale-to-zero |
 | `preflight-check.sh` | Prerequisite validation |
-| `check-accelerator-availability.sh` | Zone and quota validation |
+| `check-accelerator-availability.sh` | Zone support check; `--probe` for real-time capacity |
 | `check-nodepool-prerequisites.sh` | Node pool compatibility check |
+| `probe-capacity.py` | Real-time parallel capacity probe across all supported zones |
 
 ## After Cluster Creation
 

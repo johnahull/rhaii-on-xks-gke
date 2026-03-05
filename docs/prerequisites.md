@@ -318,7 +318,12 @@ kubectl logs -n opendatahub <gateway-pod> | grep -i "epp.*mtls\|ext_proc"
 
 **Check availability:**
 ```bash
-./scripts/check-accelerator-availability.sh --type tpu```
+# Check which zones support the accelerator (fast, static data):
+./scripts/check-accelerator-availability.sh --tpu
+
+# Probe real-time capacity before cluster creation:
+./scripts/check-accelerator-availability.sh --probe --tpu
+```
 
 ### GPU Zones
 
@@ -331,7 +336,12 @@ kubectl logs -n opendatahub <gateway-pod> | grep -i "epp.*mtls\|ext_proc"
 
 **Check availability:**
 ```bash
-./scripts/check-accelerator-availability.sh --type gpu```
+# Check which zones support the accelerator (fast, static data):
+./scripts/check-accelerator-availability.sh --gpu
+
+# Probe real-time capacity before cluster creation:
+./scripts/check-accelerator-availability.sh --probe --gpu
+```
 
 ---
 

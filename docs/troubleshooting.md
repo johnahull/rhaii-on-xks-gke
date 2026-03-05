@@ -42,16 +42,16 @@ ERROR: (gcloud.container.clusters.create) Quota exceeded for quota metric 'GPUs_
 ### Accelerator Not Available in Zone
 
 **Symptom:**
-```
-ERROR: Zone does not support TPU v6e
-```
+
+Probe returns `STOCKOUT` or `ERROR` for the selected zone.
 
 **Solution:**
 ```bash
-# Check which zones have the accelerator
-./scripts/check-accelerator-availability.sh --type tpu
-# Try recommended alternative zones
-./scripts/create-gke-cluster.sh --tpu --zone us-south1-a
+# Probe real-time capacity across all zones (finds available zones instantly):
+./scripts/check-accelerator-availability.sh --probe --tpu
+./scripts/check-accelerator-availability.sh --probe --gpu --accelerator a100
+
+# create-gke-cluster.sh Step 1 runs this probe automatically and suggests alternatives on failure
 ```
 
 ---

@@ -27,6 +27,7 @@ WORKLOAD_NAMESPACE ?= rhaii-inference
 .PHONY: cluster-create cluster-nodepool-tpu cluster-nodepool-gpu cluster-credentials
 .PHONY: deploy-gpu-operator
 .PHONY: cluster-tpu cluster-gpu
+.PHONY: probe-tpu probe-gpu
 .PHONY: cluster-scale-down cluster-scale-up
 .PHONY: cluster-clean clean
 
@@ -39,6 +40,8 @@ help:
 	@echo "Common Workflows:"
 	@echo "   make cluster-tpu                  -- Create full TPU cluster"
 	@echo "   make cluster-gpu                  -- Create full GPU cluster with operator"
+	@echo "   make probe-tpu                    -- Probe real-time TPU v6e capacity across all zones"
+	@echo "   make probe-gpu                    -- Probe real-time GPU T4 capacity across all zones"
 	@echo "   make check                        -- Validate prerequisites only"
 	@echo ""
 	@echo "Cluster Management:"
@@ -166,8 +169,14 @@ deploy-gpu-operator:
 		{ echo "Error: NVIDIA container toolkit daemonset failed to become ready" ; exit 1; }
 	@echo "✓ GPU Operator deployed successfully"
 
+probe-tpu:
+	@python3 scripts/probe-capacity.py --tpu --project $(PROJECT_ID)
+
+probe-gpu:
+	@python3 scripts/probe-capacity.py --gpu --project $(PROJECT_ID)
+
 cluster-tpu: ACCELERATOR=tpu
-cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
+cluster-tpu: check probe-tpu cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo "========================================="
 	@echo "✓ TPU cluster ready!"
 	@echo "========================================="
@@ -180,7 +189,7 @@ cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo "  2. Deploy RHAII workloads"
 
 cluster-gpu: ACCELERATOR=gpu
-cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
+cluster-gpu: check probe-gpu cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
 	@echo "========================================="
 	@echo "✓ GPU cluster ready!"
 	@echo "========================================="
