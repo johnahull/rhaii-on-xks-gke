@@ -12,6 +12,7 @@ SHOW_MACHINE_TYPES=false
 CUSTOMER_MODE=false
 PROBE_CAPACITY=false
 PROBE_ACCELERATOR=""
+PROBE_MACHINE_TYPE=""
 
 # ============================================================================
 # API Data Fetching Functions
@@ -333,6 +334,7 @@ Options:
   --show-machine-types    Display available machine types from API (helps find new types)
   --probe                 Probe real-time capacity via compute instance creation (~30-60s)
   --accelerator <type>    Accelerator for --probe: gpu=(t4|a100|l4|h100), tpu=(v6e|v5e|v5p)
+  --machine-type <type>   Override GPU machine type for --probe (e.g. a2-ultragpu-1g)
   --help, -h              Show this help message
 
 Data Sources:
@@ -359,6 +361,7 @@ Examples:
   $0 --probe --gpu                           # Probe real-time GPU T4 capacity (default)
   $0 --probe --gpu --accelerator a100        # Probe A100 capacity across default zones
   $0 --probe --gpu --accelerator a100 --zone us-central1-a  # Probe A100 in specific zone
+  $0 --probe --machine-type a2-ultragpu-1g                  # Probe A100 80GB across all its zones
 
 Supported Accelerator Types:
   TPU: v6e (Trillium), v5e, v5p
@@ -571,6 +574,10 @@ while [[ $# -gt 0 ]]; do
             PROBE_ACCELERATOR="$2"
             shift 2
             ;;
+        --machine-type)
+            PROBE_MACHINE_TYPE="$2"
+            shift 2
+            ;;
         --help|-h)
             show_usage
             exit 0
@@ -629,6 +636,7 @@ if [[ "$PROBE_CAPACITY" == "true" ]]; then
     [[ -n "$ZONE_VALIDATE" ]] && PROBE_ARGS+=(--zone "$ZONE_VALIDATE")
     [[ -n "$PROJECT_ID" ]] && PROBE_ARGS+=(--project "$PROJECT_ID")
     [[ -n "$PROBE_ACCELERATOR" ]] && PROBE_ARGS+=(--accelerator "$PROBE_ACCELERATOR")
+    [[ -n "$PROBE_MACHINE_TYPE" ]] && PROBE_ARGS+=(--machine-type "$PROBE_MACHINE_TYPE")
     python3 "$(dirname "$0")/probe-capacity.py" "${PROBE_ARGS[@]}"
     exit $?
 fi

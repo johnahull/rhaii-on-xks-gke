@@ -8,6 +8,9 @@ for a GKE node pool creation to fail.
 
 Lesson from dra-test/nvidia: compute instance creation fails instantly on STOCKOUT;
 GKE node pools silently retry for ~35 minutes before surfacing the same error.
+
+Zone discovery is always dynamic (via gcloud API) so the probe stays accurate as machine
+types move between zones over time. No hardcoded zone lists.
 """
 
 import argparse
@@ -16,94 +19,62 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# GPU configs: machine_type is the probe instance type; accelerator is the --accelerator
-# flag value (None for machine families that include the GPU, e.g. a2/g2/a3).
+# GPU configs.
+# - machine_type: instance type used for the probe
+# - accelerator:  --accelerator flag value for gcloud instances create, or None for
+#                 machine families that include the GPU (a2/g2/a3)
+# - gcloud_name:  name used with `gcloud compute accelerator-types list` for zone
+#                 discovery; None means discover by machine_type instead
 GPU_CONFIGS = {
     "t4": {
         "label": "GPU T4",
         "machine_type": "n1-standard-1",
         "accelerator": "type=nvidia-tesla-t4,count=1",
-        "default_zones": [
-            "europe-west4-a",
-            "us-central1-a",
-            "us-central1-b",
-            "us-east1-b",
-            "us-east4-a",
-        ],
+        "gcloud_name": "nvidia-tesla-t4",
     },
     "a100": {
         "label": "GPU A100",
         "machine_type": "a2-highgpu-1g",
-        "accelerator": None,  # A100 is part of the a2 machine family
-        "default_zones": [
-            "us-central1-a",
-            "us-central1-b",
-            "us-east1-c",
-            "us-east4-a",
-            "europe-west4-a",
-        ],
+        "accelerator": None,
+        "gcloud_name": None,  # a2 machine type IS the A100; discover by machine type
     },
     "l4": {
         "label": "GPU L4",
         "machine_type": "g2-standard-4",
-        "accelerator": None,  # L4 is part of the g2 machine family
-        "default_zones": [
-            "us-central1-a",
-            "us-central1-b",
-            "us-east1-c",
-            "us-east4-a",
-            "europe-west4-a",
-        ],
+        "accelerator": None,
+        "gcloud_name": None,
     },
     "h100": {
         "label": "GPU H100",
         "machine_type": "a3-highgpu-1g",
-        "accelerator": None,  # H100 is part of the a3 machine family
-        "default_zones": [
-            "us-central1-a",
-            "us-central1-b",
-            "us-east4-a",
-            "us-west4-b",
-            "europe-west4-a",
-        ],
+        "accelerator": None,
+        "gcloud_name": None,
     },
 }
 
-# TPU configs: accelerator_type and version are passed to tpu-vm create.
+# TPU configs.
+# - accelerator_type: passed to --accelerator-type in tpu-vm create (topology)
+# - version:          passed to --version in tpu-vm create
+# - gcloud_name:      name used with `gcloud compute accelerator-types list` for zone
+#                     discovery (family name, different from topology identifier)
 TPU_CONFIGS = {
     "v6e": {
         "label": "TPU v6e",
         "accelerator_type": "v6e-1",
         "version": "v2-alpha-tpuv6e",
-        "default_zones": [
-            "europe-west4-a",
-            "us-south1-a",
-            "us-east5-a",
-            "us-central1-b",
-            "us-east1-d",
-        ],
+        "gcloud_name": "tpu-v6e-slice",
     },
     "v5e": {
         "label": "TPU v5e",
         "accelerator_type": "v5e-1",
         "version": "v2-alpha-tpuv5e",
-        "default_zones": [
-            "us-central1-a",
-            "us-south1-a",
-            "europe-west4-b",
-            "us-west1-c",
-            "us-west4-a",
-        ],
+        "gcloud_name": "tpu-v5e",
     },
     "v5p": {
         "label": "TPU v5p",
         "accelerator_type": "v5p-1",
         "version": "v2-alpha-tpuv5p",
-        "default_zones": [
-            "us-central1-a",
-            "us-east5-a",
-            "europe-west4-b",
-        ],
+        "gcloud_name": "tpu-v5p-slice",
     },
 }
 
@@ -127,12 +98,34 @@ def is_stockout(output):
     return any(p.lower() in output.lower() for p in STOCKOUT_PATTERNS)
 
 
-def probe_gpu_zone(zone, project, config):
+def discover_zones_by_machine_type(machine_type, project):
+    """Return sorted list of zones where machine_type exists."""
+    _, output = run([
+        "gcloud", "compute", "machine-types", "list",
+        f"--filter=name={machine_type}",
+        "--format=value(zone)",
+        f"--project={project}",
+    ])
+    return sorted(z for z in output.strip().splitlines() if z)
+
+
+def discover_zones_by_accel_type(accel_name, project):
+    """Return sorted list of zones where an accelerator type (GPU or TPU) exists."""
+    _, output = run([
+        "gcloud", "compute", "accelerator-types", "list",
+        f"--filter=name:{accel_name}",
+        "--format=value(zone)",
+        f"--project={project}",
+    ])
+    return sorted(z for z in output.strip().splitlines() if z)
+
+
+def probe_gpu_zone(zone, project, machine_type, accelerator_flag):
     name = f"rhaii-probe-{zone.replace('-', '')[:15]}-{int(time.time()) % 10000}"
     cmd = [
         "gcloud", "compute", "instances", "create", name,
         f"--zone={zone}",
-        f"--machine-type={config['machine_type']}",
+        f"--machine-type={machine_type}",
         "--maintenance-policy=TERMINATE",
         "--no-restart-on-failure",
         "--image-family=debian-12",
@@ -141,8 +134,8 @@ def probe_gpu_zone(zone, project, config):
         f"--project={project}",
         "--quiet",
     ]
-    if config["accelerator"]:
-        cmd.append(f"--accelerator={config['accelerator']}")
+    if accelerator_flag:
+        cmd.append(f"--accelerator={accelerator_flag}")
     exit_code, output = run(cmd)
     if exit_code == 0:
         subprocess.Popen(
@@ -157,13 +150,13 @@ def probe_gpu_zone(zone, project, config):
         return zone, "ERROR"
 
 
-def probe_tpu_zone(zone, project, config):
+def probe_tpu_zone(zone, project, accelerator_type, version):
     name = f"rhaii-probe-{zone.replace('-', '')[:15]}-{int(time.time()) % 10000}"
     cmd = [
         "gcloud", "compute", "tpus", "tpu-vm", "create", name,
         f"--zone={zone}",
-        f"--accelerator-type={config['accelerator_type']}",
-        f"--version={config['version']}",
+        f"--accelerator-type={accelerator_type}",
+        f"--version={version}",
         f"--project={project}",
         "--quiet",
     ]
@@ -181,20 +174,12 @@ def probe_tpu_zone(zone, project, config):
         return zone, "ERROR"
 
 
-def probe(kind, accel, zones, project):
-    """Run parallel capacity probes and print results as they arrive."""
-    if kind == "gpu":
-        config = GPU_CONFIGS[accel]
-        fn = lambda zone: probe_gpu_zone(zone, project, config)
-    else:
-        config = TPU_CONFIGS[accel]
-        fn = lambda zone: probe_tpu_zone(zone, project, config)
-
+def run_probes(label, zones, fn):
+    """Run fn(zone) in parallel across zones, printing results as they arrive."""
     icons = {"AVAILABLE": "✅", "STOCKOUT": "❌", "ERROR": "⚠️ "}
-    print(f"{config['label']} capacity ({len(zones)} zones in parallel):")
-
+    print(f"{label} capacity ({len(zones)} zones in parallel):")
     results = {}
-    with ThreadPoolExecutor(max_workers=len(zones)) as executor:
+    with ThreadPoolExecutor(max_workers=max(len(zones), 1)) as executor:
         futures = {executor.submit(fn, z): z for z in zones}
         for future in as_completed(futures):
             zone, status = future.result()
@@ -206,7 +191,7 @@ def probe(kind, accel, zones, project):
         print(f"\n  Capacity confirmed: {available[0]}")
     else:
         print(f"\n  No capacity found in probed zones.")
-        print(f"  Try: ./scripts/check-accelerator-availability.sh --{kind}")
+        print(f"  Run without --probe for a full zone list.")
     print()
     return available
 
@@ -222,29 +207,59 @@ def get_project():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Probe real-time GKE accelerator capacity across zones in parallel."
+        description="Probe real-time GKE accelerator capacity across zones in parallel.\n"
+                    "Zones are discovered dynamically from the GCP API — no hardcoded lists.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # GPU T4 (default) across all zones that support it:
+  probe-capacity.py --gpu
+
+  # A100 across all zones that support a2-highgpu-1g:
+  probe-capacity.py --gpu --accelerator a100
+
+  # A100 80GB variant (overrides machine type, discovers its zones):
+  probe-capacity.py --gpu --machine-type a2-ultragpu-1g
+
+  # Specific zone only:
+  probe-capacity.py --gpu --accelerator a100 --zone us-central1-b
+
+  # TPU v6e across all zones that support it:
+  probe-capacity.py --tpu
+
+  # TPU v5e:
+  probe-capacity.py --tpu --accelerator v5e
+        """,
     )
     parser.add_argument("--tpu", action="store_true", help="Probe TPU zones")
     parser.add_argument("--gpu", action="store_true", help="Probe GPU zones")
     parser.add_argument(
         "--accelerator",
-        help="Accelerator type: gpu=(t4|a100|l4|h100), tpu=(v6e|v5e|v5p). "
-             "Defaults: t4 for --gpu, v6e for --tpu",
+        help="GPU: t4 (default), a100, l4, h100 — TPU: v6e (default), v5e, v5p",
     )
-    parser.add_argument("--zone", help="Probe a specific zone only")
-    parser.add_argument("--exclude-zone", help="Skip this zone when probing defaults")
+    parser.add_argument(
+        "--machine-type",
+        help="Override GPU machine type and drive zone discovery from it "
+             "(e.g. a2-ultragpu-1g). Implies --gpu. Disables --accelerator gcloud flag.",
+    )
+    parser.add_argument("--zone", help="Probe a specific zone only (skips discovery)")
+    parser.add_argument("--exclude-zone", help="Skip this zone during discovery")
     parser.add_argument("--project", help="GCP project ID (default: from gcloud config)")
     args = parser.parse_args()
 
-    if not args.tpu and not args.gpu:
-        parser.error("Specify --tpu, --gpu, or both")
+    if not args.tpu and not args.gpu and not args.machine_type:
+        parser.error("Specify --tpu, --gpu, or --machine-type")
+
+    # --machine-type implies --gpu
+    if args.machine_type:
+        args.gpu = True
 
     project = args.project or get_project()
 
     print("=========================================")
     print("Real-Time Capacity Probe")
     print("=========================================")
-    print("Probing in parallel — results appear as they arrive (~30-60s).")
+    print("Discovering zones from API, then probing in parallel.")
     print()
 
     any_available = False
@@ -254,20 +269,54 @@ def main():
         if accel not in GPU_CONFIGS:
             parser.error(f"Unknown GPU accelerator '{accel}'. Choose from: {', '.join(GPU_CONFIGS)}")
         config = GPU_CONFIGS[accel]
-        zones = [args.zone] if args.zone else [z for z in config["default_zones"] if z != args.exclude_zone]
-        available = probe("gpu", accel, zones, project)
-        if available:
-            any_available = True
+
+        # --machine-type overrides config; disables the --accelerator gcloud flag
+        machine_type = args.machine_type or config["machine_type"]
+        accelerator_flag = None if args.machine_type else config["accelerator"]
+        label = f"GPU ({machine_type})" if args.machine_type else config["label"]
+
+        if args.zone:
+            zones = [args.zone]
+        else:
+            print(f"  Discovering zones for {machine_type}...", end=" ", flush=True)
+            if args.machine_type or config["gcloud_name"] is None:
+                zones = discover_zones_by_machine_type(machine_type, project)
+            else:
+                zones = discover_zones_by_accel_type(config["gcloud_name"], project)
+            zones = [z for z in zones if z != args.exclude_zone]
+            print(f"{len(zones)} found")
+            print()
+
+        if not zones:
+            print(f"  No zones found for {machine_type}. Check machine type name.")
+        else:
+            fn = lambda zone: probe_gpu_zone(zone, project, machine_type, accelerator_flag)
+            available = run_probes(label, zones, fn)
+            if available:
+                any_available = True
 
     if args.tpu:
         accel = args.accelerator or "v6e"
         if accel not in TPU_CONFIGS:
             parser.error(f"Unknown TPU accelerator '{accel}'. Choose from: {', '.join(TPU_CONFIGS)}")
         config = TPU_CONFIGS[accel]
-        zones = [args.zone] if args.zone else [z for z in config["default_zones"] if z != args.exclude_zone]
-        available = probe("tpu", accel, zones, project)
-        if available:
-            any_available = True
+
+        if args.zone:
+            zones = [args.zone]
+        else:
+            print(f"  Discovering zones for {config['gcloud_name']}...", end=" ", flush=True)
+            zones = discover_zones_by_accel_type(config["gcloud_name"], project)
+            zones = [z for z in zones if z != args.exclude_zone]
+            print(f"{len(zones)} found")
+            print()
+
+        if not zones:
+            print(f"  No zones found for {config['label']}.")
+        else:
+            fn = lambda zone: probe_tpu_zone(zone, project, config["accelerator_type"], config["version"])
+            available = run_probes(config["label"], zones, fn)
+            if available:
+                any_available = True
 
     print("=========================================")
     sys.exit(0 if any_available else 1)
