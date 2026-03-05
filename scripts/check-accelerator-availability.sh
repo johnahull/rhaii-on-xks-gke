@@ -11,6 +11,7 @@ USE_API=false
 SHOW_MACHINE_TYPES=false
 CUSTOMER_MODE=false
 PROBE_CAPACITY=false
+PROBE_ACCELERATOR=""
 
 # ============================================================================
 # API Data Fetching Functions
@@ -331,6 +332,7 @@ Options:
   --api                   Fetch live data from Google Cloud API (slower, always current)
   --show-machine-types    Display available machine types from API (helps find new types)
   --probe                 Probe real-time capacity via compute instance creation (~30-60s)
+  --accelerator <type>    Accelerator for --probe: gpu=(t4|a100|l4|h100), tpu=(v6e|v5e|v5p)
   --help, -h              Show this help message
 
 Data Sources:
@@ -352,8 +354,11 @@ Examples:
   $0 --type gpu --zone us-central1-a    # Validate us-central1-a for GPUs
   $0 --show-machine-types --type tpu    # Show available TPU machine types
   $0 --show-machine-types --type gpu    # Show available GPU machine types
-  $0 --probe --tpu                      # Probe real-time TPU capacity across default zones
-  $0 --probe --gpu --zone us-central1-a # Probe real-time GPU capacity in specific zone
+  $0 --probe --tpu                           # Probe real-time TPU v6e capacity (default)
+  $0 --probe --tpu --accelerator v5e         # Probe TPU v5e capacity
+  $0 --probe --gpu                           # Probe real-time GPU T4 capacity (default)
+  $0 --probe --gpu --accelerator a100        # Probe A100 capacity across default zones
+  $0 --probe --gpu --accelerator a100 --zone us-central1-a  # Probe A100 in specific zone
 
 Supported Accelerator Types:
   TPU: v6e (Trillium), v5e, v5p
@@ -562,6 +567,10 @@ while [[ $# -gt 0 ]]; do
             PROBE_CAPACITY=true
             shift
             ;;
+        --accelerator)
+            PROBE_ACCELERATOR="$2"
+            shift 2
+            ;;
         --help|-h)
             show_usage
             exit 0
@@ -619,6 +628,7 @@ if [[ "$PROBE_CAPACITY" == "true" ]]; then
     [[ "$TYPE_FILTER" == "gpu" || "$TYPE_FILTER" == "all" ]] && PROBE_ARGS+=(--gpu)
     [[ -n "$ZONE_VALIDATE" ]] && PROBE_ARGS+=(--zone "$ZONE_VALIDATE")
     [[ -n "$PROJECT_ID" ]] && PROBE_ARGS+=(--project "$PROJECT_ID")
+    [[ -n "$PROBE_ACCELERATOR" ]] && PROBE_ARGS+=(--accelerator "$PROBE_ACCELERATOR")
     python3 "$(dirname "$0")/probe-capacity.py" "${PROBE_ARGS[@]}"
     exit $?
 fi
