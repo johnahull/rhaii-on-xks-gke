@@ -99,25 +99,25 @@ def is_stockout(output):
 
 
 def discover_zones_by_machine_type(machine_type, project):
-    """Return sorted list of zones where machine_type exists."""
+    """Return sorted deduplicated list of zones where machine_type exists."""
     _, output = run([
         "gcloud", "compute", "machine-types", "list",
         f"--filter=name={machine_type}",
         "--format=value(zone)",
         f"--project={project}",
     ])
-    return sorted(z for z in output.strip().splitlines() if z)
+    return sorted(set(z for z in output.strip().splitlines() if z))
 
 
 def discover_zones_by_accel_type(accel_name, project):
-    """Return sorted list of zones where an accelerator type (GPU or TPU) exists."""
+    """Return sorted deduplicated list of zones where an accelerator type (GPU or TPU) exists."""
     _, output = run([
         "gcloud", "compute", "accelerator-types", "list",
-        f"--filter=name:{accel_name}",
+        f"--filter=name={accel_name}",
         "--format=value(zone)",
         f"--project={project}",
     ])
-    return sorted(z for z in output.strip().splitlines() if z)
+    return sorted(set(z for z in output.strip().splitlines() if z))
 
 
 def probe_gpu_zone(zone, project, machine_type, accelerator_flag):
