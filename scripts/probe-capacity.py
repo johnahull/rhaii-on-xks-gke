@@ -94,13 +94,19 @@ def run(cmd):
     return result.returncode, result.stdout + result.stderr
 
 
+def run_stdout(cmd):
+    """Run a command and return only stdout (stderr discarded — avoids warning bleed into parsed output)."""
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.returncode, result.stdout
+
+
 def is_stockout(output):
     return any(p.lower() in output.lower() for p in STOCKOUT_PATTERNS)
 
 
 def discover_zones_by_machine_type(machine_type, project):
     """Return sorted deduplicated list of zones where machine_type exists."""
-    _, output = run([
+    _, output = run_stdout([
         "gcloud", "compute", "machine-types", "list",
         f"--filter=name={machine_type}",
         "--format=value(zone)",
@@ -111,9 +117,9 @@ def discover_zones_by_machine_type(machine_type, project):
 
 def discover_zones_by_accel_type(accel_name, project):
     """Return sorted deduplicated list of zones where an accelerator type (GPU or TPU) exists."""
-    _, output = run([
+    _, output = run_stdout([
         "gcloud", "compute", "accelerator-types", "list",
-        f"--filter=name={accel_name}",
+        f"--filter=name:{accel_name}",
         "--format=value(zone)",
         f"--project={project}",
     ])
