@@ -29,12 +29,14 @@ DEFAULT_TPU_ZONES = [
     "us-south1-a",
     "us-east5-a",
     "us-central1-b",
-    "us-south1-b",
+    "us-east1-d",
 ]
 
 STOCKOUT_PATTERNS = [
     "STOCKOUT",
     "RESOURCE_EXHAUSTED",
+    "Insufficient capacity",
+    "no more capacity",
     "out of capacity",
     "does not have enough resources",
     "no more resources",
