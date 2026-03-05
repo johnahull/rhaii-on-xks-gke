@@ -10,6 +10,7 @@ PROJECT_ID="${PROJECT_ID:-}"
 USE_API=false
 SHOW_MACHINE_TYPES=false
 CUSTOMER_MODE=false
+PROBE_CAPACITY=false
 
 # ============================================================================
 # API Data Fetching Functions
@@ -329,6 +330,7 @@ Options:
   --customer              Customer-friendly output with recommendations
   --api                   Fetch live data from Google Cloud API (slower, always current)
   --show-machine-types    Display available machine types from API (helps find new types)
+  --probe                 Probe real-time capacity via compute instance creation (~30-60s)
   --help, -h              Show this help message
 
 Data Sources:
@@ -350,6 +352,8 @@ Examples:
   $0 --type gpu --zone us-central1-a    # Validate us-central1-a for GPUs
   $0 --show-machine-types --type tpu    # Show available TPU machine types
   $0 --show-machine-types --type gpu    # Show available GPU machine types
+  $0 --probe --tpu                      # Probe real-time TPU capacity across default zones
+  $0 --probe --gpu --zone us-central1-a # Probe real-time GPU capacity in specific zone
 
 Supported Accelerator Types:
   TPU: v6e (Trillium), v5e, v5p
@@ -554,6 +558,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_MACHINE_TYPES=true
             shift
             ;;
+        --probe)
+            PROBE_CAPACITY=true
+            shift
+            ;;
         --help|-h)
             show_usage
             exit 0
@@ -602,6 +610,17 @@ fi
 if [[ "$SHOW_MACHINE_TYPES" == "true" ]]; then
     fetch_and_display_machine_types
     exit 0
+fi
+
+# If capacity probe requested, delegate to probe-capacity.py and exit
+if [[ "$PROBE_CAPACITY" == "true" ]]; then
+    PROBE_ARGS=()
+    [[ "$TYPE_FILTER" == "tpu" || "$TYPE_FILTER" == "all" ]] && PROBE_ARGS+=(--tpu)
+    [[ "$TYPE_FILTER" == "gpu" || "$TYPE_FILTER" == "all" ]] && PROBE_ARGS+=(--gpu)
+    [[ -n "$ZONE_VALIDATE" ]] && PROBE_ARGS+=(--zone "$ZONE_VALIDATE")
+    [[ -n "$PROJECT_ID" ]] && PROBE_ARGS+=(--project "$PROJECT_ID")
+    python3 "$(dirname "$0")/probe-capacity.py" "${PROBE_ARGS[@]}"
+    exit $?
 fi
 
 # If zone validation requested, run that and exit

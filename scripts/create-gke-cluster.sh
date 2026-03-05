@@ -182,16 +182,26 @@ if [[ "$SKIP_VALIDATION" == "false" ]]; then
     echo "========================================="
     echo ""
 
-    # Check 1: Accelerator availability
-    echo "✓ Checking accelerator availability in $ZONE..."
-    if ! ./scripts/check-accelerator-availability.sh --zone "$ZONE" --type "$ACCELERATOR_TYPE" --customer > /dev/null 2>&1; then
-        echo -e "${RED}❌ Accelerator not available in zone: $ZONE${NC}"
+    # Check 1: Real-time capacity probe
+    echo "✓ Probing accelerator capacity in $ZONE..."
+    echo "  (checks real-time availability, not just zone support)"
+    if ! python3 "$(dirname "$0")/probe-capacity.py" \
+        "--$ACCELERATOR_TYPE" \
+        --zone "$ZONE" \
+        --project "$PROJECT_ID"; then
         echo ""
-        echo "Suggested zones:"
-        ./scripts/check-accelerator-availability.sh --type "$ACCELERATOR_TYPE" --customer | grep -A 5 "RECOMMENDATIONS"
+        echo "  No capacity in $ZONE. Checking alternative zones..."
+        echo ""
+        python3 "$(dirname "$0")/probe-capacity.py" \
+            "--$ACCELERATOR_TYPE" \
+            --project "$PROJECT_ID" \
+            --exclude-zone "$ZONE" || true
+        echo ""
+        echo -e "${RED}❌ Retry with an available zone above:${NC}"
+        echo "   ./scripts/create-gke-cluster.sh --$ACCELERATOR_TYPE --zone <zone>"
         exit 1
     fi
-    echo -e "${GREEN}✅ Accelerator available in $ZONE${NC}"
+    echo -e "${GREEN}✅ Capacity confirmed in $ZONE${NC}"
     echo ""
 
     # Check 2: Node pool prerequisites
