@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # - machine_type: instance type used for the probe
 # - accelerator:  --accelerator flag value for gcloud instances create, or None for
 #                 machine families that include the GPU (a2/g2/a3)
-# - gcloud_name:  name used with `gcloud compute accelerator-types list` for zone
+# - gcloud_name:  name used with \`gcloud compute accelerator-types list\` for zone
 #                 discovery; None means discover by machine_type instead
 GPU_CONFIGS = {
     "t4": {
@@ -55,7 +55,7 @@ GPU_CONFIGS = {
 # TPU configs.
 # - accelerator_type: passed to --accelerator-type in tpu-vm create (topology)
 # - version:          passed to --version in tpu-vm create
-# - gcloud_name:      name used with `gcloud compute accelerator-types list` for zone
+# - gcloud_name:      name used with \`gcloud compute accelerator-types list\` for zone
 #                     discovery (family name, different from topology identifier)
 TPU_CONFIGS = {
     "v6e": {
@@ -75,6 +75,21 @@ TPU_CONFIGS = {
         "accelerator_type": "v5p-1",
         "version": "v2-alpha-tpuv5p",
         "gcloud_name": "tpu-v5p-slice",
+    },
+}
+
+# Recommended primary zones for capacity probing (most reliable, checked first)
+DEFAULT_PRIMARY_ZONES = {
+    "tpu": {
+        "v6e": "europe-west4-a",  # Most reliable TPU v6e zone
+        "v5e": "us-central1-a",
+        "v5p": "us-central1-a",
+    },
+    "gpu": {
+        "t4": "us-central1-a",    # Widely used, good availability
+        "a100": "us-central1-a",
+        "l4": "us-central1-a",
+        "h100": "us-central1-a",
     },
 }
 
@@ -180,13 +195,48 @@ def probe_tpu_zone(zone, project, accelerator_type, version):
         return zone, "ERROR"
 
 
-def run_probes(label, zones, fn):
-    """Run fn(zone) in parallel across zones, printing results as they arrive."""
+def run_probes(label, zones, fn, primary_zone=None):
+    """
+    Run fn(zone) across zones.
+
+    If primary_zone is specified:
+      1. Probe primary_zone first
+      2. If it has capacity, return immediately (no other zones probed)
+      3. If it's STOCKOUT/ERROR, then probe all other zones in parallel
+
+    If primary_zone is None, probe all zones in parallel immediately.
+    """
     icons = {"AVAILABLE": "✅", "STOCKOUT": "❌", "ERROR": "⚠️ "}
-    print(f"{label} capacity ({len(zones)} zones in parallel):")
+
+    if primary_zone:
+        # Two-phase approach: primary zone first, then fallback to others if needed
+        print(f"{label} capacity (checking primary zone: {primary_zone}):")
+        zone, status = fn(primary_zone)
+        print(f"  {icons.get(status, '?')} {status:<10} {zone}", flush=True)
+
+        if status == "AVAILABLE":
+            print(f"\n  ✅ Capacity confirmed in primary zone: {primary_zone}")
+            print()
+            return [primary_zone]
+
+        # Primary zone failed - check other zones
+        other_zones = [z for z in zones if z != primary_zone]
+        if not other_zones:
+            print(f"\n  ❌ No capacity in {primary_zone}, and no other zones to probe.")
+            print()
+            return []
+
+        print(f"\n  Primary zone has no capacity. Checking {len(other_zones)} alternative zones...")
+        print()
+        zones_to_probe = other_zones
+    else:
+        # No primary zone - probe all zones in parallel
+        zones_to_probe = zones
+
+    print(f"{label} capacity ({len(zones_to_probe)} zones in parallel):")
     results = {}
-    with ThreadPoolExecutor(max_workers=max(len(zones), 1)) as executor:
-        futures = {executor.submit(fn, z): z for z in zones}
+    with ThreadPoolExecutor(max_workers=max(len(zones_to_probe), 1)) as executor:
+        futures = {executor.submit(fn, z): z for z in zones_to_probe}
         for future in as_completed(futures):
             zone, status = future.result()
             results[zone] = status
@@ -194,9 +244,9 @@ def run_probes(label, zones, fn):
 
     available = [z for z, s in results.items() if s == "AVAILABLE"]
     if available:
-        print(f"\n  Capacity confirmed: {available[0]}")
+        print(f"\n  ✅ Capacity confirmed: {available[0]}")
     else:
-        print(f"\n  No capacity found in probed zones.")
+        print(f"\n  ❌ No capacity found in any probed zones.")
         print(f"  Run without --probe for a full zone list.")
     print()
     return available
@@ -296,8 +346,15 @@ Examples:
         if not zones:
             print(f"  No zones found for {machine_type}. Check machine type name.")
         else:
+            # Determine primary zone: explicit --zone, or default recommended zone
+            primary_zone = args.zone if args.zone else DEFAULT_PRIMARY_ZONES["gpu"].get(accel)
+            # Only pass primary_zone if it's in the discovered zones list
+            if primary_zone and primary_zone not in zones:
+                print(f"  Warning: Primary zone {primary_zone} not in discovered zones, using discovery order")
+                primary_zone = None
+
             fn = lambda zone: probe_gpu_zone(zone, project, machine_type, accelerator_flag)
-            available = run_probes(label, zones, fn)
+            available = run_probes(label, zones, fn, primary_zone=primary_zone)
             if available:
                 any_available = True
 
@@ -319,8 +376,15 @@ Examples:
         if not zones:
             print(f"  No zones found for {config['label']}.")
         else:
+            # Determine primary zone: explicit --zone, or default recommended zone
+            primary_zone = args.zone if args.zone else DEFAULT_PRIMARY_ZONES["tpu"].get(accel)
+            # Only pass primary_zone if it's in the discovered zones list
+            if primary_zone and primary_zone not in zones:
+                print(f"  Warning: Primary zone {primary_zone} not in discovered zones, using discovery order")
+                primary_zone = None
+
             fn = lambda zone: probe_tpu_zone(zone, project, config["accelerator_type"], config["version"])
-            available = run_probes(config["label"], zones, fn)
+            available = run_probes(config["label"], zones, fn, primary_zone=primary_zone)
             if available:
                 any_available = True
 
