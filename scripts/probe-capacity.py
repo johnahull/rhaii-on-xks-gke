@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # - machine_type: instance type used for the probe
 # - accelerator:  --accelerator flag value for gcloud instances create, or None for
 #                 machine families that include the GPU (a2/g2/a3)
-# - gcloud_name:  name used with \`gcloud compute accelerator-types list\` for zone
+# - gcloud_name:  name used with `gcloud compute accelerator-types list` for zone
 #                 discovery; None means discover by machine_type instead
 GPU_CONFIGS = {
     "t4": {
@@ -55,7 +55,7 @@ GPU_CONFIGS = {
 # TPU configs.
 # - accelerator_type: passed to --accelerator-type in tpu-vm create (topology)
 # - version:          passed to --version in tpu-vm create
-# - gcloud_name:      name used with \`gcloud compute accelerator-types list\` for zone
+# - gcloud_name:      name used with `gcloud compute accelerator-types list` for zone
 #                     discovery (family name, different from topology identifier)
 TPU_CONFIGS = {
     "v6e": {
@@ -119,6 +119,46 @@ def is_stockout(output):
     return any(p.lower() in output.lower() for p in STOCKOUT_PATTERNS)
 
 
+def delete_instance_with_retry(name, zone, project, max_attempts=3):
+    """Delete a compute instance synchronously, retrying on failure.
+    Warns loudly if all attempts fail so the user can clean up manually."""
+    for attempt in range(1, max_attempts + 1):
+        rc, _ = run([
+            "gcloud", "compute", "instances", "delete", name,
+            f"--zone={zone}", f"--project={project}", "--quiet",
+        ])
+        if rc == 0:
+            return
+        if attempt < max_attempts:
+            time.sleep(5)
+    print(
+        f"  ⚠️  WARNING: Failed to delete probe instance {name} in {zone} after {max_attempts} attempts. "
+        f"Delete it manually to avoid ongoing charges: "
+        f"gcloud compute instances delete {name} --zone={zone} --project={project} --quiet",
+        flush=True,
+    )
+
+
+def delete_tpu_with_retry(name, zone, project, max_attempts=3):
+    """Delete a TPU VM synchronously, retrying on failure.
+    Warns loudly if all attempts fail so the user can clean up manually."""
+    for attempt in range(1, max_attempts + 1):
+        rc, _ = run([
+            "gcloud", "compute", "tpus", "tpu-vm", "delete", name,
+            f"--zone={zone}", f"--project={project}", "--quiet",
+        ])
+        if rc == 0:
+            return
+        if attempt < max_attempts:
+            time.sleep(5)
+    print(
+        f"  ⚠️  WARNING: Failed to delete probe TPU {name} in {zone} after {max_attempts} attempts. "
+        f"Delete it manually to avoid ongoing charges: "
+        f"gcloud compute tpus tpu-vm delete {name} --zone={zone} --project={project} --quiet",
+        flush=True,
+    )
+
+
 def discover_zones_by_machine_type(machine_type, project):
     """Return sorted deduplicated list of zones where machine_type exists."""
     _, output = run_stdout([
@@ -159,11 +199,7 @@ def probe_gpu_zone(zone, project, machine_type, accelerator_flag):
         cmd.append(f"--accelerator={accelerator_flag}")
     exit_code, output = run(cmd)
     if exit_code == 0:
-        subprocess.Popen(
-            ["gcloud", "compute", "instances", "delete", name,
-             f"--zone={zone}", f"--project={project}", "--quiet"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        delete_instance_with_retry(name, zone, project)
         return zone, "AVAILABLE"
     elif is_stockout(output):
         return zone, "STOCKOUT"
@@ -183,11 +219,7 @@ def probe_tpu_zone(zone, project, accelerator_type, version):
     ]
     exit_code, output = run(cmd)
     if exit_code == 0:
-        subprocess.Popen(
-            ["gcloud", "compute", "tpus", "tpu-vm", "delete", name,
-             f"--zone={zone}", f"--project={project}", "--quiet"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        delete_tpu_with_retry(name, zone, project)
         return zone, "AVAILABLE"
     elif is_stockout(output):
         return zone, "STOCKOUT"
