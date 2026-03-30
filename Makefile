@@ -126,8 +126,7 @@ cluster-create: check
 		--zone $(ZONE) \
 		--cluster-name $(CLUSTER_NAME) \
 		--num-nodes $(NUM_NODES) \
-		--non-interactive \
-		--skip-validation
+		--non-interactive
 	@echo "✓ Cluster creation complete"
 
 deploy-gpu-operator:
@@ -176,7 +175,7 @@ probe-gpu:
 	@python3 scripts/probe-capacity.py --gpu --project $(PROJECT_ID)
 
 cluster-tpu: ACCELERATOR=tpu
-cluster-tpu: check probe-tpu cluster-create cluster-nodepool-tpu cluster-credentials
+cluster-tpu: check cluster-create cluster-nodepool-tpu cluster-credentials
 	@echo "========================================="
 	@echo "✓ TPU cluster ready!"
 	@echo "========================================="
@@ -189,7 +188,7 @@ cluster-tpu: check probe-tpu cluster-create cluster-nodepool-tpu cluster-credent
 	@echo "  2. Deploy RHAII workloads"
 
 cluster-gpu: ACCELERATOR=gpu
-cluster-gpu: check probe-gpu cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
+cluster-gpu: check cluster-create cluster-nodepool-gpu cluster-credentials deploy-gpu-operator
 	@echo "========================================="
 	@echo "✓ GPU cluster ready!"
 	@echo "========================================="
